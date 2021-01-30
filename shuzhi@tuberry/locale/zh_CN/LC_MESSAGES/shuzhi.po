@@ -1,0 +1,132 @@
+# Chinese translations for JiZhi package.
+# Copyright (C) 2021 THE JiZhi'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the JiZhi package.
+#
+# tuberry <orzun@foxmail.com>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: JiZhi 1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-01-30 21:51+0800\n"
+"PO-Revision-Date: 2021-01-30 21:52+0800\n"
+"Last-Translator: tuberry <orzun@foxmail.com>\n"
+"Language-Team: Chinese (Simplified) <orzun@foxmail.com>\n"
+"Language: zh_CHS\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"X-Generator: Gtranslator 3.38.0\n"
+
+#: extension.js:197
+msgid "Refresh"
+msgstr "刷新"
+
+#: extension.js:199
+msgid "Styles"
+msgstr "样式"
+
+#: extension.js:201
+msgid "More"
+msgstr "更多"
+
+#: extension.js:212
+msgid "Copy"
+msgstr "复制"
+
+#: extension.js:220
+msgid "Motto"
+msgstr "字句"
+
+#: extension.js:224
+msgid "Sketch"
+msgstr "纹理"
+
+#: extension.js:228
+msgid "Both"
+msgstr "全部"
+
+#: extension.js:254
+msgid "Settings"
+msgstr "设置"
+
+#: prefs.js:49
+msgid "Enable systray"
+msgstr "托盘图标"
+
+#: prefs.js:50
+msgid "Auto refresh"
+msgstr "自动刷新"
+
+#: prefs.js:51
+msgid "Show color name"
+msgstr "颜色名称"
+
+#: prefs.js:55
+msgid "Horizontal"
+msgstr "水平"
+
+#: prefs.js:55
+msgid "Vertical"
+msgstr "竖直"
+
+#: prefs.js:56
+msgid "Light"
+msgstr "浅色"
+
+#: prefs.js:56
+msgid "Dark"
+msgstr "深色"
+
+#: prefs.js:56
+msgid "Auto"
+msgstr "自动"
+
+#: prefs.js:56
+msgid "Background and text"
+msgstr "背景和文本"
+
+#: prefs.js:57 prefs.js:58
+msgid "Waves"
+msgstr "波浪"
+
+#: prefs.js:57 prefs.js:58
+msgid "Ovals"
+msgstr "椭圆"
+
+#: prefs.js:57 prefs.js:58
+msgid "Blobs"
+msgstr "团子"
+
+#: prefs.js:57
+msgid "Light sketches"
+msgstr "浅色纹理"
+
+#: prefs.js:58
+msgid "Clouds"
+msgstr "云纹"
+
+#: prefs.js:58
+msgid "Dark sketches"
+msgstr "深色纹理"
+
+#: prefs.js:59
+msgid "Command to generate the text in center"
+msgstr "生成中间文本的命令"
+
+#: prefs.js:77
+msgid "Text orientation"
+msgstr "文本方向"
+
+#: prefs.js:78
+msgid "Text font"
+msgstr "文本字体"
+
+#: prefs.js:79
+msgid "Default style"
+msgstr "默认样式"
+
+#: prefs.js:80
+msgid "Text command"
+msgstr "文本命令"

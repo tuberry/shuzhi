@@ -1,0 +1,130 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-01-30 21:51+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: extension.js:197
+msgid "Refresh"
+msgstr ""
+
+#: extension.js:199
+msgid "Styles"
+msgstr ""
+
+#: extension.js:201
+msgid "More"
+msgstr ""
+
+#: extension.js:212
+msgid "Copy"
+msgstr ""
+
+#: extension.js:220
+msgid "Motto"
+msgstr ""
+
+#: extension.js:224
+msgid "Sketch"
+msgstr ""
+
+#: extension.js:228
+msgid "Both"
+msgstr ""
+
+#: extension.js:254
+msgid "Settings"
+msgstr ""
+
+#: prefs.js:49
+msgid "Enable systray"
+msgstr ""
+
+#: prefs.js:50
+msgid "Auto refresh"
+msgstr ""
+
+#: prefs.js:51
+msgid "Show color name"
+msgstr ""
+
+#: prefs.js:55
+msgid "Horizontal"
+msgstr ""
+
+#: prefs.js:55
+msgid "Vertical"
+msgstr ""
+
+#: prefs.js:56
+msgid "Light"
+msgstr ""
+
+#: prefs.js:56
+msgid "Dark"
+msgstr ""
+
+#: prefs.js:56
+msgid "Auto"
+msgstr ""
+
+#: prefs.js:56
+msgid "Background and text"
+msgstr ""
+
+#: prefs.js:57 prefs.js:58
+msgid "Waves"
+msgstr ""
+
+#: prefs.js:57 prefs.js:58
+msgid "Ovals"
+msgstr ""
+
+#: prefs.js:57 prefs.js:58
+msgid "Blobs"
+msgstr ""
+
+#: prefs.js:57
+msgid "Light sketches"
+msgstr ""
+
+#: prefs.js:58
+msgid "Clouds"
+msgstr ""
+
+#: prefs.js:58
+msgid "Dark sketches"
+msgstr ""
+
+#: prefs.js:59
+msgid "Command to generate the text in center"
+msgstr ""
+
+#: prefs.js:77
+msgid "Text orientation"
+msgstr ""
+
+#: prefs.js:78
+msgid "Text font"
+msgstr ""
+
+#: prefs.js:79
+msgid "Default style"
+msgstr ""
+
+#: prefs.js:80
+msgid "Text command"
+msgstr ""

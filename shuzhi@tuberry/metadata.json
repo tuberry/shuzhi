@@ -1,0 +1,12 @@
+{
+  "name": "Shu Zhi",
+  "description": "A limited port of Jizhi for gnome shell",
+  "uuid": "shuzhi@tuberry",
+  "gettext-domain": "shuzhi",
+  "settings-schema": "org.gnome.shell.extensions.shuzhi",
+  "shell-version": [
+    "3.38"
+  ],
+  "url": "https://github.com/tuberry/shuzhi",
+  "version": -1
+}

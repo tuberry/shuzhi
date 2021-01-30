@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.shuzhi" path="/org/gnome/shell/extensions/shuzhi/">
+    <key type="b" name="enable-systray">
+        <default>false</default>
+        <summary>enable systray</summary>
+    </key>
+    <key type="b" name="enable-refresh">
+        <default>false</default>
+        <summary>enable auto update</summary>
+    </key>
+    <key type="b" name="show-color-name">
+        <default>false</default>
+        <summary>show color name</summary>
+    </key>
+    <key type="u" name="text-orientation">
+        <range min="0" max="1"/>
+        <default>0</default>
+        <summary>text orientation (0 - horizontal, 1 - vertical)</summary>
+    </key>
+    <key type="u" name="default-style">
+        <range min="0" max="2"/>
+        <default>0</default>
+        <summary>default style (0 - light, 1 - dark)</summary>
+    </key>
+    <key type="u" name="light-sketch-type">
+        <range min="0" max="2"/>
+        <default>0</default>
+        <summary>light sketch type (0 - waves, 1 - ovals, 2 - blobs)</summary>
+    </key>
+    <key type="u" name="dark-sketch-type">
+        <range min="0" max="3"/>
+        <default>0</default>
+        <summary>light sketch type (0 - waves, 1 - ovals, 2 - blobs, 3 - clouds)</summary>
+    </key>
+    <key type="u" name="refresh-interval">
+        <range min="10" max="300"/>
+        <default>60</default>
+        <summary>refresh interval (mins)</summary>
+    </key>
+    <key type="s" name="font-name">
+        <default>"Sans 16"</default>
+        <summary>font of text</summary>
+    </key>
+    <key type="s" name="points-cache">
+        <default>""</default>
+        <summary>control points cache</summary>
+    </key>
+    <key type="s" name="text-command">
+        <default>""</default>
+        <summary>text generation command</summary>
+    </key>
+  </schema>
+</schemalist>
