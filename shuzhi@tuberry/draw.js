@@ -37,23 +37,16 @@ function randamp(x, y) {
     return rand(x - y, x + y);
 }
 
-function randbm(min, max, skew) {
-    // Ref: https://stackoverflow.com/a/49434653
-    let u = 0, v = 0;
-    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
-    while(v === 0) v = Math.random();
-    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+function gauss(mu, sgm) {
+    // https://en.wikipedia.org/wiki/Marsaglia_polar_method
+    let q, u, v, p;
+    do  {
+        u = 2 * Math.random() - 1;
+        v = 2 * Math.random() - 1;
+        q = u * u + v * v;
+    } while (q >= 1 || q === 0);
 
-    num = num / 10.0 + 0.5; // Translate to 0 -> 1
-    if (num > 1 || num < 0) num = randbm(min, max, skew); // resample between 0 and 1 if out of range
-    num = Math.pow(num, skew); // Skew
-    num *= max - min; // Stretch to fill range
-    num += min; // offset to min
-    return num;
-}
-
-function gauss(mu, range) {
-    return randbm(mu - range, mu + range, 1);
+    return mu + sgm * u * Math.sqrt(- 2 * Math.log(q) / q);
 }
 
 function shuffle(arr) {
@@ -76,7 +69,7 @@ function genPolygon(ctr_x, ctr_y, ave_r, dt_a, dt_r, vertex) {
     dt_a = clip(dt_a, 0, 1) * 2 * Math.PI / vertex;
     dt_r = clip(dt_r, 0, 1) * ave_r;
     let [min, max, points] = [(2 * Math.PI / vertex) - dt_a, (2 * Math.PI / vertex) + dt_a, []];
-    let angle_step = Array.from({length: vertex}, () => rand(min, max));
+    let angle_step = Array.from({ length: vertex }, () => rand(min, max));
     let angle_norm = 2 * Math.PI / angle_step.reduce((ac, v) => ac + v);
     angle_step = angle_step.map(a => a * angle_norm);
     for(let i = 0, angle = rand(0, 2 * Math.PI); i < vertex; angle += angle_step[i], i++) {
@@ -85,45 +78,6 @@ function genPolygon(ctr_x, ctr_y, ave_r, dt_a, dt_r, vertex) {
     }
 
     return points;
-}
-
-function genConvexPolygon(vertex, size){ // convex
-    // Port of Valtr algorithm by Sander Verdonschot.
-    // Ref: http://cglab.ca/~sander/misc/ConvexGeneration/ValtrAlgorithm.java
-    let xs = Array.from({length: vertex}, () => Math.random() * size).sort();
-    let ys = Array.from({length: vertex}, () => Math.random() * size).sort();
-    let toVecCoord = (arr, min, max) => {
-        let [result, last_min, last_max] = [[], min, min];
-        arr.forEach(a => {
-            if (Math.round(Math.random())) {
-                result.push(a - last_min);
-                last_min = a;
-            } else {
-                result.push(last_max - a);
-                last_max = a;
-            }
-        });
-        result.push(max - last_min, last_max - max);
-        return result;
-    };
-    let zip = arrs => arrs[0].map((_,i) => arrs.map(a => a[i]));
-
-    let [min_x, min_y] = [xs[0], ys[0]];
-    let vec_xs = toVecCoord(xs, xs.shift(), xs.pop());
-    let vec_ys = shuffle(toVecCoord(ys, ys.shift(), ys.pop()));
-    let vector = zip([vec_xs, vec_ys]).sort((a, b) => Math.atan2(...a) > Math.atan2(...b));
-
-    let [pt_x, pt_y, mpl_x, mpl_y, points] = [0, 0, 0, 0, []];
-    vector.forEach(vec => {
-        let [vec_x, vec_y] = vec;
-        points.push([pt_x, pt_y]);
-        pt_x += vec_x;
-        pt_y += vec_y;
-        mpl_x = Math.min(mpl_x, pt_x);
-        mpl_y = Math.min(mpl_y, pt_y);
-    });
-
-    return points.map(p => [p[0] + min_x - mpl_x, p[1] + min_y - mpl_y]);
 }
 
 function genCoords(rect, sum, factor) { // reduce collision
@@ -331,13 +285,12 @@ function drawMoon(cr, pts) {
 function genWaves(x, y) {
     let [layers, alpha, factor, num] = [5, 0.2, 0.35, 10];
     let [delta, start] = [factor * y / layers, (1 - factor) * y];
-    let color = Color.getRandColor(alpha, DarkBg);
-    let pts = Array.from({length: layers}, (_, i) => {
+    let pts = Array.from({ length: layers }, (_, i) => {
         let length = randint(num, num + 5);
-        return ctrlUnclosed(Array.from({length: length + 1}, (_, j) => [x * j / length, randamp(start + i * delta, delta * 0.7)]), 1);
+        return ctrlUnclosed(Array.from({ length: length + 1 }, (_, j) => [x * j / length, randamp(start + i * delta, delta * 0.7)]), 1);
     });
 
-    return [[x, y, color], pts];
+    return [[x, y, Color.getRandColor(alpha, DarkBg)], pts];
 }
 
 function drawWaves(cr, waves, show) {
@@ -372,7 +325,7 @@ function drawWaves(cr, waves, show) {
 }
 
 function genBlobs(x, y) {
-    return shuffle(genCoords([[0, 0, x ,y]], 20, 3)).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => [Color.getRandColor(0.5, DarkBg).color, ctrlClosed(genPolygon(...circle(rect), 0.6, 0.2, 6), 1)] );
+    return shuffle(genCoords([[0, 0, x ,y]], 20, 5)).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => [Color.getRandColor(0.5, DarkBg).color, ctrlClosed(genPolygon(...circle(rect), 0.6, 0.2, 6), 1)] );
 }
 
 function drawBlobs(cr, pts) {
@@ -387,9 +340,9 @@ function drawBlobs(cr, pts) {
 }
 
 function genOvals(x, y) {
-    return shuffle(genCoords([[0, 0, x ,y]], 20, 3)).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => {
+    return shuffle(genCoords([[0, 0, x ,y]], 20, 5)).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
-        let [e_w, e_h] = [r, gauss(r, 0.6 * r)];
+        let [e_w, e_h] = [r, gauss(r, 0.2 * r)];
         return [Color.getRandColor(0.5, DarkBg).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
     });
 }
@@ -412,7 +365,7 @@ function drawOvals(cr, pts) {
 function genCloud(rect, offset) {
     let [x, y, w, h] = [rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]];
     let wave = n => {
-        let src = shuffle(Array.from({length: n}, (_,i) => i));
+        let src = shuffle(Array.from({ length: n }, (_,i) => i));
         for(let i = 0; i < n; i += 2) {
             if(i > 0 && src[i] < src[i - 1])
                 [src[i], src[i - 1]] = [src[i - 1], src[i]]
@@ -425,9 +378,9 @@ function genCloud(rect, offset) {
     let length = Math.floor(h / offset);
     let steps = wave(length).map(s => s / length);
     if(steps[0] > steps[1]) {
-        result.push([gauss(x, w * steps[0]), y]);
+        result.push([gauss(x, w * steps[0] / 3), y]);
     } else {
-        result.push([gauss(x + w, w * (1 - steps[0])), y]);
+        result.push([gauss(x + w, w * (1 - steps[0]) / 3), y]);
     }
     for(let i = 0; i < length; i++) {
         let old_y = result[result.length - 1][1];
@@ -437,9 +390,9 @@ function genCloud(rect, offset) {
         result.push([new_x, old_y + offset, fold]);
     }
     if(steps[length - 1] > steps[length - 2]) {
-        result.push([gauss(x, w * steps[length - 1]), result[result.length - 1][1]]);
+        result.push([gauss(x, w * steps[length - 1] / 3), result[result.length - 1][1]]);
     } else {
-        result.push([gauss(x + w, w * (1 - steps[length - 1])), result[result.length - 1][1]]);
+        result.push([gauss(x + w, w * (1 - steps[length - 1]) / 3), result[result.length - 1][1]]);
     }
 
     return result;
@@ -447,7 +400,7 @@ function genCloud(rect, offset) {
 
 function genClouds(x, y) {
     let offset = y / 27;
-    let moonRect = [x * 3 / 4, x / 20, x * 17/ 20, x * 3 / 20];
+    let moonRect = [x * 3 / 4, x / 20, x * 17 / 20, x * 3 / 20];
     let cords = genCoords([[0, 0, x ,y]], 15, 6).filter(c => {
         if(c[2] - c[0] < 2 * offset || c[3] - c[1] < 2 * offset || c[3] - c[1] > 8 * offset)
             return false;
@@ -486,6 +439,7 @@ function drawClouds(cr, clouds) {
 
 function genMotto(cr, x, y, font, text, orien) {
     let layout = PangoCairo.create_layout(cr);
+    layout.set_line_spacing(1.05);
     layout.set_font_description(Pango.FontDescription.from_string(font));
     if(orien) layout.get_context().set_base_gravity(Pango.Gravity.EAST);
     layout.set_markup(text, -1);

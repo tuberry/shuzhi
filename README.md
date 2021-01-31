@@ -22,10 +22,10 @@ cd shuzhi && VERSION=1 make install
 
 ![prefs](https://user-images.githubusercontent.com/17917040/106359323-07d58f00-634d-11eb-83a6-68f9b9dfd2c9.png)
 
-## Notes
+## Note
 
-伪随机，纯静态，非渐变，不自然。
+伪随机，纯静态，非渐变。
 
-Pseudo random, pure static, non gradient, unnatural.
+Pseudo random, purely static, non gradient.
 
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg

@@ -5,6 +5,7 @@ var DARK = [36 / 255, 36 / 255, 36 / 255, 1];
 var LIGHT = [230 / 255, 230 / 255, 230 / 255, 1];
 var DARKHEX = '#242424'
 var LIGHTHEX = '#E6E6E6';
+
 const Colors = [
     {
         "CMYK": [
@@ -7783,6 +7784,7 @@ const Colors = [
         "pinyin": "yanhui"
     }
 ];
+
 const DarkColors = Colors.filter(x => !isLight(x.RGB));
 const LightColors = Colors.filter(x => isLight(x.RGB));
 
@@ -7790,9 +7792,9 @@ function getRandColor(alpha, dark) {
     let colors = dark ? LightColors : DarkColors;
     let index = Math.floor(Math.random() * colors.length);
     let color = colors[index];
-    let rgba = color.RGB.map(x => x / 255.0);
+    let rgba = color.RGB.map(x => x / 255);
     rgba.push(alpha == undefined ? 1 : alpha);
-    return { color: rgba, name: color.name, index: index };
+    return { color: rgba, name: color.name };
 }
 
 function isLight(rgb) {
