@@ -325,7 +325,10 @@ function drawWaves(cr, waves, show) {
 }
 
 function genBlobs(x, y) {
-    return shuffle(genCoords([[0, 0, x ,y]], 20, 5)).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => [Color.getRandColor(0.5, DarkBg).color, ctrlClosed(genPolygon(...circle(rect), 0.6, 0.2, 6), 1)] );
+    return shuffle(genCoords([[0, 0, x ,y]], 20, 5))
+        .filter(c => !overlap(c, TextRect))
+        .slice(0, 16)
+        .map(rect => [Color.getRandColor(0.5, DarkBg).color, ctrlClosed(genPolygon(...circle(rect), 0.6, 0.2, 6), 1)] );
 }
 
 function drawBlobs(cr, pts) {
@@ -440,13 +443,19 @@ function drawClouds(cr, clouds) {
 function genMotto(cr, x, y, font, text, orien) {
     let layout = PangoCairo.create_layout(cr);
     layout.set_line_spacing(1.05);
+    if(orien) {
+        layout.set_width(0.6 * y * Pango.SCALE);
+        layout.get_context().set_base_gravity(Pango.Gravity.EAST);
+    } else {
+        layout.set_alignment(Pango.Alignment.CENTER);
+    }
     layout.set_font_description(Pango.FontDescription.from_string(font));
-    if(orien) layout.get_context().set_base_gravity(Pango.Gravity.EAST);
     layout.set_markup(text, -1);
     let [fw, fh] = layout.get_pixel_size();
-    setFontName(font);
-    let [a, b, c, d] = [x / 2, 0.618 * y / 2, fw / 2, fh / 2];
+    let [a, b, c, d] = [x / 2, 0.65 * y / 2, fw / 2, fh / 2];
     setTextRect(orien ? [a - d, b - c, a + d, b + c] : [a - c, b - d, a + c, b + d]);
+    setFontName(font);
+
     return [x, y, layout, orien, fw, fh];
 }
 
@@ -456,10 +465,10 @@ function drawMotto(cr, pts) {
     cr.save();
     cr.setSourceRGBA(...color);
     if(orien) {
-        cr.moveTo((x + fh) / 2, (0.618 * y - fw) / 2);
+        cr.moveTo((x + fh) / 2, (0.65 * y - fw) / 2);
         cr.rotate(Math.PI / 2);
     } else {
-        cr.moveTo((x - fw) / 2, (0.618 * y - fh) / 2);
+        cr.moveTo((x - fw) / 2, (0.65 * y - fh) / 2);
     }
     PangoCairo.show_layout(cr, layout);
     cr.restore();

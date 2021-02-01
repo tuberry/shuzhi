@@ -60,8 +60,8 @@ const ShuZhi = GObject.registerClass({
     }
 
     _bindSettings() {
+        ngsettings.bind(System.LIGHT,   this, 'night',     Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.STYLE,    this, 'style',     Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.DSKETCH,  this, 'dsketch',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.LSKETCH,  this, 'lsketch',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.COLOR,    this, 'showcolor', Gio.SettingsBindFlags.GET);
@@ -70,7 +70,7 @@ const ShuZhi = GObject.registerClass({
         gsettings.bind(Fields.FONT,     this, 'fontname',  Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.ORIENT,   this, 'orient',    Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.REFRESH,  this, 'refresh',   Gio.SettingsBindFlags.GET);
-        ngsettings.bind(System.LIGHT,   this, 'night',     Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
     }
 
     _buildWidgets() {
@@ -119,6 +119,7 @@ const ShuZhi = GObject.registerClass({
                 style_class: 'shuzhi-systray system-status-icon',
             }));
             Main.panel.addToStatusArea(Me.metadata.uuid, this._button, 0, 'right');
+            this._updateMenu();
         } else {
             if(!this._button) return;
             this._button.destroy();
