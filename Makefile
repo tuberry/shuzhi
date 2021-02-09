@@ -1,7 +1,7 @@
 # by tuberry and based on dashtodock's makefile
 # to increase version number automatically when manually installing
 
-EXTNUM = 2959
+EXTNUM = 3985
 
 UUID = $(shell ls | grep @)
 NAME = $(shell cat $(UUID)/metadata.json | grep gettext-domain | sed -e 's/.* "//; s/",//')

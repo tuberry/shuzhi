@@ -196,21 +196,21 @@ function genMoon(x, y) {
         let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
         let gd = new Cairo.RadialGradient(c_x2, c_y2, r2, c_x2, c_y2, r2 + r1 / 16);
         gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.9, 0.9, 0.9, 1);
+        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
         return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
     } break;
     case 2: {
         let [r_t, s_t1, e_t1] = [1 / 8, - 1 / 2, 1 / 2];
         let gd = new Cairo.LinearGradient(0, 0, r1 / 16, 0);
         gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.9, 0.9, 0.9, 1);
+        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
         return [c_x, c_y, r1, s_t1, e_t1, r_t, gd];
     } break;
     case 3: {
         let [r_t, s_t1, e_t1, s_t2, e_t2] = [1, 1 / 2, - 1 / 2, - 1 / 3, 1 / 3];
         let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
         let gd = new Cairo.RadialGradient(c_x2, c_y2, r2 - r1 / 16, c_x2, c_y2, r2);
-        gd.addColorStopRGBA(0, 0.9, 0.9, 0.9, 1);
+        gd.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
         gd.addColorStopRGBA(1, 0, 0, 0, 0);
         return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
     } break;
@@ -221,7 +221,7 @@ function genMoon(x, y) {
         let [r_t, s_t1, e_t1, s_t2, e_t2] = [- 1 / 4, 1 / 2, - 1 / 2, - 1 / 3, 1 / 3];
         let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
         let gd = new Cairo.RadialGradient(c_x2, c_y2, r2 - r1 / 16, c_x2, c_y2, r2);
-        gd.addColorStopRGBA(0, 0.9, 0.9, 0.9, 1);
+        gd.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
         gd.addColorStopRGBA(1, 0, 0, 0, 0);
         return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
     } break;
@@ -229,7 +229,7 @@ function genMoon(x, y) {
         let [r_t, s_t1, e_t1] = [9 / 8, - 1 / 2, 1 / 2];
         let gd = new Cairo.LinearGradient(0, 0, r1 / 16, 0);
         gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.9, 0.9, 0.9, 1);
+        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
         return [c_x, c_y, r1, s_t1, e_t1, r_t, gd];
     } break;
     case 7: {
@@ -237,7 +237,7 @@ function genMoon(x, y) {
         let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
         let gd = new Cairo.RadialGradient(c_x2, c_y2, r2, c_x2, c_y2, r2 + r1 / 16);
         gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.9, 0.9, 0.9, 1);
+        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
         return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
     }
     default:
@@ -368,12 +368,17 @@ function drawOvals(cr, pts) {
 function genCloud(rect, offset) {
     let [x, y, w, h] = [rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]];
     let wave = n => {
-        let src = shuffle(Array.from({ length: n }, (_,i) => i));
-        for(let i = 0; i < n; i += 2) {
-            if(i > 0 && src[i] < src[i - 1])
-                [src[i], src[i - 1]] = [src[i - 1], src[i]]
-            if(i < n- 1 && src[i] < src[i+1])
-                [src[i], src[i + 1]] = [src[i + 1], src[i]]
+        let src = shuffle(Array.from({ length: n }, (_, i) => i));
+        if(Math.round(Math.random())) {
+            for(let i = 0; i < n; i += 2) {
+                if(i > 0 && src[i] < src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]]
+                if(i < n - 1 && src[i] < src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]]
+            }
+        } else {
+            for(let i = 0; i < n; i += 2) {
+                if(i > 0 && src[i] > src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]]
+                if(i < n - 1 && src[i] > src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]]
+            }
         }
         return src;
     };
