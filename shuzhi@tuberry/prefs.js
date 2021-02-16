@@ -18,6 +18,7 @@ var Fields = {
     SYSTRAY:  'enable-systray',
     COLOR:    'show-color-name',
     DSKETCH:  'dark-sketch-type',
+    FOLDER:   'picture-location',
     INTERVAL: 'refresh-interval',
     ORIENT:   'text-orientation',
     LSKETCH:  'light-sketch-type',
@@ -53,10 +54,11 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         this._field_font     = new Gtk.FontButton();
         this._field_interval = this._spinMaker(10, 300, 30);
         this._field_orient   = this._comboMaker([_('Horizontal'), _('Vertical')]);
-        this._field_style    = this._comboMaker([_('Light'), _('Dark'), _('Auto')], _('Background and text'));
-        this._field_lsketch  = this._comboMaker([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
-        this._field_dsketch  = this._comboMaker([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
         this._field_command  = this._entryMaker('fortune', _('Command to generate the text in center'))
+        this._field_lsketch  = this._comboMaker([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
+        this._field_style    = this._comboMaker([_('Light'), _('Dark'), _('Auto')], _('Background and text'));
+        this._field_folder   = Gtk.FileChooserButton.new(_('Picture location'), Gtk.FileChooserAction.SELECT_FOLDER);
+        this._field_dsketch  = this._comboMaker([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
     }
 
     _bulidUI() {
@@ -75,6 +77,7 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         frame._add(this._field_color);
         frame._add(this._field_refresh, this._field_interval);
         frame._add(this._labelMaker(_('Text orientation')), this._field_orient);
+        frame._add(this._labelMaker(_('Picture location')), this._field_folder);
         frame._add(this._labelMaker(_('Text font')), this._field_font);
         frame._add(this._labelMaker(_('Default style')), hbox);
         frame._att(this._labelMaker(_('Text command')), this._field_command);
@@ -94,6 +97,10 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
     }
 
     _syncStatus() {
+        this._field_folder.set_filename(gsettings.get_string(Fields.FOLDER));
+        this._field_folder.connect('file-set', widget => {
+            gsettings.set_string(Fields.FOLDER, widget.get_filename());
+        });
         this._field_refresh.connect('notify::active', widget => {
             this._field_interval.set_sensitive(widget.active);
         });

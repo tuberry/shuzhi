@@ -1,14 +1,14 @@
 # 数枝 | Shuzhi
 
-[几枝](https://github.com/unicar9/jizhi)在 Gnome shell 上的部分移植。
+受[几枝](https://github.com/unicar9/jizhi)启发的 gnome shell 壁纸生成插件。
 
-A limited port of [jizhi](https://github.com/unicar9/jizhi) for gnome shell.
+A wallpaper generation extension for gnome shell, inspired by [jizhi](https://github.com/unicar9/jizhi).
 
->疏影横斜水清浅，暗香浮动月黄昏。 —— *【宋】林逋*<br>
+>望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*<br>
 [![license]](/LICENSE)
 <br>
 
-![sz](https://user-images.githubusercontent.com/17917040/106359354-44a18600-634d-11eb-8f6c-71c4ca36de3b.png)
+![shuzhi](https://user-images.githubusercontent.com/17917040/108039729-7453cc00-7077-11eb-9d91-4beebcef9e97.png)
 
 ## Installation
 
@@ -24,13 +24,7 @@ cd shuzhi && make install
 
 ## Features
 
-![prefs](https://user-images.githubusercontent.com/17917040/106359323-07d58f00-634d-11eb-83a6-68f9b9dfd2c9.png)
-
-## Note
-
-伪随机，纯静态，非渐变。
-
-Pseudo random, purely static, non gradient.
+![szprefs](https://user-images.githubusercontent.com/17917040/108040675-8f730b80-7078-11eb-86e9-b50a3ed5f39a.png)
 
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/

@@ -1,5 +1,6 @@
 // vim:fdm=syntax
 // by tuberry
+const Cairo = imports.cairo;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
@@ -17,9 +18,7 @@ const _ = imports.gettext.domain(Me.metadata['gettext-domain']).gettext;
 const getIcon = x => Me.dir.get_child('icons').get_child(x + '-symbolic.svg').get_path();
 
 const System = {
-    NONE:        0,
-    COLOR:       'primary-color',
-    PICTURE:     'picture-options',
+    PICTURE:     'picture-uri',
     LIGHT:       'night-light-enabled',
     PROPERTY:    'g-properties-changed',
     BUS_NAME:    'org.gnome.SettingsDaemon.Color',
@@ -35,6 +34,7 @@ const Sketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3, };
 
 const ShuZhi = GObject.registerClass({
     Properties: {
+        'folder':    GObject.param_spec_string('folder', 'folder', 'folder', '', GObject.ParamFlags.READWRITE),
         'style':     GObject.param_spec_uint('style', 'style', 'style', 0, 2, 0, GObject.ParamFlags.READWRITE),
         'night':     GObject.param_spec_boolean('night', 'night', 'night', false, GObject.ParamFlags.READWRITE),
         'command':   GObject.param_spec_string('command', 'command', 'command', '', GObject.ParamFlags.READWRITE),
@@ -53,6 +53,7 @@ const ShuZhi = GObject.registerClass({
         this._motto = '';
         this._points = [];
         this._interval = 30;
+        this._inited = false;
         this._painted = false;
 
         this._bindSettings();
@@ -62,6 +63,7 @@ const ShuZhi = GObject.registerClass({
     _bindSettings() {
         ngsettings.bind(System.LIGHT,   this, 'night',     Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.STYLE,    this, 'style',     Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.FOLDER,   this, 'folder',    Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.DSKETCH,  this, 'dsketch',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.LSKETCH,  this, 'lsketch',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.COLOR,    this, 'showcolor', Gio.SettingsBindFlags.GET);
@@ -75,16 +77,20 @@ const ShuZhi = GObject.registerClass({
 
     _buildWidgets() {
         this._proxy = new ColorProxy(Gio.DBus.session, System.BUS_NAME, System.OBJECT_PATH, (proxy, error) => {
-            if(error) return;
-            this._onProxyChanged();
-            this._proxy.connect(System.PROPERTY, this._onProxyChanged.bind(this));
+            if(!error) {
+                this._onProxyChanged();
+                this._proxy.connect(System.PROPERTY, this._onProxyChanged.bind(this));
+            }
+            this._inited = true;
         });
+        let pic = Gio.file_new_for_path(this._pic);
+        if(pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(this._pic)) return;
+        this._queueRepaint();
+    }
 
-        this._area = new St.DrawingArea({style_class: 'shuzhi-area', reactive: false, });
-        this._area.set_size(...global.display.get_size());
-        this._area.connect('repaint', this._repaint.bind(this));
-        Main.layoutManager._backgroundGroup.add_actor(this._area);
-        this._area.queue_repaint();
+    set folder(folder) {
+        this._pic = folder + '/shuzhi.png'
+        this._queueRepaint();
     }
 
     set night(night) {
@@ -177,20 +183,18 @@ const ShuZhi = GObject.registerClass({
         this._execute(this._command).then(scc => { this._motto = scc; }).catch(() => { this._motto = ''; }).finally(() => { this._queueRepaint(); });
     }
 
-    get motto() {
-        return this._execute(this._command).then(scc => scc).catch(() => '');
+    getMotto(paint) {
+        this._execute(this._command).then(scc => { this._motto = scc; }).catch(() => { this._motto = ''; }).finally(() => { this._queueRepaint(paint); });
     }
 
-    async _refreshBoth() {
-        this._motto = await this.motto;
-        this._queueRepaint(true);
+    _refreshBoth() {
+        this.getMotto(true);
 
         return GLib.SOURCE_CONTINUE;
     }
 
-    async _refreshMotto() {
-        this._motto = await this.motto;
-        this._queueRepaint();
+    _refreshMotto() {
+        this.getMotto(false);
     }
 
     _refreshSketch() {
@@ -237,10 +241,10 @@ const ShuZhi = GObject.registerClass({
         return [both, motto, sketch];
     }
 
-    _queueRepaint(flag) {
-        if(!this._area) return;
-        if(flag) this._painted = false;
-        this._area.queue_repaint();
+    _queueRepaint(paint) {
+        if(!this._inited) return;
+        if(paint) this._painted = false;
+        this.repaint();
     }
 
     _sketchItems() {
@@ -264,12 +268,10 @@ const ShuZhi = GObject.registerClass({
         return item;
     }
 
-    set desktop(color) {
-        if(color) {
-            dgsettings.set_string(System.COLOR, color);
-            dgsettings.set_enum(System.PICTURE, System.NONE);
+    set desktop(image) {
+        if(image) {
+            dgsettings.set_string(System.PICTURE, 'file://' + image);
         } else {
-            dgsettings.reset(System.COLOR);
             dgsettings.reset(System.PICTURE);
         }
     }
@@ -282,37 +284,38 @@ const ShuZhi = GObject.registerClass({
         this._updateMenu();
     }
 
-    _repaint(area) {
-        if(!area.visible) return;
-        let cr = area.get_context();
-        let [x, y] = area.get_surface_size();
+    repaint() {
+        let [x, y] = global.display.get_size();
+        let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
+        let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
-        let text = Draw.genMotto(cr, x, y, this._fontname, this._motto, this._orient);
-        this.desktop = Draw.drawBackground(cr, x, y, this.style);
+        let text = Draw.genMotto(context, x, y, this._fontname, this._motto, this._orient);
+        Draw.drawBackground(context, x, y, this.style);
         switch(this.sketch) {
         case Sketch.Waves:
             if(!this._points.length) this._points = Draw.genWaves(x, y);
-            Draw.drawWaves(cr, this._points, this._showcolor);
+            Draw.drawWaves(context, this._points, this._showcolor);
             break;
         case Sketch.Blobs:
             if(!this._points.length) this._points = Draw.genBlobs(x, y);
-            Draw.drawBlobs(cr, this._points);
+            Draw.drawBlobs(context, this._points);
             break;
         case Sketch.Ovals:
             if(!this._points.length) this._points = Draw.genOvals(x, y);
-            Draw.drawOvals(cr, this._points);
+            Draw.drawOvals(context, this._points);
             break;
         case Sketch.Clouds:
             if(!this._points.length) this._points = Draw.genClouds(x, y);
-            Draw.drawClouds(cr, this._points);
+            Draw.drawClouds(context, this._points);
             break;
         default:
             break;
         }
-        Draw.drawMotto(cr, text); // draw text on the top
-        this._painted = true;
+        Draw.drawMotto(context, text); // draw text on the top
+        surface.writeToPNG(this._pic);
+        this.desktop = this._pic;
 
-        cr.$dispose();
+        this._painted = true;
     }
 
     _execute(cmd) {
@@ -335,11 +338,9 @@ const ShuZhi = GObject.registerClass({
     }
 
     destroy() {
-        this.desktop = false;
+        // this.desktop = false;
         this.systray = false;
         this.refresh = false;
-        this._area.destroy();
-        delete this._area;
         delete this._proxy;
         delete this._points;
     }

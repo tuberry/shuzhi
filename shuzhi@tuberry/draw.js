@@ -485,5 +485,4 @@ function drawBackground(cr, x, y, dark) {
     cr.setSourceRGBA(...color);
     cr.rectangle(0, 0, x, y);
     cr.fill();
-    return dark ? Color.DARKHEX : Color.LIGHTHEX;
 }

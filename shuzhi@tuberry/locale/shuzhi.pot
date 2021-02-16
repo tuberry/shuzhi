@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the Shuzhi package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: Shuzhi \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-30 21:51+0800\n"
+"POT-Creation-Date: 2021-02-16 17:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,114 +17,118 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:197
+#: extension.js:208
 msgid "Refresh"
 msgstr ""
 
-#: extension.js:199
+#: extension.js:210
 msgid "Styles"
 msgstr ""
 
-#: extension.js:201
+#: extension.js:212
 msgid "More"
 msgstr ""
 
-#: extension.js:212
+#: extension.js:223
 msgid "Copy"
 msgstr ""
 
-#: extension.js:220
+#: extension.js:231
 msgid "Motto"
 msgstr ""
 
-#: extension.js:224
+#: extension.js:235
 msgid "Sketch"
 msgstr ""
 
-#: extension.js:228
+#: extension.js:239
 msgid "Both"
 msgstr ""
 
-#: extension.js:254
+#: extension.js:266
 msgid "Settings"
 msgstr ""
 
-#: prefs.js:49
+#: prefs.js:50
 msgid "Enable systray"
 msgstr ""
 
-#: prefs.js:50
+#: prefs.js:51
 msgid "Auto refresh"
 msgstr ""
 
-#: prefs.js:51
+#: prefs.js:52
 msgid "Show color name"
 msgstr ""
 
-#: prefs.js:55
+#: prefs.js:56
 msgid "Horizontal"
 msgstr ""
 
-#: prefs.js:55
+#: prefs.js:56
 msgid "Vertical"
 msgstr ""
 
-#: prefs.js:56
-msgid "Light"
-msgstr ""
-
-#: prefs.js:56
-msgid "Dark"
-msgstr ""
-
-#: prefs.js:56
-msgid "Auto"
-msgstr ""
-
-#: prefs.js:56
-msgid "Background and text"
-msgstr ""
-
-#: prefs.js:57 prefs.js:58
-msgid "Waves"
-msgstr ""
-
-#: prefs.js:57 prefs.js:58
-msgid "Ovals"
-msgstr ""
-
-#: prefs.js:57 prefs.js:58
-msgid "Blobs"
-msgstr ""
-
 #: prefs.js:57
-msgid "Light sketches"
-msgstr ""
-
-#: prefs.js:58
-msgid "Clouds"
-msgstr ""
-
-#: prefs.js:58
-msgid "Dark sketches"
-msgstr ""
-
-#: prefs.js:59
 msgid "Command to generate the text in center"
 msgstr ""
 
-#: prefs.js:77
-msgid "Text orientation"
+#: prefs.js:58 prefs.js:61
+msgid "Waves"
 msgstr ""
 
-#: prefs.js:78
-msgid "Text font"
+#: prefs.js:58 prefs.js:61
+msgid "Ovals"
+msgstr ""
+
+#: prefs.js:58 prefs.js:61
+msgid "Blobs"
+msgstr ""
+
+#: prefs.js:58
+msgid "Light sketches"
+msgstr ""
+
+#: prefs.js:59
+msgid "Light"
+msgstr ""
+
+#: prefs.js:59
+msgid "Dark"
+msgstr ""
+
+#: prefs.js:59
+msgid "Auto"
+msgstr ""
+
+#: prefs.js:59
+msgid "Background and text"
+msgstr ""
+
+#: prefs.js:60 prefs.js:80
+msgid "Picture location"
+msgstr ""
+
+#: prefs.js:61
+msgid "Clouds"
+msgstr ""
+
+#: prefs.js:61
+msgid "Dark sketches"
 msgstr ""
 
 #: prefs.js:79
+msgid "Text orientation"
+msgstr ""
+
+#: prefs.js:81
+msgid "Text font"
+msgstr ""
+
+#: prefs.js:82
 msgid "Default style"
 msgstr ""
 
-#: prefs.js:80
+#: prefs.js:83
 msgid "Text command"
 msgstr ""

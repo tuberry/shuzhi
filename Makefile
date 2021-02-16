@@ -54,18 +54,17 @@ $(SCMCPL): $(SCMXML)
 	msgfmt $< -o $@
 
 _build: $(SCMCPL) $(MSGPOS:.po=.mo)
+	-rm -fR _build
 	mkdir -p _build
 	cp -r $(UUID)/* _build
 	sed -i 's/"version": [[:digit:]]\+/"version": $(VERSION)/' _build/metadata.json;
-
-install: install-local
 
 zip: _build
 	cd _build ; \
 		zip -qr "$(NAME)_v$(shell cat _build/metadata.json | grep \"version\" | sed -e 's/[^0-9]*//').zip" .
 	mv _build/*.zip ./
 
-install-local: _build
+install: _build
 	rm -rf $(INSTALLBASE)/$(UUID)
 	mkdir -p $(INSTALLBASE)/$(UUID)
 	cp -r ./_build/* $(INSTALLBASE)/$(UUID)/
@@ -73,8 +72,9 @@ ifeq ($(INSTALLTYPE),system)
 	# system-wide settings and locale files
 	rm -r $(INSTALLBASE)/$(UUID)/schemas $(INSTALLBASE)/$(UUID)/locale
 	mkdir -p $(SHARE_PREFIX)/glib-2.0/schemas $(SHARE_PREFIX)/locale
-	cp -r ./_build/schemas/*gschema.* $(SHARE_PREFIX)/glib-2.0/schemas
-	cp -r ./_build/locale/* $(SHARE_PREFIX)/locale
+	cp -r ./_build/schemas/*gschema.xml $(SHARE_PREFIX)/glib-2.0/schemas
+	cd _build/locale ; \
+		cp --parents */LC_MESSAGES/*.mo $(SHARE_PREFIX)/locale
 endif
 
 $(UUID)/$(MSGSRC):

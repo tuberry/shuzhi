@@ -42,9 +42,9 @@
         <default>"Sans 16"</default>
         <summary>font of text</summary>
     </key>
-    <key type="s" name="points-cache">
+    <key type="s" name="picture-location">
         <default>""</default>
-        <summary>control points cache</summary>
+        <summary>temporary picture location</summary>
     </key>
     <key type="s" name="text-command">
         <default>""</default>

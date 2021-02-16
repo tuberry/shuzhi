@@ -3,8 +3,6 @@
 // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
 var DARK = [36 / 255, 36 / 255, 36 / 255, 1];
 var LIGHT = [230 / 255, 230 / 255, 230 / 255, 1];
-var DARKHEX = '#242424'
-var LIGHTHEX = '#E6E6E6';
 
 const Colors = [
     {
