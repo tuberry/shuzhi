@@ -1,6 +1,6 @@
 {
   "name": "Shu Zhi",
-  "description": "A limited port of Jizhi for gnome shell",
+  "description": "A wallpaper generation extension for gnome shell, inspired by Jizhi",
   "uuid": "shuzhi@tuberry",
   "gettext-domain": "shuzhi",
   "settings-schema": "org.gnome.shell.extensions.shuzhi",

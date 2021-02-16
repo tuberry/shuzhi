@@ -2,7 +2,7 @@
 
 受[几枝](https://github.com/unicar9/jizhi)启发的 gnome shell 壁纸生成插件。
 
-A wallpaper generation extension for gnome shell, inspired by [jizhi](https://github.com/unicar9/jizhi).
+A wallpaper generation extension for gnome shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
 >望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*<br>
 [![license]](/LICENSE)
