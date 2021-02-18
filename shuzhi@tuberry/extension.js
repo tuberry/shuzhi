@@ -61,18 +61,18 @@ const ShuZhi = GObject.registerClass({
     }
 
     _bindSettings() {
+        gsettings.bind(Fields.FOLDER,   this, 'folder',    Gio.SettingsBindFlags.GET);
         ngsettings.bind(System.LIGHT,   this, 'night',     Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.STYLE,    this, 'style',     Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.FOLDER,   this, 'folder',    Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.DSKETCH,  this, 'dsketch',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.LSKETCH,  this, 'lsketch',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.COLOR,    this, 'showcolor', Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.INTERVAL, this, 'interval',  Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.COMMAND,  this, 'command',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.FONT,     this, 'fontname',  Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.ORIENT,   this, 'orient',    Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.REFRESH,  this, 'refresh',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.COMMAND,  this, 'command',   Gio.SettingsBindFlags.GET);
     }
 
     _buildWidgets() {
@@ -81,15 +81,11 @@ const ShuZhi = GObject.registerClass({
                 this._onProxyChanged();
                 this._proxy.connect(System.PROPERTY, this._onProxyChanged.bind(this));
             }
-            this._inited = true;
         });
-        let pic = Gio.file_new_for_path(this._pic);
-        if(pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(this._pic)) return;
-        this._queueRepaint();
     }
 
     set folder(folder) {
-        this._pic = folder + '/shuzhi.png'
+        this._folder = folder ? folder : GLib.get_home_dir();
         this._queueRepaint();
     }
 
@@ -167,6 +163,10 @@ const ShuZhi = GObject.registerClass({
         return this._style == Style.Auto ? this._night && this._light : this._style == Style.Dark;
     }
 
+    get path() {
+        return this._folder + '/shuzhi-' + (this.style ? 'dark.png' : 'light.png');
+    }
+
     set refresh(refresh) {
         if(this._refreshId) GLib.source_remove(this._refreshId), this._refreshId = 0;
         if(!refresh) return;
@@ -180,11 +180,27 @@ const ShuZhi = GObject.registerClass({
 
     set command(command) {
         this._command = command;
-        this._execute(this._command).then(scc => { this._motto = scc; }).catch(() => { this._motto = ''; }).finally(() => { this._queueRepaint(); });
+        if(this._inited) {
+            this.getMotto(false);
+        } else {
+            this._execute(this._command)
+                .then(scc => { this._motto = scc; })
+                .catch(() => { this._motto = ''; })
+                .finally(() => {
+                    this._inited = true;
+                    let path = this.path;
+                    let pic = Gio.file_new_for_path(path);
+                    if(pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path)) return;
+                    this._queueRepaint();
+                });
+        }
     }
 
     getMotto(paint) {
-        this._execute(this._command).then(scc => { this._motto = scc; }).catch(() => { this._motto = ''; }).finally(() => { this._queueRepaint(paint); });
+        this._execute(this._command)
+            .then(scc => { this._motto = scc; })
+            .catch(() => { this._motto = ''; })
+            .finally(() => { this._queueRepaint(paint); });
     }
 
     _refreshBoth() {
@@ -242,7 +258,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     _queueRepaint(paint) {
-        if(!this._inited) return;
+        if(!this._motto) return;
         if(paint) this._painted = false;
         this.repaint();
     }
@@ -312,8 +328,9 @@ const ShuZhi = GObject.registerClass({
             break;
         }
         Draw.drawMotto(context, text); // draw text on the top
-        surface.writeToPNG(this._pic);
-        this.desktop = this._pic;
+        let path = this.path;
+        surface.writeToPNG(path);
+        this.desktop = path;
 
         this._painted = true;
     }
