@@ -6,7 +6,7 @@ EXTNUM = 3985
 UUID = $(shell ls | grep @)
 NAME = $(shell cat $(UUID)/metadata.json | grep gettext-domain | sed -e 's/.* "//; s/",//')
 PACK = $(shell echo $(NAME) | sed -e 's/^./\U&/g; s/-/ /g; s/ ./\U&/g')
-EGOURL = https://extensions.gnome.org/extension/$(EXTNUM)/$(NAME)/
+EGOURL = https://extensions.gnome.org/extension/$(EXTNUM)/shu-zhi/
 
 MSGPOS = $(wildcard $(UUID)/locale/*/LC_MESSAGES/*.po)
 SCMXML = $(UUID)/schemas/org.gnome.shell.extensions.$(NAME).gschema.xml
