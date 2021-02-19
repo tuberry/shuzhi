@@ -26,5 +26,9 @@ cd shuzhi && make install
 
 ![szprefs](https://user-images.githubusercontent.com/17917040/108040675-8f730b80-7078-11eb-86e9-b50a3ed5f39a.png)
 
+## Note
+
+* support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [_shuzhi.fish](/_shuzhi.fish) for reference.
+
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/
