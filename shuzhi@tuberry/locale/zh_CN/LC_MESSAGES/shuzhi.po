@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: JiZhi 1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-16 17:40+0800\n"
-"PO-Revision-Date: 2021-02-16 16:57+0800\n"
+"POT-Creation-Date: 2021-03-27 14:31+0800\n"
+"PO-Revision-Date: 2021-03-27 14:32+0800\n"
 "Last-Translator: tuberry <orzun@foxmail.com>\n"
 "Language-Team: Chinese (Simplified) <orzun@foxmail.com>\n"
 "Language: zh_CHS\n"
@@ -18,118 +18,120 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0\n"
 "X-Generator: Gtranslator 3.38.0\n"
 
-#: extension.js:208
-msgid "Refresh"
-msgstr "刷新"
-
-#: extension.js:210
-msgid "Styles"
-msgstr "样式"
-
-#: extension.js:212
-msgid "More"
-msgstr "更多"
-
-#: extension.js:223
+#: extension.js:244
 msgid "Copy"
 msgstr "复制"
 
-#: extension.js:231
+#: extension.js:250
+msgid "Refresh"
+msgstr "刷新"
+
+#: extension.js:253
 msgid "Motto"
 msgstr "字句"
 
-#: extension.js:235
+#: extension.js:256
 msgid "Sketch"
 msgstr "纹理"
 
-#: extension.js:239
+#: extension.js:259
 msgid "Both"
 msgstr "全部"
 
-#: extension.js:266
+#: extension.js:268
+msgid "Sketch: "
+msgstr "纹理："
+
+#: extension.js:283
 msgid "Settings"
 msgstr "设置"
 
 #: prefs.js:50
-msgid "Enable systray"
-msgstr "托盘图标"
-
-#: prefs.js:51
 msgid "Auto refresh"
 msgstr "自动刷新"
+
+#: prefs.js:51
+msgid "Enable systray"
+msgstr "托盘图标"
 
 #: prefs.js:52
 msgid "Show color name"
 msgstr "颜色名称"
 
-#: prefs.js:56
+#: prefs.js:53
 msgid "Horizontal"
 msgstr "水平"
 
-#: prefs.js:56
+#: prefs.js:53
 msgid "Vertical"
 msgstr "竖直"
 
-#: prefs.js:57
-msgid "Command to generate the text in center"
-msgstr "生成中间文本的命令"
+#: prefs.js:54
+msgid "Command to generate the center text"
+msgstr "生成正中间文本的命令"
 
-#: prefs.js:58 prefs.js:61
+#: prefs.js:55 prefs.js:57
 msgid "Waves"
 msgstr "波浪"
 
-#: prefs.js:58 prefs.js:61
+#: prefs.js:55 prefs.js:57
 msgid "Ovals"
 msgstr "椭圆"
 
-#: prefs.js:58 prefs.js:61
+#: prefs.js:55 prefs.js:57
 msgid "Blobs"
 msgstr "团子"
 
-#: prefs.js:58
+#: prefs.js:55
 msgid "Light sketches"
 msgstr "浅色纹理"
 
-#: prefs.js:59
+#: prefs.js:56
 msgid "Light"
 msgstr "浅色"
 
-#: prefs.js:59
+#: prefs.js:56
 msgid "Dark"
 msgstr "深色"
 
-#: prefs.js:59
+#: prefs.js:56
 msgid "Auto"
 msgstr "自动"
 
-#: prefs.js:59
-msgid "Background and text"
-msgstr "背景和文本"
+#: prefs.js:56
+msgid "Background color"
+msgstr "背景颜色"
 
-#: prefs.js:60 prefs.js:80
-msgid "Picture location"
-msgstr "图像位置"
-
-#: prefs.js:61
+#: prefs.js:57
 msgid "Clouds"
 msgstr "云纹"
 
-#: prefs.js:61
+#: prefs.js:57
 msgid "Dark sketches"
 msgstr "深色纹理"
 
-#: prefs.js:79
+#: prefs.js:68
 msgid "Text orientation"
 msgstr "文本方向"
 
-#: prefs.js:81
+#: prefs.js:69
+msgid "Picture location"
+msgstr "图像位置"
+
+#: prefs.js:70
 msgid "Text font"
 msgstr "文本字体"
 
-#: prefs.js:82
+#: prefs.js:71
 msgid "Default style"
 msgstr "默认样式"
 
-#: prefs.js:83
+#: prefs.js:72
 msgid "Text command"
 msgstr "文本命令"
+
+#~ msgid "Styles"
+#~ msgstr "样式"
+
+#~ msgid "More"
+#~ msgstr "更多"

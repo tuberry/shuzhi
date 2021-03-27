@@ -34,18 +34,18 @@ const Sketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3, };
 
 const ShuZhi = GObject.registerClass({
     Properties: {
-        'folder':    GObject.param_spec_string('folder', 'folder', 'folder', '', GObject.ParamFlags.READWRITE),
-        'style':     GObject.param_spec_uint('style', 'style', 'style', 0, 2, 0, GObject.ParamFlags.READWRITE),
-        'night':     GObject.param_spec_boolean('night', 'night', 'night', false, GObject.ParamFlags.READWRITE),
-        'command':   GObject.param_spec_string('command', 'command', 'command', '', GObject.ParamFlags.READWRITE),
-        'orient':    GObject.param_spec_uint('orient', 'orient', 'orient', 0, 1, 0, GObject.ParamFlags.READWRITE),
-        'dsketch':   GObject.param_spec_uint('dsketch', 'dsketch', 'dsketch', 0, 3, 0, GObject.ParamFlags.READWRITE),
-        'lsketch':   GObject.param_spec_uint('lsketch', 'lsketch', 'lsketch', 0, 2, 0, GObject.ParamFlags.READWRITE),
-        'refresh':   GObject.param_spec_boolean('refresh', 'refresh', 'refresh', false, GObject.ParamFlags.READWRITE),
-        'systray':   GObject.param_spec_boolean('systray', 'systray', 'systray', false, GObject.ParamFlags.READWRITE),
-        'interval':  GObject.param_spec_uint('interval', 'interval', 'interval', 10, 300, 60, GObject.ParamFlags.READWRITE),
-        'fontname':  GObject.param_spec_string('fontname', 'fontname', 'font name', 'Sans 48', GObject.ParamFlags.READWRITE),
-        'showcolor': GObject.param_spec_boolean('showcolor', 'showcolor', 'show color', false, GObject.ParamFlags.READWRITE),
+        'folder':    GObject.ParamSpec.string('folder', 'folder', 'folder', GObject.ParamFlags.READWRITE, ''),
+        'style':     GObject.ParamSpec.uint('style', 'style', 'style', GObject.ParamFlags.READWRITE, 0, 2, 0),
+        'night':     GObject.ParamSpec.boolean('night', 'night', 'night', GObject.ParamFlags.READWRITE, false),
+        'command':   GObject.ParamSpec.string('command', 'command', 'command', GObject.ParamFlags.READWRITE, ''),
+        'orient':    GObject.ParamSpec.uint('orient', 'orient', 'orient', GObject.ParamFlags.READWRITE, 0, 1, 0),
+        'dsketch':   GObject.ParamSpec.uint('dsketch', 'dsketch', 'dsketch', GObject.ParamFlags.READWRITE, 0, 3, 0),
+        'lsketch':   GObject.ParamSpec.uint('lsketch', 'lsketch', 'lsketch', GObject.ParamFlags.READWRITE, 0, 2, 0),
+        'refresh':   GObject.ParamSpec.boolean('refresh', 'refresh', 'refresh', GObject.ParamFlags.READWRITE, false),
+        'systray':   GObject.ParamSpec.boolean('systray', 'systray', 'systray', GObject.ParamFlags.READWRITE, false),
+        'interval':  GObject.ParamSpec.uint('interval', 'interval', 'interval', GObject.ParamFlags.READWRITE, 10, 300, 60),
+        'fontname':  GObject.ParamSpec.string('fontname', 'fontname', 'font name', GObject.ParamFlags.READWRITE, 'Sans 48'),
+        'showcolor': GObject.ParamSpec.boolean('showcolor', 'showcolor', 'show color', GObject.ParamFlags.READWRITE, false),
     },
 }, class ShuZhi extends GObject.Object {
     _init() {
@@ -189,7 +189,7 @@ const ShuZhi = GObject.registerClass({
                 .finally(() => {
                     this._inited = true;
                     let path = this.path;
-                    let pic = Gio.file_new_for_path(path);
+                    let pic = Gio.File.new_for_path(path);
                     if(pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path)) return;
                     this._queueRepaint();
                 });
@@ -217,20 +217,25 @@ const ShuZhi = GObject.registerClass({
         this._queueRepaint(true);
     }
 
+    _queueRepaint(paint) {
+        if(!this._motto) return;
+        if(paint) this._painted = false;
+        this.repaint();
+    }
+
     _updateMenu() {
         if(!this._button) return;
         this._button.menu.removeAll();
         this._button.menu.addMenuItem(this._copyItem());
-        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(_('Refresh')));
-        this._refreshItems().forEach(x => this._button.menu.addMenuItem(x));
-        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(_('Styles')));
-        this._sketchItems().forEach(x => this._button.menu.addMenuItem(x));
-        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(_('More')));
+        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._button.menu.addMenuItem(this._refreshMenu());
+        this._button.menu.addMenuItem(this._sketchMenu());
+        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._button.menu.addMenuItem(this._settingItem());
     }
 
     _copyItem() {
-        let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item' });
+        let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
         item.connect('activate', () => {
             let [ok, attr, text] = Pango.parse_markup(this._motto, -1, '');
             if(!ok) return;
@@ -241,44 +246,40 @@ const ShuZhi = GObject.registerClass({
         return item;
     }
 
-    _refreshItems() {
-        let motto = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item' });
+    _refreshMenu() {
+        let refresh = new PopupMenu.PopupSubMenuMenuItem(_('Refresh'));
+        let motto = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
         motto.connect('activate', this._refreshMotto.bind(this));
         motto.add_child(new St.Label({ x_expand: true, text: _('Motto'), }));
-
-        let sketch = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item' });
+        let sketch = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
         sketch.connect('activate', this._refreshSketch.bind(this));
         sketch.add_child(new St.Label({ x_expand: true, text: _('Sketch'), }));
-
-        let both = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item' });
+        let both = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
         both.connect('activate', this._refreshBoth.bind(this));
         both.add_child(new St.Label({ x_expand: true, text: _('Both'), }));
+        [both, motto, sketch].forEach(x => { refresh.menu.addMenuItem(x); });
 
-        return [both, motto, sketch];
+        return refresh;
     }
 
-    _queueRepaint(paint) {
-        if(!this._motto) return;
-        if(paint) this._painted = false;
-        this.repaint();
-    }
-
-    _sketchItems() {
+    _sketchMenu() {
         let keys = Object.keys(Sketch);
         if(!this.style) keys.pop(); // exclude `clouds` in light style
-
-        return keys.map(x => {
-            let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item' });
+        let sketch = new PopupMenu.PopupSubMenuMenuItem(_('Sketch: ') + _(keys[this.sketch]));
+        keys.map(x => {
+            let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
             item.setOrnament(this.sketch == Sketch[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
             item.connect('activate', () => { item._getTopMenu().close(); this.sketch = Sketch[x]; });
             item.add_child(new St.Label({ x_expand: true, text: _(x), }));
             return item;
-        });
+        }).forEach(x => { sketch.menu.addMenuItem(x) });
+
+        return sketch;
     }
 
     _settingItem() {
-        let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item' });
-        item.connect('activate', () => { item._getTopMenu().close(); ExtensionUtils.openPrefs(); });
+        let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
+        item.connect('activate', () => { ExtensionUtils.openPrefs(); });
         item.add_child(new St.Label({ x_expand: true, text: _('Settings'), }));
 
         return item;

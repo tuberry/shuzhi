@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Shuzhi \n"
+"Project-Id-Version: Shuzhi 7\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-02-16 17:40+0800\n"
+"POT-Creation-Date: 2021-03-27 14:31+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,118 +17,114 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:208
-msgid "Refresh"
-msgstr ""
-
-#: extension.js:210
-msgid "Styles"
-msgstr ""
-
-#: extension.js:212
-msgid "More"
-msgstr ""
-
-#: extension.js:223
+#: extension.js:244
 msgid "Copy"
 msgstr ""
 
-#: extension.js:231
+#: extension.js:250
+msgid "Refresh"
+msgstr ""
+
+#: extension.js:253
 msgid "Motto"
 msgstr ""
 
-#: extension.js:235
+#: extension.js:256
 msgid "Sketch"
 msgstr ""
 
-#: extension.js:239
+#: extension.js:259
 msgid "Both"
 msgstr ""
 
-#: extension.js:266
+#: extension.js:268
+msgid "Sketch: "
+msgstr ""
+
+#: extension.js:283
 msgid "Settings"
 msgstr ""
 
 #: prefs.js:50
-msgid "Enable systray"
+msgid "Auto refresh"
 msgstr ""
 
 #: prefs.js:51
-msgid "Auto refresh"
+msgid "Enable systray"
 msgstr ""
 
 #: prefs.js:52
 msgid "Show color name"
 msgstr ""
 
-#: prefs.js:56
+#: prefs.js:53
 msgid "Horizontal"
 msgstr ""
 
-#: prefs.js:56
+#: prefs.js:53
 msgid "Vertical"
 msgstr ""
 
-#: prefs.js:57
-msgid "Command to generate the text in center"
+#: prefs.js:54
+msgid "Command to generate the center text"
 msgstr ""
 
-#: prefs.js:58 prefs.js:61
+#: prefs.js:55 prefs.js:57
 msgid "Waves"
 msgstr ""
 
-#: prefs.js:58 prefs.js:61
+#: prefs.js:55 prefs.js:57
 msgid "Ovals"
 msgstr ""
 
-#: prefs.js:58 prefs.js:61
+#: prefs.js:55 prefs.js:57
 msgid "Blobs"
 msgstr ""
 
-#: prefs.js:58
+#: prefs.js:55
 msgid "Light sketches"
 msgstr ""
 
-#: prefs.js:59
+#: prefs.js:56
 msgid "Light"
 msgstr ""
 
-#: prefs.js:59
+#: prefs.js:56
 msgid "Dark"
 msgstr ""
 
-#: prefs.js:59
+#: prefs.js:56
 msgid "Auto"
 msgstr ""
 
-#: prefs.js:59
-msgid "Background and text"
+#: prefs.js:56
+msgid "Background color"
 msgstr ""
 
-#: prefs.js:60 prefs.js:80
-msgid "Picture location"
-msgstr ""
-
-#: prefs.js:61
+#: prefs.js:57
 msgid "Clouds"
 msgstr ""
 
-#: prefs.js:61
+#: prefs.js:57
 msgid "Dark sketches"
 msgstr ""
 
-#: prefs.js:79
+#: prefs.js:68
 msgid "Text orientation"
 msgstr ""
 
-#: prefs.js:81
+#: prefs.js:69
+msgid "Picture location"
+msgstr ""
+
+#: prefs.js:70
 msgid "Text font"
 msgstr ""
 
-#: prefs.js:82
+#: prefs.js:71
 msgid "Default style"
 msgstr ""
 
-#: prefs.js:83
+#: prefs.js:72
 msgid "Text command"
 msgstr ""

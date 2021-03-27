@@ -6,8 +6,8 @@ const { Gio, Gtk, GObject } = imports.gi;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const _ = imports.gettext.domain(Me.metadata['gettext-domain']).gettext;
-
 const gsettings = ExtensionUtils.getSettings();
+const UI = Me.imports.ui;
 
 var Fields = {
     FONT:     'font-name',
@@ -39,167 +39,57 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
             hscrollbar_policy: Gtk.PolicyType.NEVER,
         });
 
-        this._bulidWidget();
         this._bulidUI();
         this._bindValues();
-        this._syncStatus();
         this.show_all();
     }
 
-    _bulidWidget() {
-        this._field_systray = this._checkMaker(_('Enable systray'));
-        this._field_refresh = this._checkMaker(_('Auto refresh'));
-        this._field_color   = this._checkMaker(_('Show color name'));
-
-        this._field_font     = new Gtk.FontButton();
-        this._field_interval = this._spinMaker(10, 300, 30);
-        this._field_orient   = this._comboMaker([_('Horizontal'), _('Vertical')]);
-        this._field_command  = this._entryMaker('fortune', _('Command to generate the text in center'))
-        this._field_lsketch  = this._comboMaker([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
-        this._field_style    = this._comboMaker([_('Light'), _('Dark'), _('Auto')], _('Background and text'));
-        this._field_folder   = Gtk.FileChooserButton.new(_('Picture location'), Gtk.FileChooserAction.SELECT_FOLDER);
-        this._field_dsketch  = this._comboMaker([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
-    }
-
     _bulidUI() {
-        this._box = new Gtk.Box({
-            margin: 30,
-            orientation: Gtk.Orientation.VERTICAL,
-        });
-        this.add(this._box);
+        this._field_font     = new Gtk.FontButton();
+        this._field_interval = new UI.Spin(10, 300, 30);
+        this._field_refresh  = new UI.Check(_('Auto refresh'));
+        this._field_systray  = new UI.Check(_('Enable systray'));
+        this._field_color    = new UI.Check(_('Show color name'));
+        this._field_orient   = new UI.Combo([_('Horizontal'), _('Vertical')]);
+        this._field_command  = new UI.Entry('fortune', _('Command to generate the center text'));
+        this._field_lsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
+        this._field_style    = new UI.Combo([_('Light'), _('Dark'), _('Auto')], _('Background color'));
+        this._field_dsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
+        this._field_folder   = new UI.FileButton(gsettings.get_string(Fields.FOLDER), { action: Gtk.FileChooserAction.SELECT_FOLDER });
 
-        let frame = this._listFrameMaker();
-        let hbox = new Gtk.HBox({ hexpand: false, spacing: 8 });
+        let grid = new UI.ListGrid();
+        let hbox = new Gtk.Box({ hexpand: false, });
         hbox.add(this._field_style);
         hbox.add(this._field_lsketch);
         hbox.add(this._field_dsketch);
-        frame._add(this._field_systray);
-        frame._add(this._field_color);
-        frame._add(this._field_refresh, this._field_interval);
-        frame._add(this._labelMaker(_('Text orientation')), this._field_orient);
-        frame._add(this._labelMaker(_('Picture location')), this._field_folder);
-        frame._add(this._labelMaker(_('Text font')), this._field_font);
-        frame._add(this._labelMaker(_('Default style')), hbox);
-        frame._att(this._labelMaker(_('Text command')), this._field_command);
+        grid._add(this._field_systray);
+        grid._add(this._field_color);
+        grid._add(this._field_refresh, this._field_interval);
+        grid._add(new UI.Label(_('Text orientation')), this._field_orient);
+        grid._add(new UI.Label(_('Picture location')), this._field_folder);
+        grid._add(new UI.Label(_('Text font')), this._field_font);
+        grid._add(new UI.Label(_('Default style')), hbox);
+        grid._att(new UI.Label(_('Text command')), this._field_command);
+
+        this.add(new UI.Frame(grid));
     }
 
     _bindValues() {
-        gsettings.bind(Fields.SYSTRAY,  this._field_systray,  'active',    Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.COLOR,    this._field_color,    'active',    Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.REFRESH,  this._field_refresh,  'active',    Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.STYLE,    this._field_style,    'active',      Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.LSKETCH,  this._field_lsketch,  'active',    Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.DSKETCH,  this._field_dsketch,  'active',    Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.INTERVAL, this._field_interval, 'value',     Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.ORIENT,   this._field_orient,   'active',    Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.COMMAND,  this._field_command,  'text',      Gio.SettingsBindFlags.DEFAULT);
-        gsettings.bind(Fields.FONT,     this._field_font,     'font-name', Gio.SettingsBindFlags.DEFAULT);
-    }
+        gsettings.bind(Fields.SYSTRAY,  this._field_systray,  'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.COLOR,    this._field_color,    'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.REFRESH,  this._field_refresh,  'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.STYLE,    this._field_style,    'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.LSKETCH,  this._field_lsketch,  'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.DSKETCH,  this._field_dsketch,  'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.INTERVAL, this._field_interval, 'value',  Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.ORIENT,   this._field_orient,   'active', Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.COMMAND,  this._field_command,  'text',   Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.FONT,     this._field_font,     'font',   Gio.SettingsBindFlags.DEFAULT);
+        gsettings.bind(Fields.FOLDER,   this._field_folder,   'file',   Gio.SettingsBindFlags.DEFAULT);
 
-    _syncStatus() {
-        this._field_folder.set_filename(gsettings.get_string(Fields.FOLDER));
-        this._field_folder.connect('file-set', widget => {
-            gsettings.set_string(Fields.FOLDER, widget.get_filename());
-        });
-        this._field_refresh.connect('notify::active', widget => {
-            this._field_interval.set_sensitive(widget.active);
-        });
+        this._field_refresh.bind_property('active', this._field_interval, 'sensitive', GObject.BindingFlags.GET);
         this._field_interval.set_sensitive(this._field_refresh.active);
-        let edit = !gsettings.get_string(Fields.COMMAND);
-        this._field_command.set_editable(edit);
-        this._field_command.secondary_icon_name = edit ? 'document-edit-symbolic' : 'action-unavailable-symbolic';
-    }
-
-    _listFrameMaker() {
-        let frame = new Gtk.Frame({
-            label_yalign: 1,
-        });
-        this._box.add(frame);
-
-        frame.grid = new Gtk.Grid({
-            margin: 10,
-            hexpand: true,
-            row_spacing: 12,
-            column_spacing: 18,
-            row_homogeneous: false,
-            column_homogeneous: false,
-        });
-
-        frame.grid._row = 0;
-        frame.add(frame.grid);
-        frame._add = (x, y) => {
-            const hbox = new Gtk.Box();
-            hbox.pack_start(x, true, true, 4);
-            if(y) hbox.pack_start(y, false, false, 4);
-            frame.grid.attach(hbox, 0, frame.grid._row++, 1, 1);
-        }
-        frame._att = (x, y) => {
-            const hbox = new Gtk.Box();
-            hbox.pack_start(x, true, true, 4);
-            if(y) hbox.pack_start(y, true, true, 4);
-            frame.grid.attach(hbox, 0, frame.grid._row++, 1, 1);
-        }
-
-        return frame;
-    }
-
-    _spinMaker(l, u, s) {
-        return new Gtk.SpinButton({
-            adjustment: new Gtk.Adjustment({
-                lower: l,
-                upper: u,
-                step_increment: s,
-            }),
-        });
-    }
-
-    _labelMaker(x) {
-        return new Gtk.Label({
-            label: x,
-            hexpand: true,
-            halign: Gtk.Align.START,
-        });
-    }
-
-    _checkMaker(x) {
-        return new Gtk.CheckButton({
-            label: x,
-            hexpand: true,
-            halign: Gtk.Align.START,
-        });
-    }
-
-    _comboMaker(ops, tip) {
-        let l = new Gtk.ListStore();
-        l.set_column_types([GObject.TYPE_STRING]);
-        ops.forEach(op => l.set(l.append(), [0], [op]));
-        let c = new Gtk.ComboBox({ model: l, tooltip_text: tip ? tip : '' });
-        let r = new Gtk.CellRendererText();
-        c.pack_start(r, false);
-        c.add_attribute(r, 'text', 0);
-        return c;
-    }
-
-    _entryMaker(x, y, z) {
-        let entry = new Gtk.Entry({
-            editable: false,
-            placeholder_text: x,
-            hexpand: z ? false : true,
-            secondary_icon_sensitive: true,
-            secondary_icon_tooltip_text: y,
-            secondary_icon_activatable: true,
-            secondary_icon_name: 'action-unavailable',
-        });
-        entry.connect('icon-press', () => {
-            if(entry.get_editable()) {
-                entry.set_editable(false);
-                entry.secondary_icon_name = 'action-unavailable'
-            } else {
-                entry.set_editable(true);
-                entry.secondary_icon_name = 'document-edit-symbolic';
-            }
-        });
-        return entry;
+        this._field_command.set_edit(!gsettings.get_string(Fields.COMMAND));
     }
 });
 

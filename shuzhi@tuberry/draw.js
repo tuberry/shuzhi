@@ -44,15 +44,15 @@ function gauss(mu, sgm) {
         u = 2 * Math.random() - 1;
         v = 2 * Math.random() - 1;
         q = u * u + v * v;
-    } while (q >= 1 || q === 0);
+    } while(q >= 1 || q === 0);
 
     return mu + sgm * u * Math.sqrt(- 2 * Math.log(q) / q);
 }
 
 function shuffle(arr) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    for (let i = arr.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
+    for(let i = arr.length - 1, j; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
