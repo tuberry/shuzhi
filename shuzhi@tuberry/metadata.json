@@ -5,7 +5,7 @@
   "gettext-domain": "shuzhi",
   "settings-schema": "org.gnome.shell.extensions.shuzhi",
   "shell-version": [
-    "3.38"
+    "40"
   ],
   "url": "https://github.com/tuberry/shuzhi",
   "version": 1

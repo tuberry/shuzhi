@@ -40,7 +40,7 @@ function randamp(x, y) {
 function gauss(mu, sgm) {
     // https://en.wikipedia.org/wiki/Marsaglia_polar_method
     let q, u, v, p;
-    do  {
+    do {
         u = 2 * Math.random() - 1;
         v = 2 * Math.random() - 1;
         q = u * u + v * v;
@@ -97,7 +97,7 @@ function genCoords(rect, sum, factor) { // reduce collision
         for(let i = 0; i < rect.length; i++)
             tmp = tmp.concat(quadsect(rect[i], factor));
         rect = tmp;
-    } while (rect.length <= sum);
+    } while(rect.length <= sum);
 
     return rect;
 }
@@ -189,57 +189,37 @@ function getLunarPhase() {
 }
 
 function genMoon(x, y) {
+    let phase = getLunarPhase();
     let [c_x, c_y, r1] = [x * 8 / 10, x / 10, x / 20];
-    switch(getLunarPhase()) {
-    case 1: {
-        let [r_t, s_t1, e_t1, s_t2, e_t2] = [1 / 4, - 1 / 2, 1 / 2, - 1 / 3, 1 / 3];
-        let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
-        let gd = new Cairo.RadialGradient(c_x2, c_y2, r2, c_x2, c_y2, r2 + r1 / 16);
-        gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
-        return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
-    } break;
-    case 2: {
-        let [r_t, s_t1, e_t1] = [1 / 8, - 1 / 2, 1 / 2];
-        let gd = new Cairo.LinearGradient(0, 0, r1 / 16, 0);
-        gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
-        return [c_x, c_y, r1, s_t1, e_t1, r_t, gd];
-    } break;
-    case 3: {
-        let [r_t, s_t1, e_t1, s_t2, e_t2] = [1, 1 / 2, - 1 / 2, - 1 / 3, 1 / 3];
-        let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
-        let gd = new Cairo.RadialGradient(c_x2, c_y2, r2 - r1 / 16, c_x2, c_y2, r2);
-        gd.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
-        gd.addColorStopRGBA(1, 0, 0, 0, 0);
-        return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
-    } break;
-    case 4: {
-        return [c_x, c_y, r1, Color.LIGHT];
-    } break;
-    case 5: {
-        let [r_t, s_t1, e_t1, s_t2, e_t2] = [- 1 / 4, 1 / 2, - 1 / 2, - 1 / 3, 1 / 3];
-        let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
-        let gd = new Cairo.RadialGradient(c_x2, c_y2, r2 - r1 / 16, c_x2, c_y2, r2);
-        gd.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
-        gd.addColorStopRGBA(1, 0, 0, 0, 0);
-        return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
-    } break;
-    case 6: {
-        let [r_t, s_t1, e_t1] = [9 / 8, - 1 / 2, 1 / 2];
-        let gd = new Cairo.LinearGradient(0, 0, r1 / 16, 0);
-        gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
-        return [c_x, c_y, r1, s_t1, e_t1, r_t, gd];
-    } break;
+    switch(phase) {
+    case 1:
     case 7: {
-        let [r_t, s_t1, e_t1, s_t2, e_t2] = [3 / 4, - 1 / 2, 1 / 2, - 1 / 3, 1 / 3];
+        let [r_t, s_t1, e_t1, s_t2, e_t2] = [phase == 1 ? 1 / 4 : 3 / 4, - 1 / 2, 1 / 2, - 1 / 3, 1 / 3];
         let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
         let gd = new Cairo.RadialGradient(c_x2, c_y2, r2, c_x2, c_y2, r2 + r1 / 16);
         gd.addColorStopRGBA(0, 0, 0, 0, 0);
         gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
         return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
     }
+    case 2:
+    case 6: {
+        let [r_t, s_t1, e_t1] = [phase == 2 ? 1 / 8 : 9 / 8, - 1 / 2, 1 / 2];
+        let gd = new Cairo.LinearGradient(0, 0, r1 / 16, 0);
+        gd.addColorStopRGBA(0, 0, 0, 0, 0);
+        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
+        return [c_x, c_y, r1, s_t1, e_t1, r_t, gd];
+    }
+    case 3:
+    case 5: {
+        let [r_t, s_t1, e_t1, s_t2, e_t2] = [phase == 3 ? 1 : - 1 / 4, 1 / 2, - 1 / 2, - 1 / 3, 1 / 3];
+        let [c_x2, c_y2, r2] = [- r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
+        let gd = new Cairo.RadialGradient(c_x2, c_y2, r2 - r1 / 16, c_x2, c_y2, r2);
+        gd.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
+        gd.addColorStopRGBA(1, 0, 0, 0, 0);
+        return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
+    }
+    case 4:
+        return [c_x, c_y, r1, Color.LIGHT];
     default:
         return [];
     }
@@ -275,10 +255,7 @@ function drawMoon(cr, pts) {
         cr.setSourceRGBA(...color);
         cr.arc(c_x, c_y, r1, 0, 2 * Math.PI);
         cr.fill();
-        break;
-    }
-    default:
-        break;
+    } break;
     }
 }
 

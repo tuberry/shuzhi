@@ -1,5 +1,7 @@
 // vim:fdm=syntax
-// by tuberry
+// by: tuberry@github
+'use strict';
+
 const Cairo = imports.cairo;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
@@ -9,7 +11,7 @@ const { GLib, St, GObject, Gio, Pango } = imports.gi;
 const ExtensionUtils = imports.misc.extensionUtils;
 const gsettings = ExtensionUtils.getSettings();
 const Me = ExtensionUtils.getCurrentExtension();
-const Fields = Me.imports.prefs.Fields;
+const Fields = Me.imports.fields.Fields;
 const Draw = Me.imports.draw;
 
 const dgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
@@ -19,6 +21,7 @@ const getIcon = x => Me.dir.get_child('icons').get_child(x + '-symbolic.svg').ge
 
 const System = {
     PICTURE:     'picture-uri',
+    PRIMARY:     'primary-color',
     LIGHT:       'night-light-enabled',
     PROPERTY:    'g-properties-changed',
     BUS_NAME:    'org.gnome.SettingsDaemon.Color',
@@ -287,9 +290,12 @@ const ShuZhi = GObject.registerClass({
 
     set desktop(image) {
         if(image) {
+            let color = this.style ? '#242424' : '#E6E6E6';
+            if(dgsettings.get_string(System.PRIMARY) != color) dgsettings.set_string(System.PRIMARY, color);
             dgsettings.set_string(System.PICTURE, 'file://' + image);
         } else {
             dgsettings.reset(System.PICTURE);
+            dgsettings.reset(System.PRIMARY);
         }
     }
 
