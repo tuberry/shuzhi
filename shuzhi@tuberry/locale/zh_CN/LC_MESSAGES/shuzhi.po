@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: JiZhi 1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-27 14:31+0800\n"
-"PO-Revision-Date: 2021-03-27 14:32+0800\n"
+"POT-Creation-Date: 2021-04-06 18:46+0800\n"
+"PO-Revision-Date: 2021-04-06 18:49+0800\n"
 "Last-Translator: tuberry <orzun@foxmail.com>\n"
 "Language-Team: Chinese (Simplified) <orzun@foxmail.com>\n"
 "Language: zh_CHS\n"
@@ -16,119 +16,122 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0\n"
-"X-Generator: Gtranslator 3.38.0\n"
+"X-Generator: Gtranslator 40.0\n"
 
-#: extension.js:244
+#: extension.js:249
 msgid "Copy"
 msgstr "复制"
 
-#: extension.js:250
+#: extension.js:255
 msgid "Refresh"
 msgstr "刷新"
 
-#: extension.js:253
+#: extension.js:258
 msgid "Motto"
 msgstr "字句"
 
-#: extension.js:256
+#: extension.js:261
 msgid "Sketch"
 msgstr "纹理"
 
-#: extension.js:259
+#: extension.js:264
 msgid "Both"
 msgstr "全部"
 
-#: extension.js:268
+#: extension.js:273
 msgid "Sketch: "
 msgstr "纹理："
 
-#: extension.js:283
+#: extension.js:288
 msgid "Settings"
 msgstr "设置"
 
-#: prefs.js:50
+#: prefs.js:39
 msgid "Auto refresh"
 msgstr "自动刷新"
 
-#: prefs.js:51
+#: prefs.js:40
 msgid "Enable systray"
 msgstr "托盘图标"
 
-#: prefs.js:52
+#: prefs.js:41
 msgid "Show color name"
 msgstr "颜色名称"
 
-#: prefs.js:53
+#: prefs.js:42
 msgid "Horizontal"
 msgstr "水平"
 
-#: prefs.js:53
+#: prefs.js:42
 msgid "Vertical"
 msgstr "竖直"
 
-#: prefs.js:54
+#: prefs.js:43
 msgid "Command to generate the center text"
 msgstr "生成正中间文本的命令"
 
-#: prefs.js:55 prefs.js:57
+#: prefs.js:45 prefs.js:47
 msgid "Waves"
 msgstr "波浪"
 
-#: prefs.js:55 prefs.js:57
+#: prefs.js:45 prefs.js:47
 msgid "Ovals"
 msgstr "椭圆"
 
-#: prefs.js:55 prefs.js:57
+#: prefs.js:45 prefs.js:47
 msgid "Blobs"
 msgstr "团子"
 
-#: prefs.js:55
+#: prefs.js:45
 msgid "Light sketches"
 msgstr "浅色纹理"
 
-#: prefs.js:56
+#: prefs.js:46
 msgid "Light"
 msgstr "浅色"
 
-#: prefs.js:56
+#: prefs.js:46
 msgid "Dark"
 msgstr "深色"
 
-#: prefs.js:56
+#: prefs.js:46
 msgid "Auto"
 msgstr "自动"
 
-#: prefs.js:56
-msgid "Background color"
-msgstr "背景颜色"
+#: prefs.js:46
+msgid "Background color, “Auto” means sync with the Night Light"
+msgstr "背景颜色，“自动”即随夜灯同步切换"
 
-#: prefs.js:57
+#: prefs.js:47
 msgid "Clouds"
 msgstr "云纹"
 
-#: prefs.js:57
+#: prefs.js:47
 msgid "Dark sketches"
 msgstr "深色纹理"
 
-#: prefs.js:68
+#: prefs.js:55
 msgid "Text orientation"
 msgstr "文本方向"
 
-#: prefs.js:69
+#: prefs.js:56
 msgid "Picture location"
 msgstr "图像位置"
 
-#: prefs.js:70
+#: prefs.js:57
 msgid "Text font"
 msgstr "文本字体"
 
-#: prefs.js:71
+#: prefs.js:58
 msgid "Default style"
 msgstr "默认样式"
 
-#: prefs.js:72
+#: prefs.js:59
 msgid "Text command"
 msgstr "文本命令"
+
+#~ msgid "Background color"
+#~ msgstr "背景颜色"
 
 #~ msgid "Styles"
 #~ msgstr "样式"

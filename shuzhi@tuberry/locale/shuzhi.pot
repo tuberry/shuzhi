@@ -6,125 +6,125 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Shuzhi 7\n"
+"Project-Id-Version: Shuzhi 10\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-27 14:31+0800\n"
+"POT-Creation-Date: 2021-04-06 18:46+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:244
+#: extension.js:249
 msgid "Copy"
 msgstr ""
 
-#: extension.js:250
+#: extension.js:255
 msgid "Refresh"
 msgstr ""
 
-#: extension.js:253
+#: extension.js:258
 msgid "Motto"
 msgstr ""
 
-#: extension.js:256
+#: extension.js:261
 msgid "Sketch"
 msgstr ""
 
-#: extension.js:259
+#: extension.js:264
 msgid "Both"
 msgstr ""
 
-#: extension.js:268
+#: extension.js:273
 msgid "Sketch: "
 msgstr ""
 
-#: extension.js:283
+#: extension.js:288
 msgid "Settings"
 msgstr ""
 
-#: prefs.js:50
+#: prefs.js:39
 msgid "Auto refresh"
 msgstr ""
 
-#: prefs.js:51
+#: prefs.js:40
 msgid "Enable systray"
 msgstr ""
 
-#: prefs.js:52
+#: prefs.js:41
 msgid "Show color name"
 msgstr ""
 
-#: prefs.js:53
+#: prefs.js:42
 msgid "Horizontal"
 msgstr ""
 
-#: prefs.js:53
+#: prefs.js:42
 msgid "Vertical"
 msgstr ""
 
-#: prefs.js:54
+#: prefs.js:43
 msgid "Command to generate the center text"
 msgstr ""
 
-#: prefs.js:55 prefs.js:57
+#: prefs.js:45 prefs.js:47
 msgid "Waves"
 msgstr ""
 
-#: prefs.js:55 prefs.js:57
+#: prefs.js:45 prefs.js:47
 msgid "Ovals"
 msgstr ""
 
-#: prefs.js:55 prefs.js:57
+#: prefs.js:45 prefs.js:47
 msgid "Blobs"
 msgstr ""
 
-#: prefs.js:55
+#: prefs.js:45
 msgid "Light sketches"
 msgstr ""
 
-#: prefs.js:56
+#: prefs.js:46
 msgid "Light"
 msgstr ""
 
-#: prefs.js:56
+#: prefs.js:46
 msgid "Dark"
 msgstr ""
 
-#: prefs.js:56
+#: prefs.js:46
 msgid "Auto"
 msgstr ""
 
-#: prefs.js:56
-msgid "Background color"
+#: prefs.js:46
+msgid "Background color, “Auto” means sync with the Night Light"
 msgstr ""
 
-#: prefs.js:57
+#: prefs.js:47
 msgid "Clouds"
 msgstr ""
 
-#: prefs.js:57
+#: prefs.js:47
 msgid "Dark sketches"
 msgstr ""
 
-#: prefs.js:68
+#: prefs.js:55
 msgid "Text orientation"
 msgstr ""
 
-#: prefs.js:69
+#: prefs.js:56
 msgid "Picture location"
 msgstr ""
 
-#: prefs.js:70
+#: prefs.js:57
 msgid "Text font"
 msgstr ""
 
-#: prefs.js:71
+#: prefs.js:58
 msgid "Default style"
 msgstr ""
 
-#: prefs.js:72
+#: prefs.js:59
 msgid "Text command"
 msgstr ""

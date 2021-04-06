@@ -43,7 +43,7 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         this._field_command  = new UI.Entry('fortune', _('Command to generate the center text'));
         this._field_folder   = new UI.FileButton({ action: Gtk.FileChooserAction.SELECT_FOLDER });
         this._field_lsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
-        this._field_style    = new UI.Combo([_('Light'), _('Dark'), _('Auto')], _('Background color'));
+        this._field_style    = new UI.Combo([_('Light'), _('Dark'), _('Auto')], _('Background color, “Auto” means sync with the Night Light'));
         this._field_dsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
     }
 
