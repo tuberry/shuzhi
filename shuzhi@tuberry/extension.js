@@ -88,7 +88,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     set folder(folder) {
-        this._folder = folder ? folder : GLib.get_home_dir();
+        this._folder = folder;
         this._queueRepaint();
     }
 
@@ -167,7 +167,9 @@ const ShuZhi = GObject.registerClass({
     }
 
     get path() {
-        return this._folder + '/shuzhi-' + (this.style ? 'dark.png' : 'light.png');
+        let file = '/shuzhi-' + (this.style ? 'dark.png' : 'light.png');
+        let dir = this._folder ? this._folder : GLib.get_user_cache_dir();
+        return dir + file;
     }
 
     set refresh(refresh) {
@@ -221,7 +223,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     _queueRepaint(paint) {
-        if(!this._motto) return;
+        if(!this._inited) return;
         if(paint) this._painted = false;
         this.repaint();
     }
@@ -332,7 +334,7 @@ const ShuZhi = GObject.registerClass({
             Draw.drawClouds(context, this._points);
             break;
         default:
-            break;
+            return;
         }
         Draw.drawMotto(context, text); // draw text on the top
         let path = this.path;
