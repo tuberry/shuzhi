@@ -1,6 +1,6 @@
 # 数枝 | Shuzhi
 
-受[几枝](https://github.com/unicar9/jizhi)启发的 gnome shell 壁纸生成插件。
+受[几枝](https://github.com/unicar9/jizhi)启发的 gnome shell 壁纸生成扩展。
 
 A wallpaper generation extension for gnome shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 

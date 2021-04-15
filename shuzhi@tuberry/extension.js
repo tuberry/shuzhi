@@ -44,11 +44,14 @@ const ShuZhi = GObject.registerClass({
         'orient':    GObject.ParamSpec.uint('orient', 'orient', 'orient', GObject.ParamFlags.READWRITE, 0, 1, 0),
         'dsketch':   GObject.ParamSpec.uint('dsketch', 'dsketch', 'dsketch', GObject.ParamFlags.READWRITE, 0, 3, 0),
         'lsketch':   GObject.ParamSpec.uint('lsketch', 'lsketch', 'lsketch', GObject.ParamFlags.READWRITE, 0, 2, 0),
+        'display':   GObject.ParamSpec.boolean('display', 'display', 'display', GObject.ParamFlags.READWRITE, false),
         'refresh':   GObject.ParamSpec.boolean('refresh', 'refresh', 'refresh', GObject.ParamFlags.READWRITE, false),
         'systray':   GObject.ParamSpec.boolean('systray', 'systray', 'systray', GObject.ParamFlags.READWRITE, false),
         'interval':  GObject.ParamSpec.uint('interval', 'interval', 'interval', GObject.ParamFlags.READWRITE, 10, 300, 60),
         'fontname':  GObject.ParamSpec.string('fontname', 'fontname', 'font name', GObject.ParamFlags.READWRITE, 'Sans 48'),
         'showcolor': GObject.ParamSpec.boolean('showcolor', 'showcolor', 'show color', GObject.ParamFlags.READWRITE, false),
+        'xdisplay':  GObject.ParamSpec.uint('xdisplay', 'xdisplay', 'xdisplay', GObject.ParamFlags.READWRITE, 800, 9600, 1920),
+        'ydisplay':  GObject.ParamSpec.uint('ydisplay', 'ydisplay', 'ydisplay', GObject.ParamFlags.READWRITE, 600, 5400, 1080),
     },
 }, class ShuZhi extends GObject.Object {
     _init() {
@@ -59,8 +62,8 @@ const ShuZhi = GObject.registerClass({
         this._inited = false;
         this._painted = false;
 
-        this._bindSettings();
         this._buildWidgets();
+        this._bindSettings();
     }
 
     _bindSettings() {
@@ -75,6 +78,9 @@ const ShuZhi = GObject.registerClass({
         gsettings.bind(Fields.ORIENT,   this, 'orient',    Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.REFRESH,  this, 'refresh',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.DISPLAY,  this, 'display',   Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.XDISPLAY, this, 'xdisplay',  Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.YDISPLAY, this, 'ydisplay',  Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.COMMAND,  this, 'command',   Gio.SettingsBindFlags.GET);
     }
 
@@ -130,6 +136,11 @@ const ShuZhi = GObject.registerClass({
             this._button.destroy();
             delete this._button;
         }
+    }
+
+    set display(display) {
+        this._display = display;
+        this._queueRepaint(true);
     }
 
     set lsketch(sketch) {
@@ -193,12 +204,22 @@ const ShuZhi = GObject.registerClass({
                 .catch(() => { this._motto = ''; })
                 .finally(() => {
                     this._inited = true;
-                    let path = this.path;
-                    let pic = Gio.File.new_for_path(path);
-                    if(pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path)) return;
-                    this._queueRepaint();
+                    if(!this.checkFile) this._queueRepaint();
                 });
         }
+    }
+
+    get checkFile() {
+        let path = this.path;
+        let pic = Gio.File.new_for_path(path);
+        return pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path);
+    }
+
+    _onProxyChanged() {
+        this._light = this._proxy.NightLightActive;
+        if(this.checkFile) return;
+        this._queueRepaint(true);
+        this._updateMenu();
     }
 
     getMotto(paint) {
@@ -301,16 +322,8 @@ const ShuZhi = GObject.registerClass({
         }
     }
 
-    _onProxyChanged() {
-        let style = this.style;
-        this._light = this._proxy.NightLightActive;
-        if(style == this.style) return;
-        this._queueRepaint(true);
-        this._updateMenu();
-    }
-
     repaint() {
-        let [x, y] = global.display.get_size();
+        let [x, y] = this._display ? [this.xdisplay, this.ydisplay] : global.display.get_size();
         let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];

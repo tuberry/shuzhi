@@ -29,6 +29,10 @@ function rand(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+function randbool() {
+    return !!Math.round(Math.random());
+}
+
 function randint(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -55,6 +59,10 @@ function shuffle(arr) {
         j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
     }
+    for(let i = arr.length - 1, j; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
     return arr;
 };
 
@@ -72,8 +80,8 @@ function genPolygon(ctr_x, ctr_y, ave_r, dt_a, dt_r, vertex) {
     let angle_step = Array.from({ length: vertex }, () => rand(min, max));
     let angle_norm = 2 * Math.PI / angle_step.reduce((ac, v) => ac + v);
     angle_step = angle_step.map(a => a * angle_norm);
-    for(let i = 0, angle = rand(0, 2 * Math.PI); i < vertex; angle += angle_step[i], i++) {
-        let r = clip(gauss(ave_r, dt_r), 0, 2 * ave_r);
+    for(let i = 0, angle = rand(0, 2 * Math.PI), r; i < vertex; angle += angle_step[i], i++) {
+        r = clip(gauss(ave_r, dt_r), 0, 2 * ave_r);
         points.push([ctr_x + r * Math.cos(angle), ctr_y + r * Math.sin(angle)]);
     }
 
@@ -82,9 +90,9 @@ function genPolygon(ctr_x, ctr_y, ave_r, dt_a, dt_r, vertex) {
 
 function genCoords(rect, sum, factor) { // reduce collision
     // https://stackoverflow.com/a/4382286
+    let to_rect = (m, n, p, q) => [Math.min(m, p), Math.min(n, q), Math.max(m, p), Math.max(n, q)];
     let quadsect = (rec, fac) => {
-        let delta = v =>  Math.round(Math.random()) ? v : -v;
-        let to_rect = (m, n, p, q) => [Math.min(m, p), Math.min(n, q), Math.max(m, p), Math.max(n, q)];
+        let delta = v =>  randbool() ? v : -v;
         let [a, b, c, d] = rec;
         let [w, h] = [c - a, d - b];
         let delta_x = delta(randint(0, w / fac));
@@ -260,14 +268,14 @@ function drawMoon(cr, pts) {
 }
 
 function genWaves(x, y) {
-    let [layers, alpha, factor, num] = [5, 0.2, 0.35, 10];
+    let [layers, factor, num] = [5, 0.35, 10];
     let [delta, start] = [factor * y / layers, (1 - factor) * y];
     let pts = Array.from({ length: layers }, (_, i) => {
         let length = randint(num, num + 5);
         return ctrlUnclosed(Array.from({ length: length + 1 }, (_, j) => [x * j / length, randamp(start + i * delta, delta * 0.7)]), 1);
     });
 
-    return [[x, y, Color.getRandColor(alpha, DarkBg)], pts];
+    return [[x, y, Color.getRandColor(1 / layers, DarkBg)], pts];
 }
 
 function drawWaves(cr, waves, show) {
@@ -294,7 +302,7 @@ function drawWaves(cr, waves, show) {
         layout.get_context().set_base_gravity(Pango.Gravity.EAST);
         layout.set_markup(color.name, -1);
         let [fw, fh] = layout.get_pixel_size();
-        cr.moveTo(x, 30);
+        cr.moveTo(x, 0.03 * y);
         cr.rotate(Math.PI / 2);
         PangoCairo.show_layout(cr, layout);
         cr.restore();
@@ -346,15 +354,15 @@ function genCloud(rect, offset) {
     let [x, y, w, h] = [rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]];
     let wave = n => {
         let src = shuffle(Array.from({ length: n }, (_, i) => i));
-        if(Math.round(Math.random())) {
+        if(randbool()) {
             for(let i = 0; i < n; i += 2) {
-                if(i > 0 && src[i] < src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]]
-                if(i < n - 1 && src[i] < src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]]
+                if(i > 0 && src[i] < src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]];
+                if(i < n - 1 && src[i] < src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]];
             }
         } else {
             for(let i = 0; i < n; i += 2) {
-                if(i > 0 && src[i] > src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]]
-                if(i < n - 1 && src[i] > src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]]
+                if(i > 0 && src[i] > src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]];
+                if(i < n - 1 && src[i] > src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]];
             }
         }
         return src;
@@ -370,7 +378,7 @@ function genCloud(rect, offset) {
     for(let i = 0; i < length; i++) {
         let old_y = result[result.length - 1][1];
         let new_x = x + w * steps[i];
-        let fold = Math.round(Math.random());
+        let fold = randbool();
         result.push([new_x, old_y, fold]);
         result.push([new_x, old_y + offset, fold]);
     }

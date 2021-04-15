@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Shuzhi 10\n"
+"Project-Id-Version: Shuzhi 11\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-04-06 18:46+0800\n"
+"POT-Creation-Date: 2021-04-15 08:18+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,31 +17,31 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:249
+#: extension.js:270
 msgid "Copy"
 msgstr ""
 
-#: extension.js:255
+#: extension.js:276
 msgid "Refresh"
 msgstr ""
 
-#: extension.js:258
+#: extension.js:279
 msgid "Motto"
 msgstr ""
 
-#: extension.js:261
+#: extension.js:282
 msgid "Sketch"
 msgstr ""
 
-#: extension.js:264
+#: extension.js:285
 msgid "Both"
 msgstr ""
 
-#: extension.js:273
+#: extension.js:294
 msgid "Sketch: "
 msgstr ""
 
-#: extension.js:288
+#: extension.js:309
 msgid "Settings"
 msgstr ""
 
@@ -66,65 +66,81 @@ msgid "Vertical"
 msgstr ""
 
 #: prefs.js:43
-msgid "Command to generate the center text"
+msgid "Width"
 msgstr ""
 
-#: prefs.js:45 prefs.js:47
-msgid "Waves"
-msgstr ""
-
-#: prefs.js:45 prefs.js:47
-msgid "Ovals"
-msgstr ""
-
-#: prefs.js:45 prefs.js:47
-msgid "Blobs"
+#: prefs.js:44
+msgid "Height"
 msgstr ""
 
 #: prefs.js:45
+msgid "Command to generate the center text"
+msgstr ""
+
+#: prefs.js:47 prefs.js:48
+msgid "Waves"
+msgstr ""
+
+#: prefs.js:47 prefs.js:48
+msgid "Ovals"
+msgstr ""
+
+#: prefs.js:47 prefs.js:48
+msgid "Blobs"
+msgstr ""
+
+#: prefs.js:47
 msgid "Light sketches"
 msgstr ""
 
-#: prefs.js:46
-msgid "Light"
-msgstr ""
-
-#: prefs.js:46
-msgid "Dark"
-msgstr ""
-
-#: prefs.js:46
-msgid "Auto"
-msgstr ""
-
-#: prefs.js:46
-msgid "Background color, “Auto” means sync with the Night Light"
-msgstr ""
-
-#: prefs.js:47
+#: prefs.js:48
 msgid "Clouds"
 msgstr ""
 
-#: prefs.js:47
+#: prefs.js:48
 msgid "Dark sketches"
 msgstr ""
 
-#: prefs.js:55
-msgid "Text orientation"
+#: prefs.js:49
+msgid "Set resolution"
 msgstr ""
 
-#: prefs.js:56
-msgid "Picture location"
+#: prefs.js:49
+msgid "Required only if the resolution is incorrect"
 msgstr ""
 
-#: prefs.js:57
-msgid "Text font"
+#: prefs.js:50
+msgid "Light"
 msgstr ""
 
-#: prefs.js:58
-msgid "Default style"
+#: prefs.js:50
+msgid "Dark"
+msgstr ""
+
+#: prefs.js:50
+msgid "Auto"
+msgstr ""
+
+#: prefs.js:50
+msgid "Background color, “Auto” means sync with the Night Light"
 msgstr ""
 
 #: prefs.js:59
+msgid "Text orientation"
+msgstr ""
+
+#: prefs.js:60
+msgid "Picture location"
+msgstr ""
+
+#: prefs.js:61
+msgid "Text font"
+msgstr ""
+
+#: prefs.js:62
+msgid "Default style"
+msgstr ""
+
+#: prefs.js:63
 msgid "Text command"
 msgstr ""

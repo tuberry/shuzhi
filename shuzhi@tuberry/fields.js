@@ -5,6 +5,8 @@ var Fields = {
     FONT:     'font-name',
     COMMAND:  'text-command',
     POINTS:   'points-cache',
+    XDISPLAY: 'resolution-x',
+    YDISPLAY: 'resolution-y',
     STYLE:    'default-style',
     REFRESH:  'enable-refresh',
     SYSTRAY:  'enable-systray',
@@ -13,5 +15,6 @@ var Fields = {
     FOLDER:   'picture-location',
     INTERVAL: 'refresh-interval',
     ORIENT:   'text-orientation',
+    DISPLAY:  'enable-resolution',
     LSKETCH:  'light-sketch-type',
 };
