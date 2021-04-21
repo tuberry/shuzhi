@@ -27,10 +27,7 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         this._buildWidgets();
         this._bindValues();
         this._buildUI();
-        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-            this.get_root().default_height = 500;
-            return GLib.SOURCE_REMOVE;
-        }); // maybe effective, see https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/4029
+        this.connect('realize', () => { this.get_root().default_height = 510; });
     }
 
     _buildWidgets() {
