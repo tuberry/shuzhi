@@ -119,7 +119,9 @@ function overlap(rect1, rect2) {
 function circle(rect) {
     let [a, b, c, d] = rect;
     let [w, h] = [c - a, d - b];
-    return [a + w / 2, b + h / 2, Math.min(w, h) / 2];
+    let delta = Math.min(w, h) / 2;
+    let [x, y] = w > h ? [rand(a + delta, c - delta), b + h / 2] : [a + w / 2, rand(b + delta, d - delta)];
+    return [x, y, delta];
 };
 
 function ctrlClosed(vertex, smooth) { // closed

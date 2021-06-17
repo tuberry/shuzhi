@@ -16,10 +16,11 @@ A wallpaper generation extension for gnome shell, inspired by [Jizhi](https://gi
 
 Or manually:
 
-```
+```bash
 git clone https://github.com/tuberry/shuzhi.git
 cd shuzhi && make install
-// yay -S fortune-mod-mingju-git // Recommended
+# make mergepo # for translation
+# yay -S fortune-mod-mingju-git # Recommended
 ```
 
 ## Features

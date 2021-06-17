@@ -124,7 +124,7 @@ const ShuZhi = GObject.registerClass({
     set systray(systray) {
         if(systray) {
             if(this._button) return;
-            this._button = new PanelMenu.Button(0.0, null, false);
+            this._button = new PanelMenu.Button(null, Me.metadata.uuid);
             this._button.add_actor(new St.Icon({
                 gicon: new Gio.FileIcon({ file: Gio.File.new_for_path(getIcon('florette')) }),
                 style_class: 'shuzhi-systray system-status-icon',
@@ -252,38 +252,22 @@ const ShuZhi = GObject.registerClass({
     _updateMenu() {
         if(!this._button) return;
         this._button.menu.removeAll();
-        this._button.menu.addMenuItem(this._copyItem());
+        this._button.menu.addMenuItem(this._menuItemMaker(_('Copy'), () => {
+            let [ok, attr, text] = Pango.parse_markup(this._motto, -1, '');
+            if(ok) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
+        }));
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._button.menu.addMenuItem(this._refreshMenu());
         this._button.menu.addMenuItem(this._sketchMenu());
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._button.menu.addMenuItem(this._settingItem());
-    }
-
-    _copyItem() {
-        let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-        item.connect('activate', () => {
-            let [ok, attr, text] = Pango.parse_markup(this._motto, -1, '');
-            if(!ok) return;
-            St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
-        });
-        item.add_child(new St.Label({ x_expand: true, text: _('Copy'), }));
-
-        return item;
+        this._button.menu.addMenuItem(this._menuItemMaker(_('Settings'), () => { ExtensionUtils.openPrefs(); }));
     }
 
     _refreshMenu() {
         let refresh = new PopupMenu.PopupSubMenuMenuItem(_('Refresh'));
-        let motto = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-        motto.connect('activate', this._refreshMotto.bind(this));
-        motto.add_child(new St.Label({ x_expand: true, text: _('Motto'), }));
-        let sketch = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-        sketch.connect('activate', this._refreshSketch.bind(this));
-        sketch.add_child(new St.Label({ x_expand: true, text: _('Sketch'), }));
-        let both = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-        both.connect('activate', this._refreshBoth.bind(this));
-        both.add_child(new St.Label({ x_expand: true, text: _('Both'), }));
-        [both, motto, sketch].forEach(x => { refresh.menu.addMenuItem(x); });
+        refresh.menu.addMenuItem(this._menuItemMaker(_('Motto'), this._refreshMotto.bind(this)));
+        refresh.menu.addMenuItem(this._menuItemMaker(_('Sketch'), this._refreshSketch.bind(this)));
+        refresh.menu.addMenuItem(this._menuItemMaker(_('Both'), this._refreshBoth.bind(this)));
 
         return refresh;
     }
@@ -303,10 +287,9 @@ const ShuZhi = GObject.registerClass({
         return sketch;
     }
 
-    _settingItem() {
-        let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-        item.connect('activate', () => { ExtensionUtils.openPrefs(); });
-        item.add_child(new St.Label({ x_expand: true, text: _('Settings'), }));
+    _menuItemMaker(text, callback) {
+        let item = new PopupMenu.PopupMenuItem(text, { style_class: 'shuzhi-item popup-menu-item' });
+        item.connect('activate', callback);
 
         return item;
     }
