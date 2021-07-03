@@ -34,7 +34,8 @@ function randbool() {
 }
 
 function randint(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    let [l, u] = [Math.floor(min), Math.floor(max)]
+    return Math.floor(Math.random() * (u - l + 1)) + l;
 }
 
 function randamp(x, y) {
@@ -373,9 +374,9 @@ function genCloud(rect, offset) {
     let length = Math.floor(h / offset);
     let steps = wave(length).map(s => s / length);
     if(steps[0] > steps[1]) {
-        result.push([gauss(x, w * steps[0] / 3), y]);
+        result.push([gauss(x, w * steps[0] / 4), y]);
     } else {
-        result.push([gauss(x + w, w * (1 - steps[0]) / 3), y]);
+        result.push([gauss(x + w, w * (1 - steps[0]) / 4), y]);
     }
     for(let i = 0; i < length; i++) {
         let old_y = result[result.length - 1][1];
@@ -385,9 +386,9 @@ function genCloud(rect, offset) {
         result.push([new_x, old_y + offset, fold]);
     }
     if(steps[length - 1] > steps[length - 2]) {
-        result.push([gauss(x, w * steps[length - 1] / 3), result[result.length - 1][1]]);
+        result.push([gauss(x, w * steps[length - 1] / 4), result[result.length - 1][1]]);
     } else {
-        result.push([gauss(x + w, w * (1 - steps[length - 1]) / 3), result[result.length - 1][1]]);
+        result.push([gauss(x + w, w * (1 - steps[length - 1]) / 4), result[result.length - 1][1]]);
     }
 
     return result;
@@ -395,14 +396,40 @@ function genCloud(rect, offset) {
 
 function genClouds(x, y) {
     let offset = y / 27;
-    let moonRect = [x * 3 / 4, x / 20, x * 17 / 20, x * 3 / 20];
-    let cords = genCoords([[0, 0, x ,y]], 15, 6).filter(c => {
-        if(c[2] - c[0] < 2 * offset || c[3] - c[1] < 2 * offset || c[3] - c[1] > 8 * offset)
-            return false;
-        return !overlap(c, TextRect) && !overlap(c, moonRect);
-    });
+    let points = [[0, 0], [0, 1 / 4], [0, 2 / 4], [1 / 4, 2 / 4], [2 / 4, 2 / 4], [2 / 4, 1 / 4]];
+    let genRect = (pt) => {
+        let a, b, c, d, e, f;
+        switch(pt) {
+        case 0: [a, b, c, d, e] = [0, 1 / 8, 1 / 16, 1 / 8, 2]; break;
+        case 1: [a, b, c, d, e] = [0, 1 / 8, 1 / 8, 1 / 4, 2]; break;
+        case 2: [a, b, c, d, e] = [0, 1 / 4, 0, 1 / 4, 5 / 2]; break;
+        case 3: [a, b, c, d, e] = [0, 1 / 4, 1 / 8, 1 / 4, 3]; break;
+        case 4: [a, b, c, d, e] = [0, 1 / 4, 0, 1 / 4, 5 / 2]; break;
+        default: [a, b, c, d, e] = [1 / 8, 1 / 4, 1 / 8, 1 / 4, 2]; break;
+        }
+        let s_x = randint(a * x, b * x)
+        let s_y = randint(c * y, d * y)
+        let s_h = randint(3 * offset, pt ? 7 * offset : 5 * offset)
+        let s_w = randint(s_h * 2, e * offset * 7)
 
-    return [genMoon(x, y), shuffle(cords).slice(0, 3).map(c => [Color.getRandColor(1, DarkBg).color, genCloud(c, offset)])];
+        return [s_x, s_y, s_x + s_w, s_y + s_h]
+    }
+    let mv = pt => {
+        let [a, b, c, d] = genRect(pt);
+        let [x1, y1] = points[pt];
+        return [a + x1 * x, b + y1 * y, c + x1 * x, d + y1 * y];
+    }
+    let cords;
+
+    switch(randint(0, 4)) {
+    case 0: cords = [0, 2, 4]; break;
+    case 1: cords = [0, 2, 5]; break;
+    case 2: cords = [0, 3, 5]; break;
+    default: cords = [1, 3, 5]; break;
+    }
+
+    // if(Math.random() < 1 / 5) cords.splice(Math.floor(Math.random() * cords.length), 1);
+    return [genMoon(x, y), cords.map(c => [Color.getRandColor(1, DarkBg).color, genCloud(mv(c), offset)])];
 }
 
 function drawClouds(cr, clouds) {
