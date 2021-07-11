@@ -39,7 +39,7 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         this._field_orient   = new UI.Combo([_('Horizontal'), _('Vertical')]);
         this._field_xdisplay = new UI.Spin(800, 9600, 100, { tooltip_text: _('Width') });
         this._field_ydisplay = new UI.Spin(600, 5400, 100, { tooltip_text: _('Height') });
-        this._field_command  = new UI.Entry('fortune', _('Command to generate the center text'));
+        this._field_command  = new UI.Entry('.local/share/gnome-shell/extensions/shuzhi@tuberry/shuzhi.sh', _('Command to generate the center text'));
         this._field_folder   = new UI.FileButton({ action: Gtk.FileChooserAction.SELECT_FOLDER });
         this._field_lsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
         this._field_dsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
