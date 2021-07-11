@@ -28,7 +28,7 @@ cd shuzhi && make install
 
 ## Note
 
-* support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [shuzhi.sh](/shuzhi.sh) for reference.
+* support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) for reference.
 
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/
