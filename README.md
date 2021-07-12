@@ -29,6 +29,7 @@ cd shuzhi && make install
 ## Note
 
 * support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) for reference.
+* thanks to [xenv](https://github.com/xenv) for providing [API](https://github.com/xenv/gushici).
 
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/
