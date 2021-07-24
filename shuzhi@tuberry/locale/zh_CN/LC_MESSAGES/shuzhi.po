@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Shuzhi 11\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-06-18 16:53+0800\n"
+"POT-Creation-Date: 2021-07-23 01:07+0800\n"
 "PO-Revision-Date: 2021-04-19 22:40+0800\n"
 "Last-Translator: tuberry <orzun@foxmail.com>\n"
 "Language-Team: Chinese (Simplified) <orzun@foxmail.com>\n"
@@ -20,33 +20,33 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0\n"
 "X-Generator: Gtranslator 40.0\n"
 
-#: extension.js:270
+#: extension.js:261
 msgid "Copy"
 msgstr "复制"
 
-#: extension.js:276
+#: extension.js:269
+msgid "Settings"
+msgstr "设置"
+
+#: extension.js:273
 msgid "Refresh"
 msgstr "刷新"
 
-#: extension.js:279
+#: extension.js:274
 msgid "Motto"
 msgstr "字句"
 
-#: extension.js:282
+#: extension.js:275
 msgid "Sketch"
 msgstr "纹理"
 
-#: extension.js:285
+#: extension.js:276
 msgid "Both"
 msgstr "全部"
 
-#: extension.js:294
+#: extension.js:285
 msgid "Sketch: "
 msgstr "纹理："
-
-#: extension.js:309
-msgid "Settings"
-msgstr "设置"
 
 #: prefs.js:36
 msgid "Auto refresh"
@@ -93,6 +93,10 @@ msgid "Blobs"
 msgstr "团子"
 
 #: prefs.js:44
+msgid "Trees"
+msgstr "虚树"
+
+#: prefs.js:44
 msgid "Light sketches"
 msgstr "浅色纹理"
 
@@ -129,20 +133,20 @@ msgid "Background color, “Auto” means sync with the Night Light"
 msgstr "背景颜色，“自动”即随夜灯同步切换"
 
 #: prefs.js:56
-msgid "Text orientation"
-msgstr "文本方向"
-
-#: prefs.js:57
 msgid "Picture location"
 msgstr "图像位置"
 
-#: prefs.js:58
-msgid "Text font"
-msgstr "文本字体"
-
-#: prefs.js:59
+#: prefs.js:57
 msgid "Default style"
 msgstr "默认样式"
+
+#: prefs.js:58
+msgid "Text orientation"
+msgstr "文本方向"
+
+#: prefs.js:59
+msgid "Text font"
+msgstr "文本字体"
 
 #: prefs.js:60
 msgid "Text command"

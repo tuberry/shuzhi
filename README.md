@@ -28,8 +28,11 @@ cd shuzhi && make install
 
 ## Note
 
-* support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) for reference.
-* thanks to [xenv](https://github.com/xenv) for providing [API](https://github.com/xenv/gushici).
+* Support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) (set the text command to `shuzhi.sh` to enable) or [_shuzhi.fish](/_shuzhi.fish) for reference.
+
+## Acknowledgements
+
+* [gushichi](https://github.com/xenv/gushici): providing the API used in [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh).
 
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/

@@ -535,19 +535,16 @@ const Colors = [
   { "RGB": [129, 119, 110], "name": "深灰", }
 ];
 
-const DarkColors = Colors.filter(x => !isLight(x.RGB));
-const LightColors = Colors.filter(x => isLight(x.RGB));
+const DarkColors = Colors.filter(x => light(x.RGB) <= 128);
+const LightColors = Colors.filter(x => light(x.RGB) > 128);
+const ModerateColors = Colors.filter(x => { let l = light(x.RGB); return l > 60 && l < 195; });
 
-function getRandColor(alpha, dark) {
-  let colors = dark ? LightColors : DarkColors;
-  let index = Math.floor(Math.random() * colors.length);
-  let color = colors[index];
-  let rgba = color.RGB.map(x => x / 255);
-  rgba.push(alpha == undefined ? 1 : alpha);
-  return { color: rgba, name: color.name };
+function getRandColor(dark, alpha = 1) {
+  let color = (x => x[Math.floor(Math.random() * x.length)])(dark === undefined ? ModerateColors : (dark ? LightColors : DarkColors));
+  return { color: color.RGB.map(x => x / 255).concat(alpha), name: color.name };
 }
 
-function isLight(rgb) {
-  return Math.round((0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255);
+function light(rgb) {
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 

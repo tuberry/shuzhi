@@ -39,9 +39,9 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         this._field_orient   = new UI.Combo([_('Horizontal'), _('Vertical')]);
         this._field_xdisplay = new UI.Spin(800, 9600, 100, { tooltip_text: _('Width') });
         this._field_ydisplay = new UI.Spin(600, 5400, 100, { tooltip_text: _('Height') });
-        this._field_command  = new UI.Entry('.local/share/gnome-shell/extensions/shuzhi@tuberry/shuzhi.sh', _('Command to generate the center text'));
+        this._field_command  = new UI.Entry('shuzhi.sh', _('Command to generate the center text'));
         this._field_folder   = new UI.FileButton({ action: Gtk.FileChooserAction.SELECT_FOLDER });
-        this._field_lsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs')], _('Light sketches'));
+        this._field_lsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs'), _('Trees')], _('Light sketches'));
         this._field_dsketch  = new UI.Combo([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
         this._field_display  = new UI.Check(_('Set resolution'), _('Required only if the resolution is incorrect'));
         this._field_style    = new UI.Combo([_('Light'), _('Dark'), _('Auto')], _('Background color, “Auto” means sync with the Night Light'));
@@ -53,10 +53,10 @@ class ShuzhiPrefs extends Gtk.ScrolledWindow {
         grid._add(this._field_color);
         grid._add(this._field_refresh, this._field_interval);
         grid._add(this._field_display, new UI.Box().appends([this._field_xdisplay, this._field_ydisplay]));
-        grid._add(new UI.Label(_('Text orientation')), this._field_orient);
         grid._add(new UI.Label(_('Picture location')), this._field_folder);
-        grid._add(new UI.Label(_('Text font')), this._field_font);
         grid._add(new UI.Label(_('Default style')), new UI.Box().appends([this._field_style, this._field_lsketch, this._field_dsketch]));
+        grid._add(new UI.Label(_('Text orientation')), this._field_orient);
+        grid._add(new UI.Label(_('Text font')), this._field_font);
         grid._att(new UI.Label(_('Text command')), this._field_command);
         this.set_child(new UI.Frame(grid));
     }

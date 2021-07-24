@@ -28,9 +28,9 @@
         <summary>default style (0 - light, 1 - dark)</summary>
     </key>
     <key type="u" name="light-sketch-type">
-        <range min="0" max="2"/>
+        <range min="0" max="3"/>
         <default>0</default>
-        <summary>light sketch type (0 - waves, 1 - ovals, 2 - blobs)</summary>
+        <summary>light sketch type (0 - waves, 1 - ovals, 2 - blobs, 3 - trees)</summary>
     </key>
     <key type="u" name="dark-sketch-type">
         <range min="0" max="3"/>

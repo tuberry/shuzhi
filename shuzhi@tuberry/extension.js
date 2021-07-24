@@ -33,7 +33,8 @@ const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
 
 const Style = { Light: 0, Dark: 1, Auto: 2 };
 const Orient = { Horizontal: 0, Vertical: 1 };
-const Sketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3, };
+const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
+const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 
 const ShuZhi = GObject.registerClass({
     Properties: {
@@ -43,7 +44,7 @@ const ShuZhi = GObject.registerClass({
         'command':   GObject.ParamSpec.string('command', 'command', 'command', GObject.ParamFlags.READWRITE, ''),
         'orient':    GObject.ParamSpec.uint('orient', 'orient', 'orient', GObject.ParamFlags.READWRITE, 0, 1, 0),
         'dsketch':   GObject.ParamSpec.uint('dsketch', 'dsketch', 'dsketch', GObject.ParamFlags.READWRITE, 0, 3, 0),
-        'lsketch':   GObject.ParamSpec.uint('lsketch', 'lsketch', 'lsketch', GObject.ParamFlags.READWRITE, 0, 2, 0),
+        'lsketch':   GObject.ParamSpec.uint('lsketch', 'lsketch', 'lsketch', GObject.ParamFlags.READWRITE, 0, 3, 0),
         'display':   GObject.ParamSpec.boolean('display', 'display', 'display', GObject.ParamFlags.READWRITE, false),
         'refresh':   GObject.ParamSpec.boolean('refresh', 'refresh', 'refresh', GObject.ParamFlags.READWRITE, false),
         'systray':   GObject.ParamSpec.boolean('systray', 'systray', 'systray', GObject.ParamFlags.READWRITE, false),
@@ -77,10 +78,10 @@ const ShuZhi = GObject.registerClass({
         gsettings.bind(Fields.FONT,     this, 'fontname',  Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.ORIENT,   this, 'orient',    Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.REFRESH,  this, 'refresh',   Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.DISPLAY,  this, 'display',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.XDISPLAY, this, 'xdisplay',  Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.YDISPLAY, this, 'ydisplay',  Gio.SettingsBindFlags.GET);
+        gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
         gsettings.bind(Fields.COMMAND,  this, 'command',   Gio.SettingsBindFlags.GET);
     }
 
@@ -108,12 +109,12 @@ const ShuZhi = GObject.registerClass({
 
     set orient(orient) {
         this._orient = orient;
-        this._queueRepaint();
+        if(this._inited) this.getMotto(false);
     }
 
     set showcolor(show) {
         this._showcolor = show;
-        if(this.sketch == Sketch.Waves) this._queueRepaint();
+        if(this.sketch == LSketch.Waves) this._queueRepaint();
     }
 
     set fontname(name) {
@@ -199,17 +200,14 @@ const ShuZhi = GObject.registerClass({
         if(this._inited) {
             this.getMotto(false);
         } else {
-            this._execute(this._command)
-                .then(scc => { this._motto = scc; })
-                .catch(() => { this._motto = ''; })
-                .finally(() => {
-                    this._inited = true;
-                    if(!this.checkFile) this._queueRepaint();
-                });
+            this.getMotto(false, () => {
+                this._inited = true;
+                if(!this.checkFile) this._queueRepaint();
+            });
         }
     }
 
-    get checkFile() {
+    get checkFile() { // Ensure the wallpaper consistent when unlocking the screen and locking the screen
         let path = this.path;
         let pic = Gio.File.new_for_path(path);
         return pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path);
@@ -217,16 +215,24 @@ const ShuZhi = GObject.registerClass({
 
     _onProxyChanged() {
         this._light = this._proxy.NightLightActive;
+        this._updateMenu();
         if(this.checkFile) return;
         this._queueRepaint(true);
-        this._updateMenu();
     }
 
-    getMotto(paint) {
-        this._execute(this._command)
+    getMotto(paint, callback) {
+        let exec = cmd => this._execute(cmd)
             .then(scc => { this._motto = scc; })
             .catch(() => { this._motto = ''; })
-            .finally(() => { this._queueRepaint(paint); });
+            .finally(callback === undefined ? () => { this._queueRepaint(paint); } : callback);
+        try {
+            let [, cmd] = GLib.shell_parse_argv(this._command);
+            this._execute('sh -c "command -v %s"'.format(cmd))
+                .then(scc => { exec(this._command); },
+                      err => { exec(cmd == 'shuzhi.sh' ? 'bash ' + Me.dir.get_child('shuzhi.sh').get_path() : this._command); });
+        } catch(e) {
+            // ignore
+        }
     }
 
     _refreshBoth() {
@@ -273,13 +279,13 @@ const ShuZhi = GObject.registerClass({
     }
 
     _sketchMenu() {
-        let keys = Object.keys(Sketch);
-        if(!this.style) keys.pop(); // exclude `clouds` in light style
+        let sketches = this.style ? DSketch : LSketch;
+        let keys = Object.keys(sketches);
         let sketch = new PopupMenu.PopupSubMenuMenuItem(_('Sketch: ') + _(keys[this.sketch]));
         keys.map(x => {
             let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-            item.setOrnament(this.sketch == Sketch[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
-            item.connect('activate', () => { item._getTopMenu().close(); this.sketch = Sketch[x]; });
+            item.setOrnament(this.sketch == sketches[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
+            item.connect('activate', () => { item._getTopMenu().close(); this.sketch = sketches[x]; });
             item.add_child(new St.Label({ x_expand: true, text: _(x), }));
             return item;
         }).forEach(x => { sketch.menu.addMenuItem(x) });
@@ -313,21 +319,27 @@ const ShuZhi = GObject.registerClass({
         let text = Draw.genMotto(context, x, y, this._fontname, this._motto, this._orient);
         Draw.drawBackground(context, x, y, this.style);
         switch(this.sketch) {
-        case Sketch.Waves:
+        case DSketch.Waves:
             if(!this._points.length) this._points = Draw.genWaves(x, y);
             Draw.drawWaves(context, this._points, this._showcolor);
             break;
-        case Sketch.Blobs:
+        case DSketch.Blobs:
             if(!this._points.length) this._points = Draw.genBlobs(x, y);
             Draw.drawBlobs(context, this._points);
             break;
-        case Sketch.Ovals:
+        case DSketch.Ovals:
             if(!this._points.length) this._points = Draw.genOvals(x, y);
             Draw.drawOvals(context, this._points);
             break;
-        case Sketch.Clouds:
-            if(!this._points.length) this._points = Draw.genClouds(x, y);
-            Draw.drawClouds(context, this._points);
+        case DSketch.Clouds:
+        case LSketch.Trees:
+            if(this.style) {
+                if(!this._points.length) this._points = Draw.genClouds(x, y);
+                Draw.drawClouds(context, this._points);
+            } else {
+                if(!this._points.length) this._points = Draw.genTrees(x, y);
+                Draw.drawTrees(context, this._points);
+            }
             break;
         default:
             return;

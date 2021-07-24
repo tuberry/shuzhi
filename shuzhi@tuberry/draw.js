@@ -9,38 +9,34 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Color = Me.imports.color;
 
+let DV = 2 / 3;
 let FontName = '';
 let DarkBg = true;
-let TextRect = [-1, -1, -1, -1];
+let TextRect = [-1, -1, 0, 0];
 
-function setFontName(font) {
-    FontName = font;
-}
+const setFontName = font => { FontName = font; };
+const setTextRect = rect => { TextRect = rect; };
+const setDarkBg = (dark) => { DarkBg = dark; };
 
-function setTextRect(rect) {
-    TextRect = rect;
-}
+const sinp = t => Math.sin(t * Math.PI);
+const cosp = t => Math.cos(t * Math.PI);
+const mod = (u, v) => u - Math.floor(u / v) * v;
+const conv = (r, t) => [r * cosp(t), r * sinp(t)];
+const overlap = (a, b) => !(a[0] > b[0] + b[2] || b[0] > a[0] + a[2] || a[1] > b[1] + b[3] || b[1] > a[1] + a[3]);
 
-function setDarkBg(dark) {
-    DarkBg = dark;
-}
+const rand = (l, u) => Math.random() * (u - l) + l;
+const randbool = () =>  !!Math.round(Math.random());
+const randamp = (x, y) => rand(x - y, x + y);
+const randint = (l, u) => Math.floor(Math.random() * (u - l + 1)) + l;
 
-function rand(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-function randbool() {
-    return !!Math.round(Math.random());
-}
-
-function randint(min, max) {
-    let [l, u] = [Math.floor(min), Math.floor(max)]
-    return Math.floor(Math.random() * (u - l + 1)) + l;
-}
-
-function randamp(x, y) {
-    return rand(x - y, x + y);
-}
+const last = (a, n = 1) => a[a.length - n];
+const scanl = (f, xs, ac) => xs.flatMap(x => ac = f(x, ac));
+const zipWith = (f, ...xss) => xss[0].map((_, i) => f(...xss.map(xs => xs[i])));
+const range = (u, l = 0, s = 1) => Array.from({ length: (u - l) / s + 1 }, (_, i) => l + i * s);
+const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce((ac, v) => ac + v);
+const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
+const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
+const trans = (xs, ...ms) => ms.reduce((ac, m) => m.map(v => dot(v, ac.concat(1))), xs); // affine
 
 function gauss(mu, sgm) {
     // https://en.wikipedia.org/wiki/Marsaglia_polar_method
@@ -56,147 +52,65 @@ function gauss(mu, sgm) {
 
 function shuffle(arr) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    for(let i = arr.length - 1, j; i > 0; i--) {
-        j = Math.floor(Math.random() * (i + 1));
+    range(0, arr.length - 1, -1).forEach(i => {
+        let j = Math.floor(Math.random() * (i + 1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    for(let i = arr.length - 1, j; i > 0; i--) {
-        j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
+    });
     return arr;
 };
 
-function genPolygon(ctr_x, ctr_y, ave_r, dt_a, dt_r, vertex) {
+function genPolygon(clc, dt_a=0.6, dt_r=0.2, num=6) {
     // Ref: https://stackoverflow.com/a/25276331
-    let clip = (x, min, max) => {
-        if(min > max) return x;
-        else if(x < min) return min;
-        else if(x > max) return max;
-        else return x;
-    }
-    dt_a = clip(dt_a, 0, 1) * 2 * Math.PI / vertex;
-    dt_r = clip(dt_r, 0, 1) * ave_r;
-    let [min, max, points] = [(2 * Math.PI / vertex) - dt_a, (2 * Math.PI / vertex) + dt_a, []];
-    let angle_step = Array.from({ length: vertex }, () => rand(min, max));
-    let angle_norm = 2 * Math.PI / angle_step.reduce((ac, v) => ac + v);
-    angle_step = angle_step.map(a => a * angle_norm);
-    for(let i = 0, angle = rand(0, 2 * Math.PI), r; i < vertex; angle += angle_step[i], i++) {
-        r = clip(gauss(ave_r, dt_r), 0, 2 * ave_r);
-        points.push([ctr_x + r * Math.cos(angle), ctr_y + r * Math.sin(angle)]);
-    }
+    let [x, y, r] = clc;
+    let stp = range(num - 1).map(() => randamp(2 / num, dt_a * 2 / num));
+    let sum = stp.reduce((ac, v) => ac + v, 0);
 
-    return points;
+    return scanl((u, v) => u + v, stp.map(w => 2 * w / sum), rand(0, 2))
+        .map(s  => zipWith((u, v) => u + v, [x, y], conv(gauss(r, dt_r * r), s)));
 }
 
-function genCoords(rect, sum, factor) { // reduce collision
+function genCoords(rect, sum=20, fac=5) { // reduce collision
     // https://stackoverflow.com/a/4382286
-    let to_rect = (m, n, p, q) => [Math.min(m, p), Math.min(n, q), Math.max(m, p), Math.max(n, q)];
-    let quadsect = (rec, fac) => {
-        let delta = v =>  randbool() ? v : -v;
-        let [a, b, c, d] = rec;
-        let [w, h] = [c - a, d - b];
-        let delta_x = delta(randint(0, w / fac));
-        let delta_y = delta(randint(0, h / fac));
-        let [n_x, n_y] = [a + w / 2 + delta_x, b + h / 2 + delta_y];
-        return [to_rect(n_x, n_y, a, b), to_rect(n_x, n_y, c, b), to_rect(n_x, n_y, c, d), to_rect(n_x, n_y, a, d)];
-    };
-    do {
-        let tmp = [];
-        for(let i = 0; i < rect.length; i++)
-            tmp = tmp.concat(quadsect(rect[i], factor));
-        rect = tmp;
-    } while(rect.length <= sum);
+    let quad = n => n == 0 ? [rect] : quad(n - 1).flatMap(rc => {
+        let [x, y, w, h] = rc;
+        let [a, b] = [w, h].map(i => Math.round(randamp(i / 2, i / fac)));
+        return [[x, y, a, b], [x + a, y, w - a, b], [x + a, y + b, w - a, h - b], [x, y + b, a, h - b]];
+    });
 
-    return rect;
-}
-
-function overlap(rect1, rect2) {
-    let [x0, y0, x1, y1] = rect1;
-    let [x2, y2, x3, y3] = rect2;
-    return !(x0 > x3 || x2 > x1 || y0 > y3 || y2 > y1);
+    return quad(Math.ceil(Math.log2(sum) / 2));
 }
 
 function circle(rect) {
-    let [a, b, c, d] = rect;
-    let [w, h] = [c - a, d - b];
-    let delta = Math.min(w, h) / 2;
-    let [x, y] = w > h ? [rand(a + delta, c - delta), b + h / 2] : [a + w / 2, rand(b + delta, d - delta)];
-    return [x, y, delta];
+    let [x, y, w, h] = rect;
+    let r = Math.min(w, h) / 2;
+    let ctr = w > h ? [rand(x + r, x + w - r), y + h / 2] : [x + w / 2, rand(y + r, y + h - r)];
+    return ctr.concat(r);
 };
 
-function ctrlClosed(vertex, smooth) { // closed
-    let [ctrl_list, result, len] = [[], [], vertex.length];
-    let dis = (a, b) => Math.sqrt(a.map((v, i) => v - b[i]).reduce((ac, cv) => ac + cv ** 2, 0));
-    for(let i = 1; i < len + 1; i++) {
-        let [o, p, q] = [(i - 1) % len, i % len, (i + 1) % len];
-        let [a_x, a_y] = vertex[o];
-        let [b_x, b_y] = vertex[p];
-        let [c_x, c_y] = vertex[q];
-        let [ab_x, ab_y] = [(a_x + b_x) / 2.0, (a_y + b_y) / 2.0];
-        let [bc_x, bc_y] = [(b_x + c_x) / 2.0, (b_y + c_y) / 2.0];
-        let [len1, len2] = [dis(vertex[o], vertex[p]), dis(vertex[q], vertex[p])];
-        let k1 = len1 / (len1 + len2);
-        let [d_x, d_y] = [ab_x + (bc_x - ab_x) * k1, ab_y + (bc_y - ab_y) * k1];
-        ctrl_list.push([b_x + (ab_x - d_x) * smooth, b_y + (ab_y - d_y) * smooth]);
-        ctrl_list.push([b_x + (bc_x - d_x) * smooth, b_y + (bc_y - d_y) * smooth]);
-    }
-    ctrl_list.unshift(ctrl_list.pop());
-    for(let i = 1; i < len + 1; i++) {
-        result.push(ctrl_list[(i - 1) * 2]);
-        result.push(ctrl_list[(i - 1) * 2 + 1]);
-        result.push(vertex[i % len])
-    }
-
-    return result;
-}
-
-function ctrlUnclosed(vertex, smooth) { // unclosed
+function bezeirCtrls(vertex, smooth=1, closed=false) {
     // Ref: https://zhuanlan.zhihu.com/p/267693043
-    let [ctrl_list, result, len] = [[vertex[0]], [], vertex.length];
-    let dis = (a, b) => Math.sqrt(a.map((v, i) => v - b[i]).reduce((ac, cv) => ac + cv ** 2, 0));
+    let dis = (a, b) => Math.sqrt(zipWith((u, v) => u - v, a, b).reduce((ac, c) => ac + c ** 2, 0));
+    let ctrls = range(vertex.length - (closed ? 1 : 2), 1).flatMap(i => {
+        let [a, b, c] = [i - 1, i, i + 1].map(x => vertex[mod(x, vertex.length)]);
+        let ls = [a, c].map(x => dis(x, b));
+        let k0 = ls[0] / (ls[0] + ls[1]);
+        let mp = [a, c].map(x => zipWith((u, v) => (u + v) / 2, x, b));
+        let ds = zipWith((u, v) => u + (v - u) * k0, ...mp);
+        return [mp[0], null, mp[1]].map(x => !x ? vertex[i] : zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds));
+    });
 
-    for(let i = 1; i < len - 1; i++) {
-        let [o, p, q] = [i - 1, i, i + 1];
-        let [a_x, a_y] = vertex[o];
-        let [b_x, b_y] = vertex[p];
-        let [c_x, c_y] = vertex[q];
-        let [ab_x, ab_y] = [(a_x + b_x) / 2.0, (a_y + b_y) / 2.0];
-        let [bc_x, bc_y] = [(b_x + c_x) / 2.0, (b_y + c_y) / 2.0];
-        let [len1, len2] = [dis(vertex[o], vertex[p]), dis(vertex[q], vertex[p])];
-        let k1 = len1 / (len1 + len2);
-        let [d_x, d_y] = [ab_x + (bc_x - ab_x) * k1, ab_y + (bc_y - ab_y) * k1];
-        ctrl_list.push([b_x + (ab_x - d_x) * smooth, b_y + (ab_y - d_y) * smooth]);
-        ctrl_list.push([b_x + (bc_x - d_x) * smooth, b_y + (bc_y - d_y) * smooth]);
-    }
-    ctrl_list.push(vertex[len - 1]);
-    for(let i = 1; i < len; i++) {
-        result.push(ctrl_list[(i - 1) * 2]);
-        result.push(ctrl_list[(i - 1) * 2 + 1]);
-        result.push(vertex[i]);
-    }
-
-    return result;
+    return closed ? ctrls.splice(-1).concat(ctrls) : [vertex[0]].concat(ctrls, Array(2).fill(last(vertex)));
 }
 
 function getLunarPhase() {
     // Ref: https://ecomaan.nl/javascript/moonphase/
     // A recent new moon occured on december, 26, 2019 = 18256 days since 1970.
     // An average synodic month takes 29 days, 12 hours, 44 minutes, 3 seconds.
-    let date = new Date();
-    let days_after_new_moon = (date.getTime() / 86400000) - 18256.8;
-    let synodic_month = 29.5305882;
-    let m = Math.abs(days_after_new_moon / synodic_month);
-    // 0 => New Moon / 新月
-    // 1 => Waxing Crescent Moon / 眉月 /)
-    // 2 => Quarter Moon / 上弦月 /)
-    // 3 => Waxing Gibbous Moon / 盈凸月 |)
-    // 4 => Full Moon / 满月 ()
-    // 5 => Waning Gibbous Moon / 亏凸月 (\
-    // 6 => Last Quarter Moon / 下弦月 (/
-    // 7 => Waning Crescent Moon / 残月 （\
-    let p = Math.round((m - Math.floor(m)) * 8) % 8;
-    return p;
+    let days = ((new Date()).getTime() / 86400000) - 18256.8;
+    let month = 29.5305882;
+    let m = Math.abs(days / month);
+
+    return Math.round((m - Math.floor(m)) * 8) % 8;
 }
 
 function genMoon(x, y) {
@@ -271,14 +185,14 @@ function drawMoon(cr, pts) {
 }
 
 function genWaves(x, y) {
-    let [layers, factor, num] = [5, 0.35, 10];
-    let [delta, start] = [factor * y / layers, (1 - factor) * y];
-    let pts = Array.from({ length: layers }, (_, i) => {
-        let length = randint(num, num + 5);
-        return ctrlUnclosed(Array.from({ length: length + 1 }, (_, j) => [x * j / length, randamp(start + i * delta, delta * 0.7)]), 1);
+    let [layers, factor, m] = [5, 1 - DV, randint(7, 10)];
+    let [dt, st] = [factor * y / layers, (1 - factor) * y];
+    let pts = range(layers - 1).map(i => {
+        let num = randint(m, m + 5);
+        return bezeirCtrls(range(num).map(j => [x * j / num, randamp(st + i * dt, dt * 0.7)]));
     });
 
-    return [[x, y, Color.getRandColor(1 / layers, DarkBg)], pts];
+    return [[x, y, Color.getRandColor(DarkBg, 1 / layers)], pts];
 }
 
 function drawWaves(cr, waves, show) {
@@ -289,52 +203,54 @@ function drawWaves(cr, waves, show) {
         cr.moveTo(x, y);
         cr.lineTo(0, y);
         cr.lineTo(...p[0])
-        for(let i = 0; i < p.length; i += 3)
-            cr.curveTo(...p[i], ...p[i+1], ...p[i+2]);
+        range(p.length - 1, 0, 3).forEach(i => { cr.curveTo(...p[i], ...p[i+1], ...p[i+2]); });
         cr.closePath();
         cr.fill();
     });
-    if(FontName && show) {
-        let fg = DarkBg ? 1 : 0;
-        cr.save();
-        cr.setSourceRGBA(fg, fg, fg, 0.1);
-        let layout = PangoCairo.create_layout(cr);
-        let desc = Pango.FontDescription.from_string(FontName);
-        desc.set_size(x * Pango.SCALE / 15);
-        layout.set_font_description(desc);
-        layout.get_context().set_base_gravity(Pango.Gravity.EAST);
-        layout.set_markup(color.name, -1);
-        let [fw, fh] = layout.get_pixel_size();
-        cr.moveTo(x, 0.03 * y);
-        cr.rotate(Math.PI / 2);
-        PangoCairo.show_layout(cr, layout);
-        cr.restore();
-    }
+    if(show) drawColor(cr, other);
+}
+
+function drawColor(cr, color) {
+    if(!FontName) return;
+    let [x, y, cl] = color;
+    let fg = DarkBg ? 1 : 0;
+    cr.save();
+    cr.setSourceRGBA(fg, fg, fg, 0.1);
+    let layout = PangoCairo.create_layout(cr);
+    let desc = Pango.FontDescription.from_string(FontName);
+    desc.set_size(x * Pango.SCALE / 15);
+    layout.set_font_description(desc);
+    layout.get_context().set_base_gravity(Pango.Gravity.EAST);
+    layout.set_markup(cl.name, -1);
+    let [fw, fh] = layout.get_pixel_size();
+    cr.moveTo(x, 0.03 * y);
+    cr.rotate(Math.PI / 2);
+    PangoCairo.show_layout(cr, layout);
+    cr.restore();
 }
 
 function genBlobs(x, y) {
-    return shuffle(genCoords([[0, 0, x ,y]], 20, 5))
+    return shuffle(genCoords([0, 0, x ,y]))
         .filter(c => !overlap(c, TextRect))
         .slice(0, 16)
-        .map(rect => [Color.getRandColor(0.5, DarkBg).color, ctrlClosed(genPolygon(...circle(rect), 0.6, 0.2, 6), 1)] );
+        .map(rect => [Color.getRandColor(DarkBg, 0.5).color, bezeirCtrls(genPolygon(circle(rect)), 1, true)]);
 }
 
 function drawBlobs(cr, pts) {
     pts.forEach(pt => {
         let [color, p] = pt;
         cr.setSourceRGBA(...color);
-        cr.moveTo(...p[p.length - 1]);
-        for(let i = 0; i < p.length; i += 3)
-            cr.curveTo(...p[i], ...p[i+1], ...p[i+2]);
+        cr.moveTo(...last(p));
+        range(p.length - 1, 0, 3).forEach(i => { cr.curveTo(...p[i], ...p[i+1], ...p[i+2]); });
         cr.fill();
     });
 }
 
 function genOvals(x, y) {
-    return shuffle(genCoords([[0, 0, x ,y]], 20, 5)).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => {
+    return shuffle(genCoords([0, 0, x ,y])).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, gauss(r, 0.2 * r)];
-        return [Color.getRandColor(0.5, DarkBg).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
+        return [Color.getRandColor(DarkBg, 0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
     });
 }
 
@@ -354,82 +270,50 @@ function drawOvals(cr, pts) {
 }
 
 function genCloud(rect, offset) {
-    let [x, y, w, h] = [rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]];
+    let [x, y, w, h] = rect;
     let wave = n => {
-        let src = shuffle(Array.from({ length: n }, (_, i) => i));
-        if(randbool()) {
-            for(let i = 0; i < n; i += 2) {
-                if(i > 0 && src[i] < src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]];
-                if(i < n - 1 && src[i] < src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]];
-            }
-        } else {
-            for(let i = 0; i < n; i += 2) {
-                if(i > 0 && src[i] > src[i - 1]) [src[i], src[i - 1]] = [src[i - 1], src[i]];
-                if(i < n - 1 && src[i] > src[i + 1]) [src[i], src[i + 1]] = [src[i + 1], src[i]];
-            }
-        }
-        return src;
+        let r = randbool();
+        let a = shuffle(range(n - 1));
+        range(n - 1, 0, 2).forEach(i => {
+            if(i != 0 && (a[i] < a[i - 1]) ^ r) [a[i], a[i - 1]] = [a[i - 1], a[i]];
+            if(i != n - 1 && (a[i] < a[i + 1]) ^ r) [a[i], a[i + 1]] = [a[i + 1], a[i]];
+        });
+        return a;
     };
-    let result = [];
-    let length = Math.floor(h / offset);
-    let steps = wave(length).map(s => s / length);
-    if(steps[0] > steps[1]) {
-        result.push([gauss(x, w * steps[0] / 4), y]);
-    } else {
-        result.push([gauss(x + w, w * (1 - steps[0]) / 4), y]);
-    }
-    for(let i = 0; i < length; i++) {
-        let old_y = result[result.length - 1][1];
-        let new_x = x + w * steps[i];
-        let fold = randbool();
-        result.push([new_x, old_y, fold]);
-        result.push([new_x, old_y + offset, fold]);
-    }
-    if(steps[length - 1] > steps[length - 2]) {
-        result.push([gauss(x, w * steps[length - 1] / 4), result[result.length - 1][1]]);
-    } else {
-        result.push([gauss(x + w, w * (1 - steps[length - 1]) / 4), result[result.length - 1][1]]);
-    }
+    let extra = (a, b) => Math.floor(a > b ? gauss(x, w * a / 4) : gauss(x + w, w * (1 - a) / 4));
+    let len = Math.floor(h / offset);
+    let stp = wave(len).map(s => s / len);
+    let fst = [[extra(stp[0], stp[1]), y]];
+    let result = scanl((i, ac) => {
+        let fd = randbool();
+        let nx = x + w * stp[i];
+        let oy = last(ac)[1];
+        return [[nx, oy, fd], [nx, oy + offset, fd]];
+    }, range(len - 1), fst);
 
-    return result;
+    return fst.concat(result, [[extra(last(stp), last(stp, 2)), last(result)[1]]]);
 }
 
 function genClouds(x, y) {
     let offset = y / 27;
-    let points = [[0, 0], [0, 1 / 4], [0, 2 / 4], [1 / 4, 2 / 4], [2 / 4, 2 / 4], [2 / 4, 1 / 4]];
     let genRect = (pt) => {
         let a, b, c, d, e, f;
         switch(pt) {
-        case 0: [a, b, c, d, e] = [0, 1 / 8, 1 / 16, 1 / 8, 2]; break;
-        case 1: [a, b, c, d, e] = [0, 1 / 8, 1 / 8, 1 / 4, 2]; break;
-        case 2: [a, b, c, d, e] = [0, 1 / 4, 0, 1 / 4, 5 / 2]; break;
-        case 3: [a, b, c, d, e] = [0, 1 / 4, 1 / 8, 1 / 4, 3]; break;
-        case 4: [a, b, c, d, e] = [0, 1 / 4, 0, 1 / 4, 5 / 2]; break;
-        default: [a, b, c, d, e] = [1 / 8, 1 / 4, 1 / 8, 1 / 4, 2]; break;
+        case 0: [a, b, c, d, e, f] = [0, 1 / 8, 1 / 16, 1 / 8, 2, [0, 0]]; break;
+        case 1: [a, b, c, d, e, f] = [0, 1 / 8, 1 / 8, 1 / 4, 2, [0, 1 / 4]]; break;
+        case 2: [a, b, c, d, e, f] = [0, 1 / 4, 0, 1 / 4, 5 / 2, [0, 2 / 4]]; break;
+        case 3: [a, b, c, d, e, f] = [0, 1 / 4, 1 / 8, 1 / 4, 3, [1 / 4, 2 / 4]]; break;
+        case 4: [a, b, c, d, e, f] = [0, 1 / 4, 0, 1 / 4, 5 / 2, [2 / 4, 2 / 4]]; break;
+        default: [a, b, c, d, e, f] = [1 / 8, 1 / 4, 1 / 8, 1 / 4, 2, [2 / 4, 1 / 4]]; break;
         }
-        let s_x = randint(a * x, b * x)
-        let s_y = randint(c * y, d * y)
-        let s_h = randint(3 * offset, pt ? 7 * offset : 5 * offset)
-        let s_w = randint(s_h * 2, e * offset * 7)
+        let h = randint(3 * offset, pt ? 7 * offset : 5 * offset);
+        let w = randint(h * 2, e * offset * 7);
 
-        return [s_x, s_y, s_x + s_w, s_y + s_h]
+        return [randint(a * x, b * x) + f[0] * x, randint(c * y, d * y) + f[1] * y, w, h];
     }
-    let mv = pt => {
-        let [a, b, c, d] = genRect(pt);
-        let [x1, y1] = points[pt];
-        return [a + x1 * x, b + y1 * y, c + x1 * x, d + y1 * y];
-    }
-    let cords;
+    let coords = [[0, 2, 4], [0, 2, 5], [0, 3, 5], [1, 3, 5], [1, 3, 5]][randint(0, 4)];
 
-    switch(randint(0, 4)) {
-    case 0: cords = [0, 2, 4]; break;
-    case 1: cords = [0, 2, 5]; break;
-    case 2: cords = [0, 3, 5]; break;
-    default: cords = [1, 3, 5]; break;
-    }
-
-    // if(Math.random() < 1 / 5) cords.splice(Math.floor(Math.random() * cords.length), 1);
-    return [genMoon(x, y), cords.map(c => [Color.getRandColor(1, DarkBg).color, genCloud(mv(c), offset)])];
+    return [genMoon(x, y), coords.map(c => [Color.getRandColor(DarkBg).color, genCloud(genRect(c), offset)])];
 }
 
 function drawClouds(cr, clouds) {
@@ -440,7 +324,7 @@ function drawClouds(cr, clouds) {
         // cr.setLineWidth(2);
         cr.setSourceRGBA(...color);
         cr.moveTo(...p[0]);
-        for(let i = 1; i < p.length - 1; i += 2) {
+        range(p.length - 2, 1, 2).forEach(i => {
             let [x, y, f, d_y] = [...p[i], (p[i + 1][1] - p[i][1]) / 2];
             let flag = x < p[i + 2][0];
             cr.lineTo(x, y);
@@ -453,8 +337,8 @@ function drawClouds(cr, clouds) {
                 cr.stroke();
             }
             cr.moveTo(p[i + 1][0], p[i + 1][1]);
-        }
-        cr.lineTo(...p[p.length - 1]);
+        })
+        cr.lineTo(...last(p));
         cr.stroke();
     });
 }
@@ -471,8 +355,8 @@ function genMotto(cr, x, y, font, text, orien) {
     layout.set_font_description(Pango.FontDescription.from_string(font));
     layout.set_markup(text, -1);
     let [fw, fh] = layout.get_pixel_size();
-    let [a, b, c, d] = [x / 2, 0.65 * y / 2, fw / 2, fh / 2];
-    setTextRect(orien ? [a - d, b - c, a + d, b + c] : [a - c, b - d, a + c, b + d]);
+    let [a, b, c, d] = [x / 2, DV * y / 2, fw / 2, fh / 2];
+    setTextRect(orien ? [a - d, b - c, fh, fw] : [a - c, b - d, fw, fh]);
     setFontName(font);
 
     return [x, y, layout, orien, fw, fh];
@@ -484,10 +368,10 @@ function drawMotto(cr, pts) {
     cr.save();
     cr.setSourceRGBA(...color);
     if(orien) {
-        cr.moveTo((x + fh) / 2, (0.65 * y - fw) / 2);
+        cr.moveTo((x + fh) / 2, (DV * y - fw) / 2);
         cr.rotate(Math.PI / 2);
     } else {
-        cr.moveTo((x - fw) / 2, (0.65 * y - fh) / 2);
+        cr.moveTo((x - fw) / 2, (DV * y - fh) / 2);
     }
     PangoCairo.show_layout(cr, layout);
     cr.restore();
@@ -500,3 +384,111 @@ function drawBackground(cr, x, y, dark) {
     cr.rectangle(0, 0, x, y);
     cr.fill();
 }
+
+function genTrees(x, y) {
+    let ld = genLand(x, y);
+    let color = Color.getRandColor();
+    let t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6 , x / 30);
+    let t2 = genTree(6, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
+    return [t1, t2, ld, [x, y]].map(v => v.concat([color]));
+}
+
+function drawTrees(cr, pts, show) {
+    let [t1, t2, ld, cl] = pts;
+    drawTree(cr, t1);
+    drawTree(cr, t2);
+    drawLand(cr, ld);
+}
+
+function genFlower(x, y, l = 20, n = 5) {
+    let da = 2 / (n + 1);
+    let t2 = rand(0, 2);
+    let t1 = gauss(1 / 2, 1 / 9);
+    let fc = 1 - Math.abs(t1 * 2 - 1);
+    let stp = range(n - 1).map(() => gauss(1, 1 / 2 - fc));
+    let sum = stp.reduce((ac, c) => ac + c, 0);
+    let tran = p => trans(p, [[1, cosp(t1) * fc, 0], [0, sinp(t1) * fc, 0]], rotate(t2), move([x, y]));
+
+    return [sinp(t1) * fc > 0.6, scanl((u, v) => u + v, stp.map(s => s * da / sum), 0)
+        .map((s, i) => [i, i + 1].map(t => [0.05, 0.1, 1].map(r => tran(conv(r * l, s + t * da)))))];
+}
+
+function drawFlower(cr, pts, cl) {
+    let [fc, pt] = pts;
+    cr.save();
+    cr.setSourceRGBA(...cl.color);
+    pt.forEach(p => {
+        cr.moveTo(...p[0][1]);
+        cr.curveTo(...p[0][2], ...p[1][2], ...p[1][1]);
+        cr.curveTo(...p[1][0], ...p[0][0], ...p[0][1]);
+    });
+    cr.fill();
+    cr.restore();
+}
+
+function genTree(n, x, y, l) {
+    // Ref: http://fhtr.blogspot.com/2008/12/drawing-tree-with-haskell-and-cairo.html
+    let branch = (vec, ang) => {
+        if(!vec) return null;
+        let t = vec[2] + ang * rand(0.1, 0.9);
+        let s = 3 * Math.pow(1 - Math.abs(t), 2) * rand(0.1, 0.9);
+        return s < 0.3 ? null : trans(vec.slice(0, 2), move(conv(s * l, t))).concat(t);
+    }
+    let root = [[0, 0, 0], branch([0, 0, 0], gauss(0, 1 / 16))];
+    let tree = root.concat(scanl((i, ac) => ac.flatMap(a => [branch(a, - 1 / 4), branch(a, 1 / 4)]), range(n - 1, 1), [root[1]]));
+    let thick = i => !tree[i] ? 0 : tree[i][2];
+    let merg = (a, b) => 0.7 * (a + b) + 0.6 * (!a * b + !b * a) + !a * !b * 1.25;
+    range(0, tree.length - 1, -1).forEach(i => { if(tree[i]) tree[i][2] = merg(thick(2 * i), thick(2 * i + 1)); });
+    tree = tree.map(t => !t ? t : trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
+    range(2 ** (n - 1) - 1, 4).forEach(i => { if(!!tree[i] && (!tree[2 * i] || !tree[2 * i + 1]))
+            tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1])]); });
+
+    return [tree];
+}
+
+function drawTree(cr, pts) {
+    let [tr, cl] = pts;
+    if(tr.length <= 2) return;
+    cr.save();
+    cr.setLineCap(Cairo.LineCap.ROUND);
+    cr.setLineJoin(Cairo.LineJoin.ROUND);
+    cr.setSourceRGBA(0.24, 0.24, 0.24, 1);
+    let lineTo = i => { if(!tr[i]) return; cr.setLineWidth(tr[i][2]); cr.lineTo(tr[i][0], tr[i][1]); cr.stroke(); };
+    let flower = (i, s) => { if(!tr[i] || !tr[i][3]) return; if(s == tr[i][3][0]) drawFlower(cr, tr[i][3], cl); }
+    range(Math.floor(Math.log2(tr.length)) - 1).forEach(i => {
+        if(i == 0) {
+            cr.moveTo(tr[i][0], tr[i][1]), lineTo(i + 1);
+        } else {
+            range(Math.pow(2, i) - 1, Math.pow(2, i - 1)).forEach(j => {
+                if(!tr[j]) return;
+                flower(2 * j, false);
+                cr.moveTo(tr[j][0], tr[j][1]);
+                lineTo(2 * j);
+                flower(2 * j + 1, false);
+                cr.moveTo(tr[j][0], tr[j][1]);
+                lineTo(2 * j + 1);
+                flower(j, true);
+            });
+        }
+    });
+
+    cr.restore();
+}
+
+function genLand(x, y, n = 20, f = 5 / 6) {
+    let land = bezeirCtrls(zipWith((u, v) => [u * x / n, v === 40 ? f * y : gauss(v * y / 48, y / 96)],
+        range(14, 5), [40, 40, 42, 44, 45, 46, 46, 43, 40, 40]), 0.3);
+    return [[0, 7 * y / 8, x, y / 8], land.concat([[x, f * y], [x, y], [0, y], [0, f * y]])];
+}
+
+function drawLand(cr, pts) {
+    let [rc, ld, cl] = pts;
+    cr.setSourceRGBA(...cl.color);
+    cr.rectangle(...rc);
+    cr.fill()
+    cr.setSourceRGBA(0.28, 0.28, 0.28, 1);
+    range(26, 0, 3).forEach(i => { cr.curveTo(...ld[i], ...ld[i+1], ...ld[i+2]); });
+    range(30, 27).forEach(i => { cr.lineTo(...ld[i]); });
+    cr.fill();
+}
+
