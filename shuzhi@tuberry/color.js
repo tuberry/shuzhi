@@ -537,7 +537,7 @@ const Colors = [
 
 const DarkColors = Colors.filter(x => light(x.RGB) <= 128);
 const LightColors = Colors.filter(x => light(x.RGB) > 128);
-const ModerateColors = Colors.filter(x => { let l = light(x.RGB); return l > 60 && l < 195; });
+const ModerateColors = Colors.filter(x => (l => l > 60 && l < 195)(light(x.RGB)));
 
 function getRandColor(dark, alpha = 1) {
   let color = (x => x[Math.floor(Math.random() * x.length)])(dark === undefined ? ModerateColors : (dark ? LightColors : DarkColors));

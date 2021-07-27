@@ -207,7 +207,7 @@ const ShuZhi = GObject.registerClass({
         }
     }
 
-    get checkFile() { // Ensure the wallpaper consistent when unlocking the screen and locking the screen
+    get checkFile() { // Ensure the wallpaper consistent when unlocking and locking the screen
         let path = this.path;
         let pic = Gio.File.new_for_path(path);
         return pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path);
@@ -304,7 +304,7 @@ const ShuZhi = GObject.registerClass({
         if(image) {
             let color = this.style ? '#242424' : '#E6E6E6';
             if(dgsettings.get_string(System.PRIMARY) != color) dgsettings.set_string(System.PRIMARY, color);
-            dgsettings.set_string(System.PICTURE, 'file://' + image);
+            if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, 'file://' + image);
         } else {
             dgsettings.reset(System.PICTURE);
             dgsettings.reset(System.PRIMARY);
