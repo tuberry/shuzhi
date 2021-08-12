@@ -32,10 +32,12 @@ const randbool = () =>  !!Math.round(Math.random());
 const randamp = (x, y) => rand(x - y, x + y);
 const randint = (l, u) => Math.floor(Math.random() * (u - l + 1)) + l;
 
+const Y = f => f(x => Y(f)(x)); // Y combinator
 const last = (a, n = 1) => a[a.length - n];
 const scanl = (f, xs, ac) => xs.flatMap(x => ac = f(x, ac));
 const zipWith = (f, ...xss) => xss[0].map((_, i) => f(...xss.map(xs => xs[i])));
 const array = (n, f = i => i) => Array.from({ length: n } , (_, i) => f(i));
+const dis = (a, b) => Math.sqrt(zipWith((u, v) => (u - v) ** 2, a, b).reduce(add));
 const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
@@ -59,36 +61,33 @@ function shuffle(a) {
     return a;
 };
 
-function genPolygon(clc, dt_a=0.6, dt_r=0.2, num=6) {
+function genPolygon(clc, dt_a = 0.6, dt_r = 0.2, num = 6) {
     // Ref: https://stackoverflow.com/a/25276331
     let [x, y, r] = clc;
-    let stp = array(num, () => randamp(2 / num, dt_a * 2 / num));
+    let stp = array(num, () => randamp(1, dt_a) * 2 / num);
 
     return scanl(add, (m => stp.map(w => 2 * w / m))(stp.reduce(add)), rand(0, 2))
         .map(s => zipWith(add, [x, y], conv(gauss(1, dt_r) * r, s)));
 }
 
-function genCoords(rect, sum=20, fac=5) { // reduce collision
+function genCoords(rect, sum = 20, fac= 1 / 5) { // reduce collision
     // https://stackoverflow.com/a/4382286
-    let quad = n => n == 0 ? [rect] : quad(n - 1).flatMap(rc => {
+    return Y(f => n => n == 0 ? [rect] : f(n - 1).flatMap(rc => {
         let [x, y, w, h] = rc;
-        let [a, b] = [w, h].map(i => Math.round(randamp(i / 2, i / fac)));
+        let [a, b] = [w, h].map(i => Math.round(i * randamp(1 / 2, fac)));
         return [[x, y, a, b], [x + a, y, w - a, b], [x + a, y + b, w - a, h - b], [x, y + b, a, h - b]];
-    });
-
-    return quad(Math.ceil(Math.log2(sum) / 2));
+    }))(Math.ceil(Math.log2(sum) / 2));
 }
 
 function circle(rect) {
     let [x, y, w, h] = rect;
     let r = Math.min(w, h) / 2;
-    let ctr = w > h ? [rand(x + r, x + w - r), y + h / 2] : [x + w / 2, rand(y + r, y + h - r)];
+    let ctr = w > h ? [x + rand(r, w - r), y + h / 2] : [x + w / 2, y + rand(r, h - r)];
     return ctr.concat(r);
 };
 
-function bezeirCtrls(vertex, smooth=1, closed=false) {
+function bezeirCtrls(vertex, smooth = 1, closed = false) {
     // Ref: https://zhuanlan.zhihu.com/p/267693043
-    let dis = (a, b) => Math.sqrt(zipWith((u, v) => (u - v) ** 2, a, b).reduce(add));
     let ctrls = array(vertex.length - (closed ? 1 : 2), i => i + 1).flatMap(i => {
         let [a, b, c] = [i - 1, i, i + 1].map(x => vertex[mod(x, vertex.length)]);
         let ls = [a, c].map(x => dis(x, b));
@@ -185,7 +184,7 @@ function drawMoon(cr, pts) {
 function genWaves(x, y) {
     let [layers, factor, min] = [5, 1 - DV, randint(6, 9)];
     let [dt, st] = [factor * y / layers, (1 - factor) * y];
-    let pts = array(layers, i => (n => bezeirCtrls(array(n + 1, j => [x * j / n, randamp(st + i * dt, dt * 0.7)])))(randint(min, min + 5)));
+    let pts = array(layers, i => (n => bezeirCtrls(array(n + 1, j => [x * j / n, st + randamp(i, 0.7) * dt])))(min + randint(0, 5)));
 
     return [[x, y, Color.getRandColor(DarkBg, 1 / layers)], pts];
 }
@@ -193,8 +192,8 @@ function genWaves(x, y) {
 function drawWaves(cr, waves, show) {
     let [other, pts] = waves;
     let [x, y, color] = other;
+    cr.setSourceRGBA(...color.color);
     pts.forEach(p => {
-        cr.setSourceRGBA(...color.color);
         cr.moveTo(x, y);
         cr.lineTo(0, y);
         cr.lineTo(...p[0])

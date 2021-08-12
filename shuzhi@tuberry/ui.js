@@ -237,12 +237,12 @@ var Combo = GObject.registerClass({
 var Frame = GObject.registerClass({
     GTypeName: 'Gjs_%s_UI_Frame'.format(Uuid),
 }, class Frame extends Gtk.Frame {
-    _init(widget, label) {
+    _init(widget, label, gap) {
         super._init({
             margin_end: 60,
             margin_top: 30,
             margin_start: 60,
-            margin_bottom: 30,
+            margin_bottom: gap ? 0 : 30,
         });
 
         this.set_child(widget);
