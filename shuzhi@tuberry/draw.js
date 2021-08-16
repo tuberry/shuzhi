@@ -28,7 +28,7 @@ const forloop = (f, u, l = 0, s = 1) => { if(s > 0)
         for(let i = l; i <= u; i += s) f(i); else for(let i = l; i >= u; i += s) f(i); };
 
 const rand = (l, u) => Math.random() * (u - l) + l;
-const randbool = () =>  !!Math.round(Math.random());
+const randbool = () => !!Math.round(Math.random());
 const randamp = (x, y) => rand(x - y, x + y);
 const randint = (l, u) => Math.floor(Math.random() * (u - l + 1)) + l;
 
@@ -104,8 +104,7 @@ function getLunarPhase() {
     // A recent new moon occured on december, 26, 2019 = 18256 days since 1970.
     // An average synodic month takes 29 days, 12 hours, 44 minutes, 3 seconds.
     let days = ((new Date()).getTime() / 86400000) - 18256.8;
-    let month = 29.5305882;
-    let m = Math.abs(days / month);
+    let m = (month => Math.abs(days / month))(29.5305882);
 
     return Math.round((m - Math.floor(m)) * 8) % 8;
 }
@@ -265,10 +264,13 @@ function drawOvals(cr, pts) {
 function genCloud(rect, offset) {
     let [x, y, w, h] = rect;
     let wave = a => {
-        forloop((r => i => {
-            (i != 0 && (a[i] < a[i - 1]) ^ r) && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
-            (i != a.length - 1 && (a[i] < a[i + 1]) ^ r) && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
-        })(randbool()), a.length - 1, 0, 2);
+        randbool() ? forloop(i => {
+            i != 0 && a[i] < a[i - 1] && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
+            i != a.length - 1 && a[i] < a[i + 1] && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
+        }, a.length - 1, 0, 2) : forloop(i => {
+            i != 0 && a[i] > a[i - 1] && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
+            i != a.length - 1 && a[i] > a[i + 1] && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
+        }, a.length - 1, 0, 2);
         return a;
     };
     let extra = (a, b) => Math.floor(a > b ? gauss(x, w * a / 4) : gauss(x + w, w * (1 - a) / 4));
