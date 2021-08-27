@@ -37,7 +37,7 @@ const last = (a, n = 1) => a[a.length - n];
 const scanl = (f, xs, ac) => xs.flatMap(x => ac = f(x, ac));
 const zipWith = (f, ...xss) => xss[0].map((_, i) => f(...xss.map(xs => xs[i])));
 const array = (n, f = i => i) => Array.from({ length: n } , (_, i) => f(i));
-const dis = (a, b) => Math.sqrt(zipWith((u, v) => (u - v) ** 2, a, b).reduce(add));
+const dis = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
 const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
@@ -206,9 +206,8 @@ function drawWaves(cr, waves, show) {
 function drawColor(cr, color) {
     if(!FontName) return;
     let [x, y, cl] = color;
-    let fg = DarkBg ? 1 : 0;
     cr.save();
-    cr.setSourceRGBA(fg, fg, fg, 0.1);
+    (fg => cr.setSourceRGBA(fg, fg, fg, 0.1))(DarkBg ? 1 : 0);
     let layout = PangoCairo.create_layout(cr);
     let desc = Pango.FontDescription.from_string(FontName);
     desc.set_size(x * Pango.SCALE / 15);
@@ -423,9 +422,9 @@ function genTree(n, x, y, l) {
     let tree = root.concat(scanl((_, ac) => ac.flatMap(a => [branch(a, - 1 / 4), branch(a, 1 / 4)]), array(n - 1), [root[1]]));
     let thick = i => !tree[i] ? 0 : tree[i][2];
     let merg = (a, b) => 0.7 * (a + b) + 0.6 * (!a * b + !b * a) + !a * !b * 1.25;
-    forloop(i => !!tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1))), 0, tree.length - 1, -1);
-    tree = tree.map(t => !t ? t : trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
-    forloop(i => (!!tree[i] && (!tree[2 * i] || !tree[2 * i + 1])) &&
+    forloop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1))), 0, tree.length - 1, -1);
+    tree = tree.map(t => t && trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
+    forloop(i => (tree[i] && (!tree[2 * i] || !tree[2 * i + 1])) &&
             (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1])])), 2 ** (n - 1) - 1, 4);
 
     return [tree];
@@ -438,8 +437,8 @@ function drawTree(cr, pts) {
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
     cr.setSourceRGBA(...Color.DARK);
-    let lineTo = i => !!tr[i] && (cr.setLineWidth(tr[i][2]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
-    let flower = (i, s) => (!!tr[i] && !!tr[i][3]) && (s == tr[i][3][0]) && drawFlower(cr, tr[i][3], cl);
+    let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][2]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
+    let flower = (i, s) => (tr[i] && tr[i][3]) && (s == tr[i][3][0]) && drawFlower(cr, tr[i][3], cl);
     forloop(i => {
         (i == 0) && (cr.moveTo(tr[i][0], tr[i][1]), lineTo(i + 1)) || forloop(j => {
             if(!tr[j]) return;

@@ -180,8 +180,8 @@ const ShuZhi = GObject.registerClass({
 
     get path() {
         let file = '/shuzhi-' + (this.style ? 'dark.png' : 'light.png');
-        let dir = this._folder ? this._folder : GLib.get_user_cache_dir();
-        return dir + file;
+
+        return (this._folder || GLib.get_user_cache_dir()) + file;
     }
 
     set refresh(refresh) {
@@ -224,7 +224,7 @@ const ShuZhi = GObject.registerClass({
         let exec = cmd => this._execute(cmd)
             .then(scc => { this._motto = scc; })
             .catch(() => { this._motto = ''; })
-            .finally(callback === undefined ? () => { this._queueRepaint(paint); } : callback);
+            .finally(callback || (() => { this._queueRepaint(paint); }));
         try {
             let [, cmd] = GLib.shell_parse_argv(this._command);
             this._execute('sh -c "command -v %s"'.format(cmd))
@@ -355,15 +355,18 @@ const ShuZhi = GObject.registerClass({
     _execute(cmd) {
         return new Promise((resolve, reject) => {
             try {
-                let [, command] = GLib.shell_parse_argv(cmd);
                 let proc = new Gio.Subprocess({
-                    argv: command,
+                    argv: GLib.shell_parse_argv(cmd)[1],
                     flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
                 });
                 proc.init(null);
                 proc.communicate_utf8_async(null, null, (proc, res) => {
-                    let [, stdout, stderr] = proc.communicate_utf8_finish(res);
-                    proc.get_exit_status() ? reject(stderr.trim()) : resolve(stdout.trim());
+                    try {
+                        let [, stdout, stderr] = proc.communicate_utf8_finish(res);
+                        proc.get_exit_status() ? reject(stderr.trim()) : resolve(stdout.trim());
+                    } catch(e) {
+                        reject(e.message);
+                    }
                 });
             } catch(e) {
                 reject(e.message);
