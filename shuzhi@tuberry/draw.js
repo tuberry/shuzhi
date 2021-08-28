@@ -3,7 +3,7 @@
 'use strict';
 
 const Cairo = imports.cairo;
-const { PangoCairo, Pango } = imports.gi;
+const { PangoCairo, Pango, GLib, Gtk } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -13,10 +13,6 @@ let DV = 2 / 3;
 let FontName = '';
 let DarkBg = true;
 let TextRect = [-1, -1, 0, 0];
-
-const setFontName = font => { FontName = font; };
-const setTextRect = rect => { TextRect = rect; };
-const setDarkBg = (dark) => { DarkBg = dark; };
 
 const add = (u, v) => u + v;
 const sinp = t => Math.sin(t * Math.PI);
@@ -42,6 +38,10 @@ const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
 const trans = (xs, ...ms) => ms.reduce((ac, m) => m.map(v => dot(v, ac.concat(1))), xs); // affine
+
+function setFontName(font) { FontName = font; }
+function setTextRect(rect) { TextRect = rect; }
+function setDarkBg(dark) { DarkBg = dark; }
 
 function gauss(mu, sgm) {
     // https://en.wikipedia.org/wiki/Marsaglia_polar_method
@@ -327,7 +327,7 @@ function drawClouds(cr, clouds) {
     });
 }
 
-function genMotto(cr, x, y, font, text, orien) {
+function genMotto(cr, x, y, text, orien) {
     let layout = PangoCairo.create_layout(cr);
     layout.set_line_spacing(1.05);
     if(orien) {
@@ -336,12 +336,11 @@ function genMotto(cr, x, y, font, text, orien) {
     } else {
         layout.set_alignment(Pango.Alignment.CENTER);
     }
-    layout.set_font_description(Pango.FontDescription.from_string(font));
+    layout.set_font_description(Pango.FontDescription.from_string(FontName));
     layout.set_markup(text, -1);
     let [fw, fh] = layout.get_pixel_size();
     let [a, b, c, d] = [x / 2, DV * y / 2, fw / 2, fh / 2];
     setTextRect(orien ? [a - d, b - c, fh, fw] : [a - c, b - d, fw, fh]);
-    setFontName(font);
 
     return [x, y, layout, orien, fw, fh];
 }
@@ -474,3 +473,13 @@ function drawLand(cr, pts) {
     cr.stroke();
 }
 
+function genLogo(x, y) {
+    let logo = GLib.get_os_info('LOGO');
+    if(!logo) return;
+    let icon = (new Gtk.IconTheme()).lookup_icon(logo, null, null);
+    if(!icon) return;
+    let img = Cairo.ImageSurface.createFromPNG(icon.get_filename());
+    ((w, h) => setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]))(img.getWidth(), img.getHeight());
+
+    return [img, TextRect[0], TextRect[1]];
+}

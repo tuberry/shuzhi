@@ -226,12 +226,13 @@ const ShuZhi = GObject.registerClass({
             .catch(() => { this._motto = ''; })
             .finally(callback || (() => { this._queueRepaint(paint); }));
         try {
-            let [, cmd] = GLib.shell_parse_argv(this._command);
+            let cmd = GLib.shell_parse_argv(this._command)[1];
             this._execute('sh -c "command -v %s"'.format(cmd))
                 .then(scc => { exec(this._command); },
                       err => { exec(cmd == 'shuzhi.sh' ? 'bash ' + Me.dir.get_child('shuzhi.sh').get_path() : this._command); });
         } catch(e) {
-            // ignore
+            this._motto = '';
+            (callback || (() => { this._queueRepaint(paint); }))();
         }
     }
 
@@ -316,7 +317,8 @@ const ShuZhi = GObject.registerClass({
         let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
-        let text = Draw.genMotto(context, x, y, this._fontname, this._motto, this._orient);
+        Draw.setFontName(this._fontname);
+        let text = this._motto ? Draw.genMotto(context, x, y, this._motto, this._orient) : Draw.genLogo(x, y);
         Draw.drawBackground(context, x, y, this.style);
         switch(this.sketch) {
         case DSketch.Waves:
@@ -341,14 +343,20 @@ const ShuZhi = GObject.registerClass({
                 Draw.drawTrees(context, this._points);
             }
             break;
-        default:
-            return;
+        default: return;
         }
-        Draw.drawMotto(context, text); // draw text on the top
         let path = this.path;
-        surface.writeToPNG(path);
+        if(this._motto) {
+            Draw.drawMotto(context, text); // draw text on the top
+            surface.writeToPNG(path);
+        } else {
+            let img = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
+            let ctx = new Cairo.Context(img);
+            ctx.setSourceSurface(surface, 0, 0), ctx.paint();
+            if(text) ctx.setSourceSurface(...text), ctx.paint();
+            img.writeToPNG(path);
+        }
         this.desktop = path;
-
         this._painted = true;
     }
 
