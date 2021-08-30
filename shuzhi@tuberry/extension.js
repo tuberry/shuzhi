@@ -119,6 +119,7 @@ const ShuZhi = GObject.registerClass({
 
     set fontname(name) {
         this._fontname = name;
+        Draw.setFontName(this._fontname);
         this._queueRepaint();
     }
 
@@ -303,7 +304,7 @@ const ShuZhi = GObject.registerClass({
 
     set desktop(image) {
         if(image) {
-            let color = this.style ? '#242424' : '#E6E6E6';
+            let color = Draw.getBgColor();
             if(dgsettings.get_string(System.PRIMARY) != color) dgsettings.set_string(System.PRIMARY, color);
             if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, 'file://' + image);
         } else {
@@ -317,9 +318,9 @@ const ShuZhi = GObject.registerClass({
         let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
-        Draw.setFontName(this._fontname);
+        Draw.setDarkBg(this.style);
         let text = this._motto ? Draw.genMotto(context, x, y, this._motto, this._orient) : Draw.genLogo(x, y);
-        Draw.drawBackground(context, x, y, this.style);
+        Draw.drawBackground(context, x, y);
         switch(this.sketch) {
         case DSketch.Waves:
             if(!this._points.length) this._points = Draw.genWaves(x, y);
@@ -371,7 +372,7 @@ const ShuZhi = GObject.registerClass({
                 proc.communicate_utf8_async(null, null, (proc, res) => {
                     try {
                         let [, stdout, stderr] = proc.communicate_utf8_finish(res);
-                        proc.get_exit_status() ? reject(stderr.trim()) : resolve(stdout.trim());
+                        proc.get_exit_status() ? reject(stderr.trim()) : resolve(stdout.replace(/\n*$/, ''));
                     } catch(e) {
                         reject(e.message);
                     }

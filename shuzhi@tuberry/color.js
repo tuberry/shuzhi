@@ -547,4 +547,3 @@ function getRandColor(dark, alpha = 1) {
 function light(rgb) {
   return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
-

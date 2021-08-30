@@ -38,10 +38,12 @@ const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
 const trans = (xs, ...ms) => ms.reduce((ac, m) => m.map(v => dot(v, ac.concat(1))), xs); // affine
+const toHex = rgba => "#" + rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
 
 function setFontName(font) { FontName = font; }
 function setTextRect(rect) { TextRect = rect; }
 function setDarkBg(dark) { DarkBg = dark; }
+function getBgColor() { return toHex(DarkBg ? Color.DARK : Color.LIGHT); }
 
 function gauss(mu, sgm) {
     // https://en.wikipedia.org/wiki/Marsaglia_polar_method
@@ -337,7 +339,7 @@ function genMotto(cr, x, y, text, orien) {
         layout.set_alignment(Pango.Alignment.CENTER);
     }
     layout.set_font_description(Pango.FontDescription.from_string(FontName));
-    layout.set_markup(text, -1);
+    layout.set_markup(text.replace(/SZ_BGCOLOR/, toHex(DarkBg ? Color.DARK : Color.LIGHT)), -1);
     let [fw, fh] = layout.get_pixel_size();
     let [a, b, c, d] = [x / 2, DV * y / 2, fw / 2, fh / 2];
     setTextRect(orien ? [a - d, b - c, fh, fw] : [a - c, b - d, fw, fh]);
@@ -347,9 +349,8 @@ function genMotto(cr, x, y, text, orien) {
 
 function drawMotto(cr, pts) {
     let [x, y, layout, orien, fw, fh] = pts;
-    let color = DarkBg ? Color.LIGHT : Color.DARK;
     cr.save();
-    cr.setSourceRGBA(...color);
+    cr.setSourceRGBA(...(DarkBg ? Color.LIGHT : Color.DARK));
     if(orien) {
         cr.moveTo((x + fh) / 2, (DV * y - fw) / 2);
         cr.rotate(Math.PI / 2);
@@ -360,8 +361,7 @@ function drawMotto(cr, pts) {
     cr.restore();
 }
 
-function drawBackground(cr, x, y, dark) {
-    setDarkBg(dark);
+function drawBackground(cr, x, y) {
     let color = DarkBg ? Color.DARK : Color.LIGHT;
     cr.setSourceRGBA(...color);
     cr.rectangle(0, 0, x, y);
@@ -386,11 +386,11 @@ function drawTrees(cr, pts, show) {
 
 function genFlower(x, y, l = 20, n = 5) {
     let da = 2 / (n + 1);
-    let t2 = rand(0, 2);
     let t1 = gauss(1 / 2, 1 / 9);
+    let rt = rotate(rand(0, 2));
     let fc = 1 - Math.abs(t1 * 2 - 1);
     let stp = array(n, () => gauss(1, 1 / 2 - fc));
-    let tran = p => trans(p, [[1, cosp(t1) * fc, 0], [0, sinp(t1) * fc, 0]], rotate(t2), move([x, y]));
+    let tran = p => trans(p, [[1, cosp(t1) * fc, 0], [0, sinp(t1) * fc, 0]], rt, move([x, y]));
 
     return [sinp(t1) * fc > 0.6, scanl(add, (m => stp.map(s => s * da / m))(stp.reduce(add)), 0)
         .map((s, i) => [i, i + 1].map(t => [0.05, 0.1, 1].map(r => tran(conv(r * l, s + t * da)))))];
@@ -420,11 +420,11 @@ function genTree(n, x, y, l) {
     let root = [[0, 0, 0], branch([0, 0, 0], gauss(0, 1 / 16))];
     let tree = root.concat(scanl((_, ac) => ac.flatMap(a => [branch(a, - 1 / 4), branch(a, 1 / 4)]), array(n - 1), [root[1]]));
     let thick = i => !tree[i] ? 0 : tree[i][2];
-    let merg = (a, b) => 0.7 * (a + b) + 0.6 * (!a * b + !b * a) + !a * !b * 1.25;
-    forloop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1))), 0, tree.length - 1, -1);
+    let merg = (a, b, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a) , a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
+    forloop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1), y / 1024)), 0, tree.length - 1, -1);
     tree = tree.map(t => t && trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
-    forloop(i => (tree[i] && (!tree[2 * i] || !tree[2 * i + 1])) &&
-            (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1])])), 2 ** (n - 1) - 1, 4);
+    forloop(i => tree[i] && !(tree[2 * i] && tree[2 * i + 1]) &&
+            (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1], y / 54)])), 2 ** (n - 1) - 1, 4);
 
     return [tree];
 }
@@ -452,11 +452,11 @@ function drawTree(cr, pts) {
 function genLand(x, y, n = 20, f = 5 / 6) {
     let land = bezeirCtrls(zipWith((u, v) => [u * x / n, v === 40 ? f * y : gauss(v * y / 48, y / 96)],
                                    array(10, i => i + 5), [40, 40, 42, 44, 45, 46, 46, 43, 40, 40]), 0.3);
-    return [[0, 7 * y / 8, x, y / 8], land.concat([[x, f * y], [x, y], [0, y], [0, f * y]])];
+    return [y / 1024, [0, 7 * y / 8, x, y / 8], land.concat([[x, f * y], [x, y], [0, y], [0, f * y]])];
 }
 
 function drawLand(cr, pts) {
-    let [rc, ld, cl] = pts;
+    let [sf, rc, ld, cl] = pts;
     cr.setSourceRGBA(...cl.color.slice(0, 3), 0.4);
     cr.rectangle(...rc);
     cr.fill();
@@ -469,7 +469,7 @@ function drawLand(cr, pts) {
     forloop(i => cr.curveTo(...ld[i], ...ld[i+1], ...ld[i+2]), 26, 0, 3);
     cr.lineTo(...last(ld, 4));
     cr.setSourceRGBA(0, 0, 0, 0.4);
-    cr.setLineWidth(2);
+    cr.setLineWidth(sf * 2);
     cr.stroke();
 }
 

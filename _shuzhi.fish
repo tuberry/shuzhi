@@ -1,4 +1,4 @@
-#!/bin/fish
+#!/usr/bin/fish
 # by tuberry
 # need fortune-mod-mingju-git (AUR) installed
 
@@ -18,8 +18,11 @@ function shuzhi -d '凌寒独自开'
 			set body '疏影横斜水清浅' '暗香浮动<span fgcolor="white">月</span>黄昏'
 			set head '林逋' '「山园小梅」'
 	end
-	set zhi $body '<span font="16"> </span>' '<span font="18">'$head[2]' <span bgcolor="#9a2e36" fgcolor="#eee">'$head[1]'</span></span>'
-	printf '%s\n' $zhi
+	set size (string replace -r -a '[^\d]+' '' (dconf read /org/gnome/shell/extensions/shuzhi/font-name))
+	test -z $size; and set size 40
+	set zhi $body '<span font="'(math -- $size x 0.4)'"> </span>' \
+	'<span font="'(math -- $size x 0.45)'">'$head[2]' <span bgcolor="#b45a56" fgcolor="SZ_BGCOLOR">'$head[1]'</span></span>'
+	printf '%s\n' $zhi # `SZ_BGCOLOR` will be replace by the bgcolor of wallpaper
 end
 
 if contains -- -v $argv || contains -- --vertical $argv
@@ -28,6 +31,8 @@ else if contains -- -h $argv || contains -- --horizontal $argv
 	shuzhi horizontal
 else if contains -- -t $argv || contains -- --test $argv
 	shuzhi test
+else if contains -- -l $argv || contains -- --logo $argv
+	echo ''
 else
 	set orien (dconf read /org/gnome/shell/extensions/shuzhi/text-orientation | string split ' ')
 	if test $orien[2] -eq 1
