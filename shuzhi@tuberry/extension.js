@@ -261,7 +261,7 @@ const ShuZhi = GObject.registerClass({
         if(!this._button) return;
         this._button.menu.removeAll();
         this._button.menu.addMenuItem(this._menuItemMaker(_('Copy'), () => {
-            let [ok, attr, text] = Pango.parse_markup(this._motto, -1, '');
+            let [ok, attr, text] = Pango.parse_markup(this._motto.replace(/SZ_BGCOLOR/, Draw.getBgColor()), -1, '');
             if(ok) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
         }));
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());

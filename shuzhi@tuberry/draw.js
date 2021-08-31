@@ -339,7 +339,7 @@ function genMotto(cr, x, y, text, orien) {
         layout.set_alignment(Pango.Alignment.CENTER);
     }
     layout.set_font_description(Pango.FontDescription.from_string(FontName));
-    layout.set_markup(text.replace(/SZ_BGCOLOR/, toHex(DarkBg ? Color.DARK : Color.LIGHT)), -1);
+    layout.set_markup(text.replace(/SZ_BGCOLOR/, getBgColor()), -1);
     let [fw, fh] = layout.get_pixel_size();
     let [a, b, c, d] = [x / 2, DV * y / 2, fw / 2, fh / 2];
     setTextRect(orien ? [a - d, b - c, fh, fw] : [a - c, b - d, fw, fh]);
