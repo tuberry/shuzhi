@@ -1,5 +1,5 @@
 // vim:fdm=syntax
-// by: tuberry@github
+// by tuberry
 'use strict';
 
 var DARK = [36 / 255, 36 / 255, 36 / 255, 1];

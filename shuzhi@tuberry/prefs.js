@@ -1,12 +1,12 @@
 // vim:fdm=syntax
-// by: tuberry@github
+// by tuberry
 'use strict';
 
 const { Gtk, Gio, GLib, GObject } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const _ = imports.gettext.domain(Me.metadata['gettext-domain']).gettext;
+const _ = ExtensionUtils.gettext;
 const gsettings = ExtensionUtils.getSettings();
 const Fields = Me.imports.fields.Fields;
 const UI = Me.imports.ui;

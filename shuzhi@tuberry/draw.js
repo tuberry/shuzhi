@@ -419,7 +419,7 @@ function genTree(n, x, y, l) {
     };
     let root = [[0, 0, 0], branch([0, 0, 0], gauss(0, 1 / 16))];
     let tree = root.concat(scanl((_, ac) => ac.flatMap(a => [branch(a, - 1 / 4), branch(a, 1 / 4)]), array(n - 1), [root[1]]));
-    let thick = i => !tree[i] ? 0 : tree[i][2];
+    let thick = i => tree[i] ? tree[i][2] : 0;
     let merg = (a, b, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a) , a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
     forloop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1), y / 1024)), 0, tree.length - 1, -1);
     tree = tree.map(t => t && trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));

@@ -1,5 +1,5 @@
 // vim:fdm=syntax
-// by: tuberry@github
+// by tuberry
 'use strict';
 
 const Cairo = imports.cairo;
@@ -10,13 +10,13 @@ const { GLib, St, GObject, Gio, Pango } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const gsettings = ExtensionUtils.getSettings();
+const _ = ExtensionUtils.gettext;
 const Me = ExtensionUtils.getCurrentExtension();
 const Fields = Me.imports.fields.Fields;
 const Draw = Me.imports.draw;
 
 const dgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
 const ngsettings = new Gio.Settings({ schema: 'org.gnome.settings-daemon.plugins.color' });
-const _ = imports.gettext.domain(Me.metadata['gettext-domain']).gettext;
 const getIcon = x => Me.dir.get_child('icons').get_child(x + '-symbolic.svg').get_path();
 
 const System = {
@@ -261,7 +261,7 @@ const ShuZhi = GObject.registerClass({
         if(!this._button) return;
         this._button.menu.removeAll();
         this._button.menu.addMenuItem(this._menuItemMaker(_('Copy'), () => {
-            let [ok, attr, text] = Pango.parse_markup(this._motto.replace(/SZ_BGCOLOR/, Draw.getBgColor()), -1, '');
+            let [ok, attr, text] = Pango.parse_markup(this._motto.replace(/SZ_BGCOLOR/, '#ffffff'), -1, '');
             if(ok) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
         }));
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
