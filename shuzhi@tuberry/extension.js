@@ -17,7 +17,7 @@ const Draw = Me.imports.draw;
 
 const dgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
 const ngsettings = new Gio.Settings({ schema: 'org.gnome.settings-daemon.plugins.color' });
-const getIcon = x => Me.dir.get_child('icons').get_child(x + '-symbolic.svg').get_path();
+const FLORETTE_ICON = Me.dir.get_child('icons').get_child('florette-symbolic.svg').get_path();
 
 const System = {
     PICTURE:     'picture-uri',
@@ -35,6 +35,8 @@ const Style = { Light: 0, Dark: 1, Auto: 2 };
 const Orient = { Horizontal: 0, Vertical: 1 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
+
+Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_utf8_finish');
 
 const ShuZhi = GObject.registerClass({
     Properties: {
@@ -109,7 +111,7 @@ const ShuZhi = GObject.registerClass({
 
     set orient(orient) {
         this._orient = orient;
-        if(this._inited) this.getMotto(false);
+        if(this._inited) this.setMotto(false);
     }
 
     set showcolor(show) {
@@ -128,7 +130,7 @@ const ShuZhi = GObject.registerClass({
             if(this._button) return;
             this._button = new PanelMenu.Button(null, Me.metadata.uuid);
             this._button.add_actor(new St.Icon({
-                gicon: new Gio.FileIcon({ file: Gio.File.new_for_path(getIcon('florette')) }),
+                gicon: new Gio.FileIcon({ file: Gio.File.new_for_path(FLORETTE_ICON) }),
                 style_class: 'shuzhi-systray system-status-icon',
             }));
             Main.panel.addToStatusArea(Me.metadata.uuid, this._button, 0, 'right');
@@ -199,9 +201,9 @@ const ShuZhi = GObject.registerClass({
     set command(command) {
         this._command = command;
         if(this._inited) {
-            this.getMotto(false);
+            this.setMotto(false);
         } else {
-            this.getMotto(false, () => {
+            this.setMotto(false, () => {
                 this._inited = true;
                 if(!this.checkFile) this._queueRepaint();
             });
@@ -221,30 +223,56 @@ const ShuZhi = GObject.registerClass({
         this._queueRepaint(true);
     }
 
-    getMotto(paint, callback) {
-        let exec = cmd => this._execute(cmd)
-            .then(scc => { this._motto = scc; })
-            .catch(() => { this._motto = ''; })
-            .finally(callback || (() => { this._queueRepaint(paint); }));
-        try {
-            let cmd = GLib.shell_parse_argv(this._command)[1];
-            this._execute('sh -c "command -v %s"'.format(cmd))
-                .then(scc => { exec(this._command); },
-                      err => { exec(cmd == 'shuzhi.sh' ? 'bash ' + Me.dir.get_child('shuzhi.sh').get_path() : this._command); });
-        } catch(e) {
-            this._motto = '';
-            (callback || (() => { this._queueRepaint(paint); }))();
+    async _execute(cmd) {
+        let proc = new Gio.Subprocess({
+            argv: GLib.shell_parse_argv(cmd)[1],
+            flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
+        });
+        proc.init(null);
+        let [stdout, stderr] = await proc.communicate_utf8_async(null, null);
+        if(proc.get_exit_status()) throw new Error(stderr.trim());
+
+        return stdout.replace(/\n*$/, '');
+    }
+
+    async _check(cmd) {
+        let chk = 'sh -c "command -v %s"'.format(cmd);
+        let proc = new Gio.Subprocess({
+            argv: GLib.shell_parse_argv(chk)[1],
+            flags: Gio.SubprocessFlags.NONE
+        });
+        proc.init(null);
+        await proc.communicate_utf8_async(null, null);
+
+        return proc.get_successful();
+    }
+
+    async getMotto() {
+        let [cmd] = GLib.shell_parse_argv(this._command)[1];
+        if(await this._check(cmd)) {
+            return await this._execute(this._command)
+        } else {
+            if(cmd == 'shuzhi.sh') {
+                return await this._execute('bash ' + Me.dir.get_child('shuzhi.sh').get_path());
+            } else {
+                throw new Error('command not found');
+            }
         }
     }
 
+    setMotto(paint, callback) {
+        this.getMotto().then(scc => this._motto = scc).catch(err => this._motto = '')
+            .finally(callback || (() => this._queueRepaint(paint)))
+    }
+
     _refreshBoth() {
-        this.getMotto(true);
+        this.setMotto(true);
 
         return GLib.SOURCE_CONTINUE;
     }
 
     _refreshMotto() {
-        this.getMotto(false);
+        this.setMotto(false);
     }
 
     _refreshSketch() {
@@ -287,7 +315,7 @@ const ShuZhi = GObject.registerClass({
         keys.map(x => {
             let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
             item.setOrnament(this.sketch == sketches[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
-            item.connect('activate', () => { item._getTopMenu().close(); this.sketch = sketches[x]; });
+            item.connect('activate', item => { this._button.menu.close(); this.sketch = sketches[x]; });
             item.add_child(new St.Label({ x_expand: true, text: _(x), }));
             return item;
         }).forEach(x => { sketch.menu.addMenuItem(x) });
@@ -359,28 +387,6 @@ const ShuZhi = GObject.registerClass({
         }
         this.desktop = path;
         this._painted = true;
-    }
-
-    _execute(cmd) {
-        return new Promise((resolve, reject) => {
-            try {
-                let proc = new Gio.Subprocess({
-                    argv: GLib.shell_parse_argv(cmd)[1],
-                    flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
-                });
-                proc.init(null);
-                proc.communicate_utf8_async(null, null, (proc, res) => {
-                    try {
-                        let [, stdout, stderr] = proc.communicate_utf8_finish(res);
-                        proc.get_exit_status() ? reject(stderr.trim()) : resolve(stdout.replace(/\n*$/, ''));
-                    } catch(e) {
-                        reject(e.message);
-                    }
-                });
-            } catch(e) {
-                reject(e.message);
-            }
-        });
     }
 
     destroy() {
