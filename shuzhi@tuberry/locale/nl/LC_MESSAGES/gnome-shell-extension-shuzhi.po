@@ -1,5 +1,5 @@
-# Chinese translations for gnome-shell-extension-shuzhi package
-# gnome-shell-extension-shuzhi 软件包的简体中文翻译.
+# Dutch translations for gnome-shell-extension-shuzhi package
+# gnome-shell-extension-shuzhi
 # Copyright (C) 2021 THE gnome-shell-extension-shuzhi'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the gnome-shell-extension-shuzhi package.
 # Automatically generated, 2021.
