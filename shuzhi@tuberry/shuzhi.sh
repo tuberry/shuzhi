@@ -20,6 +20,7 @@ if [[ ${orien[1]} -eq '1' ]]
 then
 	content=$(echo $content | sed -r 's/[，。：；？、！]/\n/g;s/[《》“”]//g;' | sed -r '/^\s*$/d')
 fi
+test -z $content && exit 1
 printf '%s\n' $content \
 	'<span font="'$(cl $size \* 2 / 5)'"> </span>' \
 	'<span font="'$(cl $size \* 9 / 20)'">'「$origin」'<span bgcolor="#b45a56" fgcolor="SZ_BGCOLOR">'$author'</span></span>'

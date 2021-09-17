@@ -32,7 +32,8 @@ else if contains -- -h $argv || contains -- --horizontal $argv
 else if contains -- -t $argv || contains -- --test $argv
 	shuzhi test
 else if contains -- -l $argv || contains -- --logo $argv
-	echo ''
+	echo '' # fallback to the distro logo
+	# echo '/usr/share/pixmaps/archlinux-logo.svg'
 else
 	set orien (dconf read /org/gnome/shell/extensions/shuzhi/text-orientation | string split ' ')
 	if test $orien[2] -eq 1

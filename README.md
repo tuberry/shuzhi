@@ -23,7 +23,7 @@ The latest and supported version should only work on the the most current stable
 ```bash
 git clone https://github.com/tuberry/shuzhi.git && cd shuzhi
 make && make install
-# make mergepo # for translation
+# make LANG=your_language_code mergepo # for translation
 ```
 
 For older versions, it's necessary to switch the git tag before `make`:
@@ -40,7 +40,7 @@ git checkout your_gnome_shell_version
 ## Note
 
 * Set the text command to `shuzhi.sh` to enable the builtin script;
-* Support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
+* Support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup or image (SVG & PNG only), see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
 
 ## Acknowledgements
 

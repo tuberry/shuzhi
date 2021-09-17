@@ -199,6 +199,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     set command(command) {
+        if(this._command && this._command.replace(/ -*/g, '') == command.replace(/ -*/g, '')) return;
         this._command = command;
         if(this._inited) {
             this.setMotto(false);
@@ -347,8 +348,26 @@ const ShuZhi = GObject.registerClass({
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
         Draw.setDarkBg(this.style);
-        let text = this._motto ? Draw.genMotto(context, x, y, this._motto, this._orient) : Draw.genLogo(x, y);
+        let isImage = !this._motto || this._motto.endsWith('.png') || this._motto.endsWith('.svg');
+        let motto = isImage ? Draw.genLogo(this._motto, x, y) : Draw.genMotto(context, x, y, this._motto, this._orient);
         Draw.drawBackground(context, x, y);
+        if(this.drawSketch(context, x, y)) return;
+        let path = this.path;
+        if(isImage) {
+            let img = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
+            let ctx = new Cairo.Context(img);
+            ctx.setSourceSurface(surface, 0, 0), ctx.paint();
+            if(motto) ctx.setSourceSurface(...motto), ctx.paint();
+            img.writeToPNG(path);
+        } else {
+            Draw.drawMotto(context, motto); // draw text on the top
+            surface.writeToPNG(path);
+        }
+        this.desktop = path;
+        this._painted = true;
+    }
+
+    drawSketch(context, x, y) {
         switch(this.sketch) {
         case DSketch.Waves:
             if(!this._points.length) this._points = Draw.genWaves(x, y);
@@ -372,21 +391,10 @@ const ShuZhi = GObject.registerClass({
                 Draw.drawTrees(context, this._points);
             }
             break;
-        default: return;
+        default: return true;
         }
-        let path = this.path;
-        if(this._motto) {
-            Draw.drawMotto(context, text); // draw text on the top
-            surface.writeToPNG(path);
-        } else {
-            let img = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
-            let ctx = new Cairo.Context(img);
-            ctx.setSourceSurface(surface, 0, 0), ctx.paint();
-            if(text) ctx.setSourceSurface(...text), ctx.paint();
-            img.writeToPNG(path);
-        }
-        this.desktop = path;
-        this._painted = true;
+
+        return false;
     }
 
     destroy() {

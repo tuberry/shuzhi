@@ -3,7 +3,7 @@
 'use strict';
 
 const Cairo = imports.cairo;
-const { PangoCairo, Pango, GLib, Gtk } = imports.gi;
+const { PangoCairo, Pango, GLib, Gtk, Rsvg } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -37,7 +37,7 @@ const dis = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
 const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
-const trans = (xs, ...ms) => ms.reduce((ac, m) => m.map(v => dot(v, ac.concat(1))), xs); // affine
+const trans = (xs, ...ms) => ms.reduce((a, m) => m.map(v => dot(v, a.concat(1))), xs); // affine
 const toHex = rgba => "#" + rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
 
 function setFontName(font) { FontName = font; }
@@ -473,13 +473,24 @@ function drawLand(cr, pts) {
     cr.stroke();
 }
 
-function genLogo(x, y) {
-    let logo = GLib.get_os_info('LOGO');
-    if(!logo) return;
-    let icon = (new Gtk.IconTheme()).lookup_icon(logo, null, null);
-    if(!icon) return;
-    let img = Cairo.ImageSurface.createFromPNG(icon.get_filename());
-    ((w, h) => setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]))(img.getWidth(), img.getHeight());
-
-    return [img, TextRect[0], TextRect[1]];
+function genLogo(motto, x, y) {
+    let g_logo = () => GLib.get_os_info('LOGO') || (DarkBg ? 'gnome-logo-text-dark' : 'gnome-logo-text');
+    let path = motto && motto.replace(/^~/, GLib.get_home_dir())
+        || (logo => logo && logo.get_filename())(new Gtk.IconTheme().lookup_icon(g_logo(), null, null));
+    try {
+        let img = (file => {
+            if(file.endsWith('.svg')) {
+                let svg = Rsvg.Handle.new_from_file(file);
+                let img = new Cairo.ImageSurface(Cairo.FORMAT_ARGB32, svg.width, svg.height);
+                svg.render_document(new Cairo.Context(img), new Rsvg.Rectangle({ x: 0, y: 0, width: svg.width, height: svg.height }));
+                return img;
+            } else {
+                return Cairo.ImageSurface.createFromPNG(file);
+            }
+        })(path);
+        ((w, h) => setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]))(img.getWidth(), img.getHeight());
+        return [img, TextRect[0], TextRect[1]];
+    } catch(e) {
+        // ignore
+    }
 }
