@@ -18,7 +18,7 @@ A wallpaper generation extension for gnome shell, inspired by [Jizhi](https://gi
 
 ### Manual
 
-The latest and supported version should only work on the the most current stable version of GNOME Shell.
+The latest and supported version should only work on the most current stable version of GNOME Shell.
 
 ```bash
 git clone https://github.com/tuberry/shuzhi.git && cd shuzhi

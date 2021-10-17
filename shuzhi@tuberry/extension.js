@@ -59,11 +59,6 @@ const ShuZhi = GObject.registerClass({
 }, class ShuZhi extends GObject.Object {
     _init() {
         super._init();
-        this._motto = '';
-        this._points = [];
-        this._interval = 30;
-        this._inited = false;
-        this._painted = false;
 
         this._buildWidgets();
         this._bindSettings();
@@ -111,7 +106,7 @@ const ShuZhi = GObject.registerClass({
 
     set orient(orient) {
         this._orient = orient;
-        if(this._inited) this.setMotto(false);
+        if(this._motto !== undefined) this.setMotto(false);
     }
 
     set showcolor(show) {
@@ -188,7 +183,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     set refresh(refresh) {
-        if(this._refreshId) GLib.source_remove(this._refreshId), this._refreshId = 0;
+        if(this._refreshId) GLib.source_remove(this._refreshId), delete this._refreshId;
         if(!refresh) return;
         this._refreshId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, this._interval * 60, this._refreshBoth.bind(this));
     }
@@ -201,14 +196,7 @@ const ShuZhi = GObject.registerClass({
     set command(command) {
         if(this._command && this._command.replace(/ -*/g, '') == command.replace(/ -*/g, '')) return;
         this._command = command;
-        if(this._inited) {
-            this.setMotto(false);
-        } else {
-            this.setMotto(false, () => {
-                this._inited = true;
-                if(!this.checkFile) this._queueRepaint();
-            });
-        }
+        this.setMotto(false, this._motto === undefined ? () => !this.checkFile && this._queueRepaint() : null);
     }
 
     get checkFile() { // Ensure the wallpaper consistent when unlocking and locking the screen
@@ -263,7 +251,7 @@ const ShuZhi = GObject.registerClass({
 
     setMotto(paint, callback) {
         this.getMotto().then(scc => this._motto = scc).catch(err => this._motto = '')
-            .finally(callback || (() => this._queueRepaint(paint)))
+            .finally(callback || (() => this._queueRepaint(paint)));
     }
 
     _refreshBoth() {
@@ -281,7 +269,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     _queueRepaint(paint) {
-        if(!this._inited) return;
+        if(this._motto === undefined) return;
         if(paint) this._painted = false;
         this.repaint();
     }

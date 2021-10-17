@@ -240,7 +240,7 @@ function drawBlobs(cr, pts) {
 }
 
 function genOvals(x, y) {
-    return shuffle(genCoords([0, 0, x ,y])).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => {
+    return shuffle(genCoords([0, 0, x, y])).filter(c => !overlap(c, TextRect)).slice(0, 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, gauss(1, 0.2) * r];
         return [Color.getRandColor(DarkBg, 0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
@@ -431,7 +431,7 @@ function genTree(n, x, y, l) {
 
 function drawTree(cr, pts) {
     let [tr, cl] = pts;
-    if(tr.length <= 2) return;
+    if(tr.length < 4) return;
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
