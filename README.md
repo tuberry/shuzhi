@@ -2,7 +2,7 @@
 
 受[几枝](https://github.com/unicar9/jizhi)启发的 gnome shell 壁纸生成扩展。
 
-A wallpaper generation extension for gnome shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
+Wallpaper generation extension for GNOME Shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
 >望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*<br>
 [![license]](/LICENSE)
@@ -40,7 +40,7 @@ git checkout your_gnome_shell_version
 ## Note
 
 * Set the text command to `shuzhi.sh` to enable the builtin script;
-* Support [pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markup or image (SVG & PNG only), see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
+* Support [Pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markups or images (SVG & PNG only), see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
 
 ## Acknowledgements
 

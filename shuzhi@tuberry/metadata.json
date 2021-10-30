@@ -1,6 +1,6 @@
 {
   "name": "Shu Zhi",
-  "description": "A wallpaper generation extension for gnome shell, inspired by Jizhi\n\nFor support, please report any issues via the homepage link below.",
+  "description": "Wallpaper generation extension for GNOME Shell, inspired by Jizhi\n\nFor support, please report any issues via the homepage link below.",
   "uuid": "shuzhi@tuberry",
   "gettext-domain": "gnome-shell-extension-shuzhi",
   "settings-schema": "org.gnome.shell.extensions.shuzhi",

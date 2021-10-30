@@ -60,6 +60,7 @@ function gauss(mu, sgm) {
 function shuffle(a) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
     forloop(i => (j => [a[i], a[j]] = [a[j], a[i]])(Math.floor(Math.random() * (i + 1))), 1, a.length - 1, -1);
+
     return a;
 };
 
@@ -73,7 +74,7 @@ function genPolygon(clc, dt_a = 0.6, dt_r = 0.2, num = 6) {
 }
 
 function genCoords(rect, sum = 20, fac= 1 / 5) { // reduce collision
-    // https://stackoverflow.com/a/4382286
+    // Ref: https://stackoverflow.com/a/4382286
     return Y(f => n => n == 0 ? [rect] : f(n - 1).flatMap(rc => {
         let [x, y, w, h] = rc;
         let [a, b] = [w, h].map(i => Math.round(i * randamp(1 / 2, fac)));
@@ -103,8 +104,6 @@ function bezeirCtrls(vertex, smooth = 1, closed = false) {
 
 function getLunarPhase() {
     // Ref: https://ecomaan.nl/javascript/moonphase/
-    // A recent new moon occured on december, 26, 2019 = 18256 days since 1970.
-    // An average synodic month takes 29 days, 12 hours, 44 minutes, 3 seconds.
     let days = ((new Date()).getTime() / 86400000) - 18256.8;
     let m = (month => Math.abs(days / month))(29.5305882);
 
