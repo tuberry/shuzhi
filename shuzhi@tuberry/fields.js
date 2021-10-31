@@ -1,6 +1,8 @@
 // vim:fdm=syntax
 // by tuberry
-//
+/* exported Fields */
+'use strict';
+
 var Fields = {
     FONT:     'font-name',
     COMMAND:  'text-command',

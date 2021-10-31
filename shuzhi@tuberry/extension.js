@@ -1,5 +1,6 @@
 // vim:fdm=syntax
 // by tuberry
+/* exported init */
 'use strict';
 
 const Cairo = imports.cairo;
@@ -32,7 +33,6 @@ const ColorInterface = loadInterfaceXML(System.BUS_NAME);
 const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
 
 const Style = { Light: 0, Dark: 1, Auto: 2 };
-const Orient = { Horizontal: 0, Vertical: 1 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 
@@ -99,7 +99,7 @@ const ShuZhi = GObject.registerClass({
     set night(night) {
         let style = this.style;
         this._night = night;
-        if(style == this.style) return;
+        if(style === this.style) return;
         this._queueRepaint(true);
         this._updateMenu();
     }
@@ -111,7 +111,7 @@ const ShuZhi = GObject.registerClass({
 
     set showcolor(show) {
         this._showcolor = show;
-        if(this.sketch == LSketch.Waves) this._queueRepaint();
+        if(this.sketch === LSketch.Waves) this._queueRepaint();
     }
 
     set fontname(name) {
@@ -167,25 +167,24 @@ const ShuZhi = GObject.registerClass({
     set style(syl) {
         let style = this.style;
         this._style = syl;
-        if(style == this.style) return;
+        if(style === this.style) return;
         this._queueRepaint(true);
         this._updateMenu();
     }
 
     get style() {
-        return this._style == Style.Auto ? this._night && this._light : this._style == Style.Dark;
+        return this._style === Style.Auto ? this._night && this._light : this._style === Style.Dark;
     }
 
     get path() {
-        let file = '/shuzhi-' + (this.style ? 'dark.png' : 'light.png');
+        let file = `/shuzhi-${this.style ? 'dark.png' : 'light.png'}`;
 
         return (this._folder || GLib.get_user_cache_dir()) + file;
     }
 
     set refresh(refresh) {
-        if(this._refreshId) GLib.source_remove(this._refreshId), delete this._refreshId;
-        if(!refresh) return;
-        this._refreshId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, this._interval * 60, this._refreshBoth.bind(this));
+        if(this._refreshId) GLib.source_remove(this._refreshId);
+        this._refreshId = refresh ? GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, this._interval * 60, this._refreshBoth.bind(this)) : 0;
     }
 
     set interval(interval) {
@@ -194,7 +193,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     set command(command) {
-        if(this._command && this._command.replace(/ -*/g, '') == command.replace(/ -*/g, '')) return;
+        if(this._command && this._command.replace(/ -*/g, '') === command.replace(/ -*/g, '')) return;
         this._command = command;
         this.setMotto(false, this._motto === undefined ? () => !this.checkFile && this._queueRepaint() : null);
     }
@@ -228,7 +227,7 @@ const ShuZhi = GObject.registerClass({
         let chk = 'sh -c "command -v %s"'.format(cmd);
         let proc = new Gio.Subprocess({
             argv: GLib.shell_parse_argv(chk)[1],
-            flags: Gio.SubprocessFlags.NONE
+            flags: Gio.SubprocessFlags.NONE,
         });
         proc.init(null);
         await proc.communicate_utf8_async(null, null);
@@ -238,19 +237,13 @@ const ShuZhi = GObject.registerClass({
 
     async getMotto() {
         let [cmd] = GLib.shell_parse_argv(this._command)[1];
-        if(await this._check(cmd)) {
-            return await this._execute(this._command)
-        } else {
-            if(cmd == 'shuzhi.sh') {
-                return await this._execute('bash ' + Me.dir.get_child('shuzhi.sh').get_path());
-            } else {
-                throw new Error('command not found');
-            }
-        }
+        if(await this._check(cmd)) return await this._execute(this._command);
+        else if(cmd === 'shuzhi.sh') return await this._execute('bash %s'.format(Me.dir.get_child('shuzhi.sh').get_path()));
+        else throw new Error('command not found');
     }
 
     setMotto(paint, callback) {
-        this.getMotto().then(scc => this._motto = scc).catch(err => this._motto = '')
+        this.getMotto().then(scc => { this._motto = scc; }).catch(() => { this._motto = ''; })
             .finally(callback || (() => this._queueRepaint(paint)));
     }
 
@@ -278,7 +271,7 @@ const ShuZhi = GObject.registerClass({
         if(!this._button) return;
         this._button.menu.removeAll();
         this._button.menu.addMenuItem(this._menuItemMaker(_('Copy'), () => {
-            let [ok, attr, text] = Pango.parse_markup(this._motto.replace(/SZ_BGCOLOR/, '#ffffff'), -1, '');
+            let [ok, , text] = Pango.parse_markup(this._motto.replace(/SZ_BGCOLOR/, '#ffffff'), -1, '');
             if(ok) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
         }));
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -303,11 +296,11 @@ const ShuZhi = GObject.registerClass({
         let sketch = new PopupMenu.PopupSubMenuMenuItem(_('Sketch: ') + _(keys[this.sketch]));
         keys.map(x => {
             let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-            item.setOrnament(this.sketch == sketches[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
-            item.connect('activate', item => { this._button.menu.close(); this.sketch = sketches[x]; });
-            item.add_child(new St.Label({ x_expand: true, text: _(x), }));
+            item.setOrnament(this.sketch === sketches[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
+            item.connect('activate', () => { this._button.menu.close(); this.sketch = sketches[x]; });
+            item.add_child(new St.Label({ x_expand: true, text: _(x) }));
             return item;
-        }).forEach(x => { sketch.menu.addMenuItem(x) });
+        }).forEach(x => { sketch.menu.addMenuItem(x); });
 
         return sketch;
     }
@@ -322,8 +315,8 @@ const ShuZhi = GObject.registerClass({
     set desktop(image) {
         if(image) {
             let color = Draw.getBgColor();
-            if(dgsettings.get_string(System.PRIMARY) != color) dgsettings.set_string(System.PRIMARY, color);
-            if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, 'file://' + image);
+            if(dgsettings.get_string(System.PRIMARY) !== color) dgsettings.set_string(System.PRIMARY, color);
+            if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, `file://${image}`);
         } else {
             dgsettings.reset(System.PICTURE);
             dgsettings.reset(System.PRIMARY);
@@ -344,8 +337,8 @@ const ShuZhi = GObject.registerClass({
         if(isImage) {
             let img = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
             let ctx = new Cairo.Context(img);
-            ctx.setSourceSurface(surface, 0, 0), ctx.paint();
-            if(motto) ctx.setSourceSurface(...motto), ctx.paint();
+            ctx.setSourceSurface(surface, 0, 0); ctx.paint();
+            if(motto.length) { ctx.setSourceSurface(...motto); ctx.paint(); }
             img.writeToPNG(path);
         } else {
             Draw.drawMotto(context, motto); // draw text on the top
@@ -407,7 +400,7 @@ const Extension = class Extension {
         this._ext.destroy();
         delete this._ext;
     }
-}
+};
 
 function init() {
     return new Extension();

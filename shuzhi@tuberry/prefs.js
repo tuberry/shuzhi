@@ -1,8 +1,9 @@
 // vim:fdm=syntax
 // by tuberry
+/* exported init buildPrefsWidget */
 'use strict';
 
-const { Gtk, Gio, GLib, GObject } = imports.gi;
+const { Gtk, Gio, GObject } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -22,7 +23,7 @@ function init() {
 const ShuzhiPrefs = GObject.registerClass(
 class ShuzhiPrefs extends Gtk.ScrolledWindow {
     _init() {
-        super._init({ hscrollbar_policy: Gtk.PolicyType.NEVER, });
+        super._init({ hscrollbar_policy: Gtk.PolicyType.NEVER });
 
         this._buildWidgets();
         this._bindValues();
