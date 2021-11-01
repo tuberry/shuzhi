@@ -84,10 +84,9 @@ const ShuZhi = GObject.registerClass({
 
     _buildWidgets() {
         this._proxy = new ColorProxy(Gio.DBus.session, System.BUS_NAME, System.OBJECT_PATH, (proxy, error) => {
-            if(!error) {
-                this._onProxyChanged();
-                this._proxy.connect(System.PROPERTY, this._onProxyChanged.bind(this));
-            }
+            if(error) return;
+            this._onProxyChanged();
+            this._proxy.connect(System.PROPERTY, this._onProxyChanged.bind(this));
         });
     }
 
@@ -177,7 +176,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     get path() {
-        let file = `/shuzhi-${this.style ? 'dark.png' : 'light.png'}`;
+        let file = '/shuzhi-%s'.format(this.style ? 'dark.png' : 'light.png');
 
         return (this._folder || GLib.get_user_cache_dir()) + file;
     }
@@ -316,7 +315,7 @@ const ShuZhi = GObject.registerClass({
         if(image) {
             let color = Draw.getBgColor();
             if(dgsettings.get_string(System.PRIMARY) !== color) dgsettings.set_string(System.PRIMARY, color);
-            if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, `file://${image}`);
+            if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, 'file://%s'.format(image));
         } else {
             dgsettings.reset(System.PICTURE);
             dgsettings.reset(System.PRIMARY);
