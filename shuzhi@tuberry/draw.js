@@ -13,6 +13,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const Color = Me.imports.color;
 
 let DV = 2 / 3;
+let spare = []; // cache of gauss()
 let FontName = '';
 let DarkBg = true;
 let TextRect = [-1, -1, 0, 0];
@@ -50,20 +51,24 @@ function setDarkBg(dark) { DarkBg = dark; }
 function getBgColor() { return toHex(DarkBg ? Color.DARK : Color.LIGHT); }
 
 function gauss(mu, sgm) {
-    // https://en.wikipedia.org/wiki/Marsaglia_polar_method
-    let q, u, v;
-    do {
-        u = 2 * Math.random() - 1;
-        v = 2 * Math.random() - 1;
-        q = u * u + v * v;
-    } while(q >= 1 || q === 0);
-
-    return mu + sgm * u * Math.sqrt(-2 * Math.log(q) / q);
+    // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
+    if(spare.length) {
+        return mu + sgm * spare.pop();
+    } else {
+        let p, q;
+        do {
+            p = array(2, () => 2 * Math.random() - 1);
+            q = p.reduce((a, x) => a + x ** 2, 0);
+        } while(q >= 1 || q === 0);
+        let r = Math.sqrt(-2 * Math.log(q) / q);
+        spare.push(p[0] * r);
+        return mu + sgm * p[1] * r;
+    }
 }
 
 function shuffle(a) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    forloop(i => (j => ([a[i], a[j]] = [a[j], a[i]]))(Math.floor(Math.random() * (i + 1))), 1, a.length - 1, -1);
+    forloop(i => (j => ([a[i], a[j]] = [a[j], a[i]]))(randint(0, i)), 1, a.length - 1, -1);
 
     return a;
 }
@@ -90,6 +95,7 @@ function circle(rect) {
     let [x, y, w, h] = rect;
     let r = Math.min(w, h) / 2;
     let ctr = w > h ? [x + rand(r, w - r), y + h / 2] : [x + w / 2, y + rand(r, h - r)];
+
     return ctr.concat(r);
 }
 
@@ -100,7 +106,7 @@ function bezeirCtrls(vertex, smooth = 1, closed = false) {
         let ls = [a, c].map(x => dis(x, b));
         let mp = [a, c].map(x => zipWith((u, v) => (u + v) / 2, x, b));
         let ds = (k => zipWith((u, v) => u + (v - u) * k, ...mp))(ls[0] / (ls[0] + ls[1]));
-        return [mp[0], null, mp[1]].map(x => !x ? vertex[i] : zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds));
+        return [mp[0], null, mp[1]].map(x => x ? zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds) : vertex[i]);
     });
 
     return closed ? ctrls.splice(-1).concat(ctrls) : [vertex[0]].concat(ctrls, Array(2).fill(last(vertex)));
@@ -108,10 +114,9 @@ function bezeirCtrls(vertex, smooth = 1, closed = false) {
 
 function getLunarPhase() {
     // Ref: https://ecomaan.nl/javascript/moonphase/
-    let days = (new Date().getTime() / 86400000) - 18256.8;
-    let m = (month => Math.abs(days / month))(29.5305882);
+    let moon = Math.abs((new Date().getTime() / 86400000 - 18256.8) / 29.5305882);
 
-    return Math.round((m - Math.floor(m)) * 8) % 8;
+    return Math.round((moon - Math.floor(moon)) * 8) % 8;
 }
 
 function genMoon(x, _y) {
@@ -303,7 +308,6 @@ function genClouds(x, y) {
         }
         let h = randint(3 * offset, pt ? 7 * offset : 5 * offset);
         let w = randint(h * 2, e * offset * 7);
-
         return [randint(a * x, b * x) + f[0] * x, randint(c * y, d * y) + f[1] * y, w, h];
     };
     let coords = [[0, 2, 4], [0, 2, 5], [0, 3, 5], [1, 3, 5], [1, 3, 5]][randint(0, 4)];
@@ -376,11 +380,11 @@ function drawBackground(cr, x, y) {
 
 function genTrees(x, y) {
     let ld = genLand(x, y);
-    let color = Color.getRandColor();
+    let cl = Color.getRandColor();
     let t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6, x / 30);
     let t2 = genTree(6, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
 
-    return [t1, t2, ld].map(v => v.concat([color]));
+    return [t1, t2, ld].map(v => v.concat([cl]));
 }
 
 function drawTrees(cr, pts) {

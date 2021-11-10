@@ -195,7 +195,7 @@ var Entry = GObject.registerClass({
     _init(x, y, z) {
         super._init({
             hexpand: !z,
-            placeholder_text: x,
+            placeholder_text: x || '',
             secondary_icon_sensitive: true,
             secondary_icon_activatable: true,
             secondary_icon_tooltip_text: y || '',
