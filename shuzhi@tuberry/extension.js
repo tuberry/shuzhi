@@ -36,6 +36,7 @@ const Style = { Light: 0, Dark: 1, Auto: 2 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 
+const conv = (ft, sz) => ft.replace(/([0-9.]*)em/g, (mt, $1) => '%s'.format(sz * $1));
 Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_utf8_finish');
 
 const ShuZhi = GObject.registerClass({
@@ -105,7 +106,7 @@ const ShuZhi = GObject.registerClass({
 
     set orient(orient) {
         this._orient = orient;
-        if(this._motto !== undefined) this.setMotto(false);
+        this._queueRepaint(false);
     }
 
     set showcolor(show) {
@@ -197,6 +198,14 @@ const ShuZhi = GObject.registerClass({
         this.setMotto(false, this._motto === undefined ? () => !this.checkFile && this._queueRepaint() : null);
     }
 
+    set motto(motto) {
+        try {
+            this._motto = JSON.parse(motto);
+        } catch(e) {
+            this._motto = !motto || motto.endsWith('.png') || motto.endsWith('.svg') ? { logo: motto || '' } : { vtext: motto, htext: motto };
+        }
+    }
+
     get checkFile() { // Ensure the wallpaper consistent when unlocking and locking the screen
         let path = this.path;
         let pic = Gio.File.new_for_path(path);
@@ -242,7 +251,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     setMotto(paint, callback) {
-        this.getMotto().then(scc => { this._motto = scc; }).catch(() => { this._motto = ''; })
+        this.getMotto().then(scc => { this.motto = scc; }).catch(() => { this.motto = ''; })
             .finally(callback || (() => this._queueRepaint(paint)));
     }
 
@@ -270,8 +279,10 @@ const ShuZhi = GObject.registerClass({
         if(!this._button) return;
         this._button.menu.removeAll();
         this._button.menu.addMenuItem(this._menuItemMaker(_('Copy'), () => {
-            let [ok, , text] = Pango.parse_markup(this._motto.replace(/SZ_BGCOLOR/, '#ffffff'), -1, '');
-            if(ok) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
+            let mtt = this._orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
+            mtt = mtt ? conv(mtt.replace(/SZ_BGCOLOR/, '#fff'), 16) : this._motto.logo || '';
+            let [ok, , text] = Pango.parse_markup(mtt, -1, '');
+            if(ok && text) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
         }));
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._button.menu.addMenuItem(this._refreshMenu());
@@ -328,20 +339,21 @@ const ShuZhi = GObject.registerClass({
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
         Draw.setDarkBg(this.style);
-        let isImage = !this._motto || this._motto.endsWith('.png') || this._motto.endsWith('.svg');
-        let motto = isImage ? Draw.genLogo(this._motto, x, y) : Draw.genMotto(context, x, y, this._motto, this._orient);
+        let mtt = this._orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
+        let size = Pango.FontDescription.from_string(this._fontname).get_size() / 1024;
+        let motto = mtt ? Draw.genMotto(context, x, y, conv(mtt, size), this._orient) : Draw.genLogo(this._motto.logo, x, y);
         Draw.drawBackground(context, x, y);
         if(this.drawSketch(context, x, y)) return;
         let path = this.path;
-        if(isImage) {
+        if(mtt) {
+            Draw.drawMotto(context, motto); // draw text on the top
+            surface.writeToPNG(path);
+        } else {
             let img = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
             let ctx = new Cairo.Context(img);
             ctx.setSourceSurface(surface, 0, 0); ctx.paint();
             if(motto.length) { ctx.setSourceSurface(...motto); ctx.paint(); }
             img.writeToPNG(path);
-        } else {
-            Draw.drawMotto(context, motto); // draw text on the top
-            surface.writeToPNG(path);
         }
         this.desktop = path;
         this._painted = true;

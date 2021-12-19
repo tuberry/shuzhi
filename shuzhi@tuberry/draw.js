@@ -343,7 +343,7 @@ function genMotto(cr, x, y, text, orien) {
     let layout = PangoCairo.create_layout(cr);
     layout.set_line_spacing(1.05);
     if(orien) {
-        layout.set_width(0.6 * y * Pango.SCALE);
+        layout.set_width(DV * y * Pango.SCALE);
         layout.get_context().set_base_gravity(Pango.Gravity.EAST);
     } else {
         layout.set_alignment(Pango.Alignment.CENTER);
@@ -434,7 +434,7 @@ function genTree(n, x, y, l) {
     forloop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1), y / 1024)), 0, tree.length - 1, -1);
     tree = tree.map(t => t && trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
     forloop(i => tree[i] && !(tree[2 * i] && tree[2 * i + 1]) &&
-            (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1], y / 54)])), 2 ** (n - 1) - 1, 4);
+            (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1], y / 54)])), 2 ** (n - 1) - 1, 1);
 
     return [tree];
 }
