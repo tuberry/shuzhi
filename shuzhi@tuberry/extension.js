@@ -8,87 +8,148 @@ const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const { GLib, St, GObject, Gio, Pango } = imports.gi;
-
+const LightProxy = Main.panel.statusArea.aggregateMenu._nightLight._proxy;
 const ExtensionUtils = imports.misc.extensionUtils;
-const gsettings = ExtensionUtils.getSettings();
-const _ = ExtensionUtils.gettext;
 const Me = ExtensionUtils.getCurrentExtension();
-const Fields = Me.imports.fields.Fields;
+const _ = ExtensionUtils.gettext;
 const Draw = Me.imports.draw;
+const Fields = Me.imports.fields.Fields;
 
-const dgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
-const ngsettings = new Gio.Settings({ schema: 'org.gnome.settings-daemon.plugins.color' });
-const FLORETTE_ICON = Me.dir.get_child('icons').get_child('florette-symbolic.svg').get_path();
-
-const System = {
-    PICTURE:     'picture-uri',
-    PRIMARY:     'primary-color',
-    LIGHT:       'night-light-enabled',
-    PROPERTY:    'g-properties-changed',
-    BUS_NAME:    'org.gnome.SettingsDaemon.Color',
-    OBJECT_PATH: '/org/gnome/SettingsDaemon/Color',
-};
-const { loadInterfaceXML } = imports.misc.fileUtils;
-const ColorInterface = loadInterfaceXML(System.BUS_NAME);
-const ColorProxy = Gio.DBusProxy.makeProxyWrapper(ColorInterface);
-
-const Style = { Light: 0, Dark: 1, Auto: 2 };
+const Style = { Light: 0, Dark: 1, Auto: 2, System: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
-
+const Desktop = { LIGHT: 'picture-uri', COLOR: 'primary-color', DARK: 'picture-uri-dark' };
 const conv = (ft, sz) => ft.replace(/([0-9.]*)em/g, (mt, $1) => '%s'.format(sz * $1));
-Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async', 'communicate_utf8_finish');
+const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child('%s-symbolic.svg'.format(x)).get_path());
+const genParam = (type, name, ...dflt) => GObject.ParamSpec[type](name, name, name, GObject.ParamFlags.READWRITE, ...dflt);
+let [gsettings, dgsettings, ngsettings, tgsettings] = Array(4).fill(null);
 
-const ShuZhi = GObject.registerClass({
-    Properties: {
-        'folder':    GObject.ParamSpec.string('folder', 'folder', 'folder', GObject.ParamFlags.READWRITE, ''),
-        'style':     GObject.ParamSpec.uint('style', 'style', 'style', GObject.ParamFlags.READWRITE, 0, 2, 0),
-        'night':     GObject.ParamSpec.boolean('night', 'night', 'night', GObject.ParamFlags.READWRITE, false),
-        'command':   GObject.ParamSpec.string('command', 'command', 'command', GObject.ParamFlags.READWRITE, ''),
-        'orient':    GObject.ParamSpec.uint('orient', 'orient', 'orient', GObject.ParamFlags.READWRITE, 0, 1, 0),
-        'dsketch':   GObject.ParamSpec.uint('dsketch', 'dsketch', 'dsketch', GObject.ParamFlags.READWRITE, 0, 3, 0),
-        'lsketch':   GObject.ParamSpec.uint('lsketch', 'lsketch', 'lsketch', GObject.ParamFlags.READWRITE, 0, 3, 0),
-        'display':   GObject.ParamSpec.boolean('display', 'display', 'display', GObject.ParamFlags.READWRITE, false),
-        'refresh':   GObject.ParamSpec.boolean('refresh', 'refresh', 'refresh', GObject.ParamFlags.READWRITE, false),
-        'systray':   GObject.ParamSpec.boolean('systray', 'systray', 'systray', GObject.ParamFlags.READWRITE, false),
-        'interval':  GObject.ParamSpec.uint('interval', 'interval', 'interval', GObject.ParamFlags.READWRITE, 10, 300, 60),
-        'fontname':  GObject.ParamSpec.string('fontname', 'fontname', 'font name', GObject.ParamFlags.READWRITE, 'Sans 48'),
-        'showcolor': GObject.ParamSpec.boolean('showcolor', 'showcolor', 'show color', GObject.ParamFlags.READWRITE, false),
-        'xdisplay':  GObject.ParamSpec.uint('xdisplay', 'xdisplay', 'xdisplay', GObject.ParamFlags.READWRITE, 800, 9600, 1920),
-        'ydisplay':  GObject.ParamSpec.uint('ydisplay', 'ydisplay', 'ydisplay', GObject.ParamFlags.READWRITE, 600, 5400, 1080),
-    },
-}, class ShuZhi extends GObject.Object {
-    _init() {
-        super._init();
+Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
 
-        this._buildWidgets();
+class MenuItem extends PopupMenu.PopupMenuItem {
+    static {
+        GObject.registerClass(this);
+    }
+
+    constructor(text, callback, params) {
+        super(text, params);
+        this.connect('activate', callback);
+    }
+
+    setLabel(label) {
+        if(this.label.text !== label) this.label.set_text(label);
+    }
+}
+
+class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
+    static {
+        GObject.registerClass(this);
+    }
+
+    constructor(name, modes, index, callback) {
+        super('');
+        this._name = name;
+        this._call = callback;
+        this.setModes(modes);
+        this.setSelected(index);
+    }
+
+    setSelected(index) {
+        this._index = index;
+        this.label.set_text('%s%s'.format(this._name, _(this._list[this._index]) ?? ''));
+        this._items.forEach((y, i) => y.setOrnament(index === i ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE));
+    }
+
+    setModes(modes) {
+        let list = Object.keys(modes);
+        let items = this._items;
+        let diff = list.length - items.length;
+        if(diff > 0) for(let a = 0; a < diff; a++) this.menu.addMenuItem(new MenuItem('', () => { this._call(items.length + a); }));
+        else if(diff < 0) for(let a = 0; a > diff; a--) items.at(a - 1).destroy();
+        this._list = list;
+        this._items.forEach((x, i) => x.setLabel(_(this._list[i])));
+    }
+
+    updateModes(modes) {
+        this.setModes(modes);
+        this.setSelected(this._index);
+    }
+
+    get _items() {
+        return this.menu._getMenuItems();
+    }
+}
+
+class ShuZhi extends GObject.Object {
+    static {
+        GObject.registerClass({
+            Properties: {
+                folder:    genParam('string', 'folder', ''),
+                command:   genParam('string', 'command', ''),
+                style:     genParam('uint', 'style', 0, 3, 0),
+                night:     genParam('boolean', 'night', false),
+                orient:    genParam('uint', 'orient', 0, 1, 0),
+                dsketch:   genParam('uint', 'dsketch', 0, 3, 0),
+                lsketch:   genParam('uint', 'lsketch', 0, 3, 0),
+                display:   genParam('boolean', 'display', false),
+                refresh:   genParam('boolean', 'refresh', false),
+                systray:   genParam('boolean', 'systray', false),
+                scheme:    genParam('string', 'scheme', 'default'),
+                showcolor: genParam('boolean', 'showcolor', false),
+                fontname:  genParam('string', 'fontname', 'Sans 48'),
+                interval:  genParam('uint', 'interval', 10, 300, 60),
+                xdisplay:  genParam('uint', 'xdisplay', 800, 9600, 1920),
+                ydisplay:  genParam('uint', 'ydisplay', 600, 5400, 1080),
+            },
+        }, this);
+    }
+
+    constructor() {
+        super();
+        this._onProxyChanged();
         this._bindSettings();
     }
 
     _bindSettings() {
-        gsettings.bind(Fields.FOLDER,   this, 'folder',    Gio.SettingsBindFlags.GET);
-        ngsettings.bind(System.LIGHT,   this, 'night',     Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.STYLE,    this, 'style',     Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.DSKETCH,  this, 'dsketch',   Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.LSKETCH,  this, 'lsketch',   Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.COLOR,    this, 'showcolor', Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.INTERVAL, this, 'interval',  Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.FONT,     this, 'fontname',  Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.ORIENT,   this, 'orient',    Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.REFRESH,  this, 'refresh',   Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.DISPLAY,  this, 'display',   Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.XDISPLAY, this, 'xdisplay',  Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.YDISPLAY, this, 'ydisplay',  Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.SYSTRAY,  this, 'systray',   Gio.SettingsBindFlags.GET);
-        gsettings.bind(Fields.COMMAND,  this, 'command',   Gio.SettingsBindFlags.GET);
+        LightProxy.connectObject('g-properties-changed', this._onProxyChanged.bind(this), this);
+        tgsettings.bind('color-scheme', this, 'scheme', Gio.SettingsBindFlags.GET);
+        ngsettings.bind('night-light-enabled', this, 'night', Gio.SettingsBindFlags.GET);
+        [
+            [Fields.FOLDER,   'folder'],
+            [Fields.STYLE,    'style'],
+            [Fields.DSKETCH,  'dsketch'],
+            [Fields.LSKETCH,  'lsketch'],
+            [Fields.COLOR,    'showcolor'],
+            [Fields.INTERVAL, 'interval'],
+            [Fields.FONT,     'fontname'],
+            [Fields.ORIENT,   'orient'],
+            [Fields.REFRESH,  'refresh'],
+            [Fields.DISPLAY,  'display'],
+            [Fields.XDISPLAY, 'xdisplay'],
+            [Fields.YDISPLAY, 'ydisplay'],
+            [Fields.SYSTRAY,  'systray'],
+            [Fields.COMMAND,  'command'],
+        ].forEach(([x, y, z]) => gsettings.bind(x, this, y, z ?? Gio.SettingsBindFlags.GET));
     }
 
-    _buildWidgets() {
-        this._proxy = new ColorProxy(Gio.DBus.session, System.BUS_NAME, System.OBJECT_PATH, (proxy, error) => {
-            if(error) return;
-            this._onProxyChanged();
-            this._proxy.connect(System.PROPERTY, this._onProxyChanged.bind(this));
-        });
+    _styleChanged(prop) {
+        let dark = this.dark;
+        Object.assign(this, prop);
+        if(dark === this.dark) return;
+        this._queueRepaint(true);
+        this._menus?.sketch.updateModes(this.sketches);
+    }
+
+    _onProxyChanged() {
+        this._styleChanged({ _light: LightProxy.NightLightActive });
+    }
+
+    set style(style) {
+        this._styleChanged({ _style: style });
+    }
+
+    set scheme(scheme) {
+        this._styleChanged({ _scheme: scheme === 'prefer-dark' });
     }
 
     set folder(folder) {
@@ -97,11 +158,7 @@ const ShuZhi = GObject.registerClass({
     }
 
     set night(night) {
-        let style = this.style;
-        this._night = night;
-        if(style === this.style) return;
-        this._queueRepaint(true);
-        this._updateMenu();
+        this._styleChanged({ _night: night });
     }
 
     set orient(orient) {
@@ -123,17 +180,15 @@ const ShuZhi = GObject.registerClass({
     set systray(systray) {
         if(systray) {
             if(this._button) return;
-            this._button = new PanelMenu.Button(null, Me.metadata.uuid);
-            this._button.add_actor(new St.Icon({
-                gicon: new Gio.FileIcon({ file: Gio.File.new_for_path(FLORETTE_ICON) }),
-                style_class: 'shuzhi-systray system-status-icon',
-            }));
+            this._button = new PanelMenu.Button(0.5, Me.metadata.uuid);
+            this._button.menu.actor.add_style_class_name('app-menu');
+            this._button.add_actor(new St.Icon({ gicon: genIcon('florette'), style_class: 'shuzhi-systray system-status-icon' }));
             Main.panel.addToStatusArea(Me.metadata.uuid, this._button, 0, 'right');
-            this._updateMenu();
+            this._addMenuItems();
         } else {
             if(!this._button) return;
             this._button.destroy();
-            delete this._button;
+            this._menus = this._button = null;
         }
     }
 
@@ -144,47 +199,44 @@ const ShuZhi = GObject.registerClass({
 
     set lsketch(sketch) {
         this._lsketch = sketch;
-        if(this.style) return;
+        if(this.dark) return;
         this._queueRepaint(true);
-        this._updateMenu();
+        this._menus?.sketch.setSelected(sketch);
     }
 
     set dsketch(sketch) {
         this._dsketch = sketch;
-        if(!this.style) return;
+        if(!this.dark) return;
         this._queueRepaint(true);
-        this._updateMenu();
+        this._menus?.sketch.setSelected(sketch);
     }
 
     get sketch() {
-        return this.style ? this._dsketch : this._lsketch;
+        return this.dark ? this._dsketch : this._lsketch;
+    }
+
+    get sketches() {
+        return this.dark ? DSketch : LSketch;
     }
 
     set sketch(sketch) {
-        gsettings.set_uint(this.style ? Fields.DSKETCH : Fields.LSKETCH, sketch);
+        gsettings.set_uint(this.dark ? Fields.DSKETCH : Fields.LSKETCH, sketch);
     }
 
-    set style(syl) {
-        let style = this.style;
-        this._style = syl;
-        if(style === this.style) return;
-        this._queueRepaint(true);
-        this._updateMenu();
-    }
-
-    get style() {
-        return this._style === Style.Auto ? this._night && this._light : this._style === Style.Dark;
+    get dark() {
+        return (this._style === Style.Auto && this._night && this._light) ||
+            (this._style === Style.System && this._scheme) || this._style === Style.Dark;
     }
 
     get path() {
-        let file = '/shuzhi-%s'.format(this.style ? 'dark.png' : 'light.png');
+        let file = '/shuzhi-%s'.format(this.dark ? 'dark.png' : 'light.png');
 
         return (this._folder || GLib.get_user_cache_dir()) + file;
     }
 
     set refresh(refresh) {
-        if(this._refreshId) GLib.source_remove(this._refreshId);
-        this._refreshId = refresh ? GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, this._interval * 60, this._refreshBoth.bind(this)) : 0;
+        clearInterval(this._refreshId);
+        if(refresh) this._refreshId = setInterval(() => { this._setMotto(true); }, this._interval * 60000);
     }
 
     set interval(interval) {
@@ -195,7 +247,7 @@ const ShuZhi = GObject.registerClass({
     set command(command) {
         if(this._command && this._command.replace(/ -*/g, '') === command.replace(/ -*/g, '')) return;
         this._command = command;
-        this.setMotto(false, this._motto === undefined ? () => !this.checkFile && this._queueRepaint() : null);
+        this._setMotto(false);
     }
 
     set motto(motto) {
@@ -204,19 +256,6 @@ const ShuZhi = GObject.registerClass({
         } catch(e) {
             this._motto = !motto || motto.endsWith('.png') || motto.endsWith('.svg') ? { logo: motto || '' } : { vtext: motto, htext: motto };
         }
-    }
-
-    get checkFile() { // Ensure the wallpaper consistent when unlocking and locking the screen
-        let path = this.path;
-        let pic = Gio.File.new_for_path(path);
-        return pic.query_exists(null) && dgsettings.get_string(System.PICTURE).includes(path);
-    }
-
-    _onProxyChanged() {
-        this._light = this._proxy.NightLightActive;
-        this._updateMenu();
-        if(this.checkFile) return;
-        this._queueRepaint(true);
     }
 
     async _execute(cmd) {
@@ -231,7 +270,7 @@ const ShuZhi = GObject.registerClass({
         return stdout.replace(/\n*$/, '');
     }
 
-    async _check(cmd) {
+    async _checkCmd(cmd) {
         let chk = 'sh -c "command -v %s"'.format(cmd);
         let proc = new Gio.Subprocess({
             argv: GLib.shell_parse_argv(chk)[1],
@@ -243,93 +282,73 @@ const ShuZhi = GObject.registerClass({
         return proc.get_successful();
     }
 
-    async getMotto() {
+    async _getMotto() {
         let [cmd] = GLib.shell_parse_argv(this._command)[1];
-        if(await this._check(cmd)) return await this._execute(this._command);
-        else if(cmd === 'shuzhi.sh') return await this._execute('bash %s'.format(Me.dir.get_child('shuzhi.sh').get_path()));
+        if(await this._checkCmd(cmd)) return this._execute(this._command);
+        else if(cmd === 'shuzhi.sh') return this._execute('bash %s'.format(Me.dir.get_child('shuzhi.sh').get_path()));
         else throw new Error('command not found');
     }
 
-    setMotto(paint, callback) {
-        this.getMotto().then(scc => { this.motto = scc; }).catch(() => { this.motto = ''; })
-            .finally(callback || (() => this._queueRepaint(paint)));
+    get _checkImage() {
+        let path = this.path;
+        return this._style === Style.System
+            ? dgsettings.get_string(path.endsWith('dark.png') ? Desktop.DARK : Desktop.LIGHT).endsWith(path)
+            : dgsettings.get_string(Desktop.LIGHT).endsWith(path) && dgsettings.get_string(Desktop.DARK).endsWith(path);
     }
 
-    _refreshBoth() {
-        this.setMotto(true);
-
-        return GLib.SOURCE_CONTINUE;
-    }
-
-    _refreshMotto() {
-        this.setMotto(false);
-    }
-
-    _refreshSketch() {
-        this._queueRepaint(true);
+    _setMotto(paint) {
+        if('_motto' in this) {
+            this._getMotto().then(scc => { this.motto = scc; }).catch(() => { this.motto = ''; })
+                .finally(() => this._queueRepaint(paint));
+        } else {
+            this._getMotto().then(scc => { this.motto = scc; }).catch(() => { this.motto = ''; })
+                .finally(() => { if(!this._checkImage) this._queueRepaint(true); });
+        }
     }
 
     _queueRepaint(paint) {
-        if(this._motto === undefined) return;
+        if(!['_motto', '_style', '_light', '_scheme', '_night'].every(x => x in this)) return;
         if(paint) this._painted = false;
         this.repaint();
     }
 
-    _updateMenu() {
-        if(!this._button) return;
-        this._button.menu.removeAll();
-        this._button.menu.addMenuItem(this._menuItemMaker(_('Copy'), () => {
-            let mtt = this._orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
-            mtt = mtt ? conv(mtt.replace(/SZ_BGCOLOR/, '#fff'), 16) : this._motto.logo || '';
-            let [ok, , text] = Pango.parse_markup(mtt, -1, '');
-            if(ok && text) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
-        }));
-        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._button.menu.addMenuItem(this._refreshMenu());
-        this._button.menu.addMenuItem(this._sketchMenu());
-        this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._button.menu.addMenuItem(this._menuItemMaker(_('Settings'), () => { ExtensionUtils.openPrefs(); }));
+    _copyMotto() {
+        let mtt = this._orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
+        mtt = mtt ? conv(mtt.replace(/SZ_BGCOLOR/g, '#fff'), 16) : this._motto.logo || '';
+        let [ok, , text] = Pango.parse_markup(mtt, -1, '');
+        if(ok && text) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
     }
 
-    _refreshMenu() {
-        let refresh = new PopupMenu.PopupSubMenuMenuItem(_('Refresh'));
-        refresh.menu.addMenuItem(this._menuItemMaker(_('Motto'), this._refreshMotto.bind(this)));
-        refresh.menu.addMenuItem(this._menuItemMaker(_('Sketch'), this._refreshSketch.bind(this)));
-        refresh.menu.addMenuItem(this._menuItemMaker(_('Both'), this._refreshBoth.bind(this)));
-
-        return refresh;
-    }
-
-    _sketchMenu() {
-        let sketches = this.style ? DSketch : LSketch;
-        let keys = Object.keys(sketches);
-        let sketch = new PopupMenu.PopupSubMenuMenuItem(_('Sketch: ') + _(keys[this.sketch]));
-        keys.map(x => {
-            let item = new PopupMenu.PopupBaseMenuItem({ style_class: 'shuzhi-item popup-menu-item' });
-            item.setOrnament(this.sketch === sketches[x] ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE);
-            item.connect('activate', () => { this._button.menu.close(); this.sketch = sketches[x]; });
-            item.add_child(new St.Label({ x_expand: true, text: _(x) }));
-            return item;
-        }).forEach(x => { sketch.menu.addMenuItem(x); });
-
-        return sketch;
-    }
-
-    _menuItemMaker(text, callback) {
-        let item = new PopupMenu.PopupMenuItem(text, { style_class: 'shuzhi-item popup-menu-item' });
-        item.connect('activate', callback);
-
-        return item;
+    _addMenuItems() {
+        this._menus = {
+            copy:     new MenuItem(_('Copy'), this._copyMotto.bind(this)),
+            sep1:     new PopupMenu.PopupSeparatorMenuItem(),
+            refresh:  new PopupMenu.PopupSubMenuMenuItem(_('Refresh')),
+            sketch:   new DRadioItem(_('Sketch: '), this.sketches, this.sketch, x => { this.sketch = x; }),
+            sep2:     new PopupMenu.PopupSeparatorMenuItem(),
+            settings: new MenuItem(_('Settings'), () => { ExtensionUtils.openPrefs(); }),
+        };
+        [
+            [_('Motto'),  () => { this._setMotto(false); }],
+            [_('Sketch'), () => { this._queueRepaint(true); }],
+            [_('Both'),   () => { this._setMotto(true); }],
+        ].forEach(xs => this._menus.refresh.menu.addMenuItem(new MenuItem(...xs)));
+        for(let p in this._menus) this._button.menu.addMenuItem(this._menus[p]);
     }
 
     set desktop(image) {
         if(image) {
             let color = Draw.getBgColor();
-            if(dgsettings.get_string(System.PRIMARY) !== color) dgsettings.set_string(System.PRIMARY, color);
-            if(!dgsettings.get_string(System.PICTURE).includes(image)) dgsettings.set_string(System.PICTURE, 'file://%s'.format(image));
+            if(dgsettings.get_string(Desktop.COLOR) !== color) dgsettings.set_string(Desktop.COLOR, color);
+            if(this._style === Style.System) {
+                if(image.endsWith('dark.png')) !dgsettings.get_string(Desktop.DARK).endsWith(image) && dgsettings.set_string(Desktop.DARK, image);
+                else !dgsettings.get_string(Desktop.LIGHT).endsWith(image) && dgsettings.set_string(Desktop.LIGHT, image);
+            } else {
+                if(!dgsettings.get_string(Desktop.LIGHT).endsWith(image)) dgsettings.set_string(Desktop.LIGHT, image);
+                if(!dgsettings.get_string(Desktop.DARK).endsWith(image)) dgsettings.set_string(Desktop.DARK, image);
+            }
         } else {
-            dgsettings.reset(System.PICTURE);
-            dgsettings.reset(System.PRIMARY);
+            [Desktop.DARK, Desktop.LIGHT, Desktop.COLOR].forEach(x => dgsettings.reset(x));
         }
     }
 
@@ -338,12 +357,12 @@ const ShuZhi = GObject.registerClass({
         let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
-        Draw.setDarkBg(this.style);
+        Draw.setDarkBg(this.dark);
         let mtt = this._orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
         let size = Pango.FontDescription.from_string(this._fontname).get_size() / 1024;
         let motto = mtt ? Draw.genMotto(context, x, y, conv(mtt, size), this._orient) : Draw.genLogo(this._motto.logo, x, y);
         Draw.drawBackground(context, x, y);
-        if(this.drawSketch(context, x, y)) return;
+        if(this._drawSketch(context, x, y)) return;
         let path = this.path;
         if(mtt) {
             Draw.drawMotto(context, motto); // draw text on the top
@@ -359,10 +378,10 @@ const ShuZhi = GObject.registerClass({
         this._painted = true;
     }
 
-    drawSketch(context, x, y) {
+    _drawSketch(context, x, y) {
         switch(this.sketch) {
         case DSketch.Waves:
-            if(!this._points.length) this._points = Draw.genWaves(x, y);
+            if(!this._points?.length) this._points = Draw.genWaves(x, y);
             Draw.drawWaves(context, this._points, this._showcolor);
             break;
         case DSketch.Blobs:
@@ -375,7 +394,7 @@ const ShuZhi = GObject.registerClass({
             break;
         case DSketch.Clouds:
         case LSketch.Trees:
-            if(this.style) {
+            if(this.dark) {
                 if(!this._points.length) this._points = Draw.genClouds(x, y);
                 Draw.drawClouds(context, this._points);
             } else {
@@ -390,28 +409,30 @@ const ShuZhi = GObject.registerClass({
     }
 
     destroy() {
+        LightProxy.disconnectObject(this);
         // this.desktop = false;
-        this.systray = false;
-        this.refresh = false;
-        delete this._proxy;
-        delete this._points;
+        this.systray = this.refresh = this._points = null;
     }
-});
+}
 
-const Extension = class Extension {
-    constructor() {
+class Extension {
+    static {
         ExtensionUtils.initTranslations();
     }
 
     enable() {
+        gsettings = ExtensionUtils.getSettings();
+        tgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
+        dgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
+        ngsettings = new Gio.Settings({ schema: 'org.gnome.settings-daemon.plugins.color' });
         this._ext = new ShuZhi();
     }
 
     disable() {
         this._ext.destroy();
-        delete this._ext;
+        gsettings = dgsettings = ngsettings = tgsettings = this._ext = null;
     }
-};
+}
 
 function init() {
     return new Extension();

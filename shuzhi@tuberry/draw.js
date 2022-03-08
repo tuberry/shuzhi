@@ -34,7 +34,6 @@ const randamp = (x, y) => rand(x - y, x + y);
 const randint = (l, u) => Math.floor(Math.random() * (u - l + 1)) + l;
 
 const Y = f => f(x => Y(f)(x)); // Y combinator
-const last = (a, n = 1) => a[a.length - n];
 const scanl = (f, xs, ac) => xs.flatMap(x => (ac = f(x, ac)));
 const zipWith = (f, ...xss) => xss[0].map((_, i) => f(...xss.map(xs => xs[i])));
 const array = (n, f = i => i) => Array.from({ length: n }, (_, i) => f(i));
@@ -109,7 +108,7 @@ function bezeirCtrls(vertex, smooth = 1, closed = false) {
         return [mp[0], null, mp[1]].map(x => x ? zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds) : vertex[i]);
     });
 
-    return closed ? ctrls.splice(-1).concat(ctrls) : [vertex[0]].concat(ctrls, Array(2).fill(last(vertex)));
+    return closed ? ctrls.splice(-1).concat(ctrls) : [vertex[0]].concat(ctrls, Array(2).fill(vertex.at(-1)));
 }
 
 function getLunarPhase() {
@@ -244,7 +243,7 @@ function drawBlobs(cr, pts) {
     pts.forEach(pt => {
         let [color, p] = pt;
         cr.setSourceRGBA(...color);
-        cr.moveTo(...last(p));
+        cr.moveTo(...p.at(-1));
         forloop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
         cr.fill();
     });
@@ -289,9 +288,9 @@ function genCloud(rect, offset) {
     let len = Math.floor(h / offset);
     let stp = wave(shuffle(array(len, i => i / len)));
     let fst = [[extra(stp[0], stp[1]), y]];
-    let result = scanl((i, ac) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], last(ac)[1], randbool()), array(len), fst);
+    let result = scanl((i, ac) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], ac.at(-1)[1], randbool()), array(len), fst);
 
-    return fst.concat(result, [[extra(last(stp), last(stp, 2)), last(result)[1]]]);
+    return fst.concat(result, [[extra(stp.at(-1), stp.at(-2)), result.at(-1)[1]]]);
 }
 
 function genClouds(x, y) {
@@ -334,7 +333,7 @@ function drawClouds(cr, clouds) {
             f && cr.arc(flag ? c_x + r : c_x - r, c_y, r, s_t * Math.PI, e_t * Math.PI), cr.stroke();
             cr.moveTo(p[i + 1][0], p[i + 1][1]);
         }, p.length - 2, 1, 2);
-        cr.lineTo(...last(p));
+        cr.lineTo(...p.at(-1));
         cr.stroke();
     });
 }
@@ -349,7 +348,7 @@ function genMotto(cr, x, y, text, orien) {
         layout.set_alignment(Pango.Alignment.CENTER);
     }
     layout.set_font_description(Pango.FontDescription.from_string(FontName));
-    layout.set_markup(text.replace(/SZ_BGCOLOR/, getBgColor()), -1);
+    layout.set_markup(text.replace(/SZ_BGCOLOR/g, getBgColor()), -1);
     let [fw, fh] = layout.get_pixel_size();
     let [a, b, c, d] = [x / 2, DV * y / 2, fw / 2, fh / 2];
     setTextRect(orien ? [a - d, b - c, fh, fw] : [a - c, b - d, fw, fh]);
@@ -474,10 +473,10 @@ function drawLand(cr, pts) {
     forloop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
     forloop(i => cr.lineTo(...ld[i]), 30, 27);
     cr.fill();
-    cr.moveTo(...last(ld));
+    cr.moveTo(...ld.at(-1));
     cr.lineTo(...ld[0]);
     forloop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
-    cr.lineTo(...last(ld, 4));
+    cr.lineTo(...ld.at(-4));
     cr.setSourceRGBA(0, 0, 0, 0.4);
     cr.setLineWidth(sf * 2);
     cr.stroke();

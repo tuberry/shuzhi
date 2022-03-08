@@ -35,12 +35,13 @@ git checkout your_gnome_shell_version
 
 ## Features
 
-![szprefs](https://user-images.githubusercontent.com/17917040/108040675-8f730b80-7078-11eb-86e9-b50a3ed5f39a.png)
+![szpref](https://user-images.githubusercontent.com/17917040/155916819-c07054a9-78a4-4ca1-9f39-31f4c85e4256.png)
+
 
 ## Note
 
 * Set the text command to `shuzhi.sh` to enable the builtin script;
-* Support [Pango](https://developer.gnome.org/pygtk/stable/pango-markup-language.html) markups or images (SVG & PNG only), see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images (SVG & PNG only), see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
 
 ## Acknowledgements
 

@@ -23,9 +23,9 @@
         <summary>text orientation (0 - horizontal, 1 - vertical)</summary>
     </key>
     <key type="u" name="default-style">
-        <range min="0" max="2"/>
+        <range min="0" max="3"/>
         <default>0</default>
-        <summary>default style (0 - light, 1 - dark)</summary>
+        <summary>default style (0 - light, 1 - dark, 2 - auto, 3 - system)</summary>
     </key>
     <key type="u" name="light-sketch-type">
         <range min="0" max="3"/>
