@@ -2,11 +2,11 @@
 // by tuberry
 /* exported setFontName setDarkBg genWaves drawWaves genBlobs
  * drawBlobs genOvals drawOvals genClouds drawClouds genTrees
- * genMotto drawMotto drawBackground drawTrees genLogo */
+ * genMotto drawMotto drawBackground drawTrees genLogo drawLogo */
 'use strict';
 
 const Cairo = imports.cairo;
-const { PangoCairo, Pango, GLib, Gtk, Rsvg } = imports.gi;
+const { PangoCairo, Pango, GLib, Gtk, Gdk, GdkPixbuf } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -24,7 +24,7 @@ const cosp = t => Math.cos(t * Math.PI);
 const mod = (u, v) => u - Math.floor(u / v) * v;
 const conv = (r, t) => [r * cosp(t), r * sinp(t)];
 const overlap = (a, b) => !(a[0] > b[0] + b[2] || b[0] > a[0] + a[2] || a[1] > b[1] + b[3] || b[1] > a[1] + a[3]);
-const forloop = (f, u, l = 0, s = 1) => {
+const forLoop = (f, u, l = 0, s = 1) => {
     if(s > 0) for(let i = l; i <= u; i += s) f(i); else for(let i = l; i >= u; i += s) f(i);
 };
 
@@ -42,7 +42,7 @@ const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = p => [[1, 0, p[0]], [0, 1, p[1]]];
 const trans = (xs, ...ms) => ms.reduce((a, m) => m.map(v => dot(v, a.concat(1))), xs); // affine
-const toHex = rgba => '#%s'.format(rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join(''));
+const toHex = rgba => `#${rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
 
 function setFontName(font) { FontName = font; }
 function setTextRect(rect) { TextRect = rect; }
@@ -67,7 +67,7 @@ function gauss(mu, sgm) {
 
 function shuffle(a) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    forloop(i => (j => ([a[i], a[j]] = [a[j], a[i]]))(randint(0, i)), 1, a.length - 1, -1);
+    forLoop(i => (j => ([a[i], a[j]] = [a[j], a[i]]))(randint(0, i)), 1, a.length - 1, -1);
 
     return a;
 }
@@ -156,10 +156,10 @@ function genMoon(x, _y) {
 }
 
 function drawMoon(cr, pts) {
+    cr.save();
     switch(pts.length) {
     case 12: {
         let [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd] = pts;
-        cr.save();
         cr.translate(c_x, c_y);
         cr.rotate(r_t * Math.PI);
         cr.setSource(gd);
@@ -167,19 +167,16 @@ function drawMoon(cr, pts) {
         cr.arc(c_x2, c_y2, r2, s_t2 * Math.PI, e_t2 *  Math.PI);
         cr.setFillRule(Cairo.FillRule.EVEN_ODD);
         cr.fill();
-        cr.restore();
         break;
     }
     case 7: {
         let [c_x, c_y, r1, s_t, e_t, r_t, gd] = pts;
-        cr.save();
         cr.translate(c_x, c_y);
         cr.rotate(r_t * Math.PI);
         cr.setSource(gd);
         cr.arc(0, 0, r1, s_t * Math.PI, e_t * Math.PI);
         cr.setFillRule(Cairo.FillRule.EVEN_ODD);
         cr.fill();
-        cr.restore();
         break;
     }
     case 4: {
@@ -190,6 +187,7 @@ function drawMoon(cr, pts) {
         break;
     }
     }
+    cr.restore();
 }
 
 function genWaves(x, y) {
@@ -203,22 +201,23 @@ function genWaves(x, y) {
 function drawWaves(cr, waves, show) {
     let [other, pts] = waves;
     let [x, y, color] = other;
+    cr.save();
     cr.setSourceRGBA(...color.color);
     pts.forEach(p => {
         cr.moveTo(x, y);
         cr.lineTo(0, y);
         cr.lineTo(...p[0]);
-        forloop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
+        forLoop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
         cr.closePath();
         cr.fill();
     });
     show && drawColor(cr, other);
+    cr.restore();
 }
 
 function drawColor(cr, color) {
     if(!FontName) return;
     let [x, y, cl] = color;
-    cr.save();
     (fg => cr.setSourceRGBA(fg, fg, fg, 0.1))(DarkBg ? 1 : 0);
     let layout = PangoCairo.create_layout(cr);
     let desc = Pango.FontDescription.from_string(FontName);
@@ -226,6 +225,7 @@ function drawColor(cr, color) {
     layout.set_font_description(desc);
     layout.get_context().set_base_gravity(Pango.Gravity.EAST);
     layout.set_markup(cl.name, -1);
+    cr.save();
     cr.moveTo(x, 0.03 * y);
     cr.rotate(Math.PI / 2);
     PangoCairo.show_layout(cr, layout);
@@ -240,13 +240,15 @@ function genBlobs(x, y) {
 }
 
 function drawBlobs(cr, pts) {
+    cr.save();
     pts.forEach(pt => {
         let [color, p] = pt;
         cr.setSourceRGBA(...color);
         cr.moveTo(...p.at(-1));
-        forloop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
+        forLoop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
         cr.fill();
     });
+    cr.restore();
 }
 
 function genOvals(x, y) {
@@ -275,10 +277,10 @@ function drawOvals(cr, pts) {
 function genCloud(rect, offset) {
     let [x, y, w, h] = rect;
     let wave = a => {
-        randbool() ? forloop(i => {
+        randbool() ? forLoop(i => {
             i !== 0 && a[i] < a[i - 1] && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
             i !== a.length - 1 && a[i] < a[i + 1] && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
-        }, a.length - 1, 0, 2) : forloop(i => {
+        }, a.length - 1, 0, 2) : forLoop(i => {
             i !== 0 && a[i] > a[i - 1] && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
             i !== a.length - 1 && a[i] > a[i + 1] && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
         }, a.length - 1, 0, 2);
@@ -303,7 +305,7 @@ function genClouds(x, y) {
         case 2: [a, b, c, d, e, f] = [0, 1 / 4, 0, 1 / 4, 5 / 2, [0, 2 / 4]]; break;
         case 3: [a, b, c, d, e, f] = [0, 1 / 4, 1 / 8, 1 / 4, 3, [1 / 4, 2 / 4]]; break;
         case 4: [a, b, c, d, e, f] = [0, 1 / 4, 0, 1 / 4, 5 / 2, [2 / 4, 2 / 4]]; break;
-        default: [a, b, c, d, e, f] = [1 / 8, 1 / 4, 1 / 8, 1 / 4, 2, [2 / 4, 1 / 4]]; break;
+        default: [a, b, c, d, e, f] = [1 / 8, 1 / 4, 1 / 8, 1 / 4, 2, [2 / 4, 1 / 4]];
         }
         let h = randint(3 * offset, pt ? 7 * offset : 5 * offset);
         let w = randint(h * 2, e * offset * 7);
@@ -317,12 +319,13 @@ function genClouds(x, y) {
 function drawClouds(cr, clouds) {
     let [moon, pts] = clouds;
     drawMoon(cr, moon);
+    cr.save();
     pts.forEach(pt => {
         let [color, p] = pt;
         // cr.setLineWidth(2);
         cr.setSourceRGBA(...color);
         cr.moveTo(...p[0]);
-        forloop(i => {
+        forLoop(i => {
             let [x, y, f, d_y] = [...p[i], (p[i + 1][1] - p[i][1]) / 2];
             let flag = x < p[i + 2][0];
             cr.lineTo(x, y);
@@ -336,6 +339,7 @@ function drawClouds(cr, clouds) {
         cr.lineTo(...p.at(-1));
         cr.stroke();
     });
+    cr.restore();
 }
 
 function genMotto(cr, x, y, text, orien) {
@@ -372,9 +376,11 @@ function drawMotto(cr, pts) {
 
 function drawBackground(cr, x, y) {
     let color = DarkBg ? Color.DARK : Color.LIGHT;
+    cr.save();
     cr.setSourceRGBA(...color);
     cr.rectangle(0, 0, x, y);
     cr.fill();
+    cr.restore();
 }
 
 function genTrees(x, y) {
@@ -430,9 +436,9 @@ function genTree(n, x, y, l) {
     let tree = root.concat(scanl((_, ac) => ac.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), array(n - 1), [root[1]]));
     let thick = i => tree[i] ? tree[i][2] : 0;
     let merg = (a, b, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
-    forloop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1), y / 1024)), 0, tree.length - 1, -1);
+    forLoop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1), y / 1024)), 0, tree.length - 1, -1);
     tree = tree.map(t => t && trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
-    forloop(i => tree[i] && !(tree[2 * i] && tree[2 * i + 1]) &&
+    forLoop(i => tree[i] && !(tree[2 * i] && tree[2 * i + 1]) &&
             (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1], y / 54)])), 2 ** (n - 1) - 1, 1);
 
     return [tree];
@@ -447,8 +453,8 @@ function drawTree(cr, pts) {
     cr.setSourceRGBA(...Color.DARK);
     let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][2]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
     let flower = (i, s) => (tr[i] && tr[i][3]) && (s === tr[i][3][0]) && drawFlower(cr, tr[i][3], cl);
-    forloop(i => {
-        (i === 0) && (cr.moveTo(tr[i][0], tr[i][1]), lineTo(i + 1)) || forloop(j => {
+    forLoop(i => {
+        (i === 0) && (cr.moveTo(tr[i][0], tr[i][1]), lineTo(i + 1)) || forLoop(j => {
             if(!tr[j]) return;
             flower(2 * j, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j);
             flower(2 * j + 1, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j + 1);
@@ -466,42 +472,41 @@ function genLand(x, y, n = 20, f = 5 / 6) {
 
 function drawLand(cr, pts) {
     let [sf, rc, ld, cl] = pts;
+    cr.save();
     cr.setSourceRGBA(...cl.color.slice(0, 3), 0.4);
     cr.rectangle(...rc);
     cr.fill();
     cr.setSourceRGBA(...Color.LIGHT);
-    forloop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
-    forloop(i => cr.lineTo(...ld[i]), 30, 27);
+    forLoop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
+    forLoop(i => cr.lineTo(...ld[i]), 30, 27);
     cr.fill();
     cr.moveTo(...ld.at(-1));
     cr.lineTo(...ld[0]);
-    forloop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
+    forLoop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
     cr.lineTo(...ld.at(-4));
     cr.setSourceRGBA(0, 0, 0, 0.4);
     cr.setLineWidth(sf * 2);
     cr.stroke();
+    cr.restore();
 }
 
 function genLogo(motto, x, y) {
-    let g_logo = () => GLib.get_os_info('LOGO') || (DarkBg ? 'gnome-logo-text-dark' : 'gnome-logo-text');
-    let path = motto && motto.replace(/^~/, GLib.get_home_dir()) ||
-        (logo => logo && logo.get_filename())(new Gtk.IconTheme().lookup_icon(g_logo(), null, null));
     try {
-        let image = (file => {
-            if(file.endsWith('.svg')) {
-                let svg = Rsvg.Handle.new_from_file(file);
-                let img = new Cairo.ImageSurface(Cairo.FORMAT_ARGB32, svg.width, svg.height);
-                svg.render_document(new Cairo.Context(img), new Rsvg.Rectangle({ x: 0, y: 0, width: svg.width, height: svg.height }));
-                return img;
-            } else {
-                return Cairo.ImageSurface.createFromPNG(file);
-            }
-        })(path);
-        ((w, h) => setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]))(image.getWidth(), image.getHeight());
+        let g_logo = () => GLib.get_os_info('LOGO') || (DarkBg ? 'gnome-logo-text-dark' : 'gnome-logo-text');
+        let path = motto && motto.replace(/^~/, GLib.get_home_dir()) ||
+            (logo => logo && logo.get_filename())(new Gtk.IconTheme().lookup_icon(g_logo(), null, null));
+        let image = GdkPixbuf.Pixbuf.new_from_file(path);
+        ((w, h) => setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]))(image.get_width(), image.get_height());
         return [image, TextRect[0], TextRect[1]];
     } catch(e) {
-        // ignore
+        return [];
     }
+}
 
-    return [];
+function drawLogo(cr, pts) {
+    if(!pts.length) return;
+    cr.save();
+    Gdk.cairo_set_source_pixbuf(cr, ...pts);
+    cr.paint();
+    cr.restore();
 }

@@ -19,8 +19,8 @@ const Style = { Light: 0, Dark: 1, Auto: 2, System: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', COLOR: 'primary-color', DARK: 'picture-uri-dark' };
-const conv = (ft, sz) => ft.replace(/([0-9.]*)em/g, (mt, $1) => '%s'.format(sz * $1));
-const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child('%s-symbolic.svg'.format(x)).get_path());
+const conv = (ft, sz) => ft.replace(/([0-9.]*)em/g, (mt, s1) => `${sz * s1}`);
+const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child(`${x}-symbolic.svg`).get_path());
 const genParam = (type, name, ...dflt) => GObject.ParamSpec[type](name, name, name, GObject.ParamFlags.READWRITE, ...dflt);
 let [gsettings, dgsettings, ngsettings, tgsettings] = Array(4).fill(null);
 
@@ -56,7 +56,7 @@ class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
 
     setSelected(index) {
         this._index = index;
-        this.label.set_text('%s%s'.format(this._name, _(this._list[this._index]) ?? ''));
+        this.label.set_text(`${this._name}${_(this._list[this._index]) ?? ''}`);
         this._items.forEach((y, i) => y.setOrnament(index === i ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE));
     }
 
@@ -64,7 +64,7 @@ class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
         let list = Object.keys(modes);
         let items = this._items;
         let diff = list.length - items.length;
-        if(diff > 0) for(let a = 0; a < diff; a++) this.menu.addMenuItem(new MenuItem('', () => { this._call(items.length + a); }));
+        if(diff > 0) for(let a = 0; a < diff; a++) this.menu.addMenuItem(new MenuItem('', () => this._call(items.length + a)));
         else if(diff < 0) for(let a = 0; a > diff; a--) items.at(a - 1).destroy();
         this._list = list;
         this._items.forEach((x, i) => x.setLabel(_(this._list[i])));
@@ -229,14 +229,14 @@ class ShuZhi extends GObject.Object {
     }
 
     get path() {
-        let file = '/shuzhi-%s'.format(this.dark ? 'dark.png' : 'light.png');
+        let file = `/shuzhi-${this.dark ? 'dark.png' : 'light.png'}`;
 
         return (this._folder || GLib.get_user_cache_dir()) + file;
     }
 
     set refresh(refresh) {
         clearInterval(this._refreshId);
-        if(refresh) this._refreshId = setInterval(() => { this._setMotto(true); }, this._interval * 60000);
+        if(refresh) this._refreshId = setInterval(() => this._setMotto(true), this._interval * 60000);
     }
 
     set interval(interval) {
@@ -245,7 +245,6 @@ class ShuZhi extends GObject.Object {
     }
 
     set command(command) {
-        if(this._command && this._command.replace(/ -*/g, '') === command.replace(/ -*/g, '')) return;
         this._command = command;
         this._setMotto(false);
     }
@@ -271,7 +270,7 @@ class ShuZhi extends GObject.Object {
     }
 
     async _checkCmd(cmd) {
-        let chk = 'sh -c "command -v %s"'.format(cmd);
+        let chk = `sh -c "command -v ${cmd}"`;
         let proc = new Gio.Subprocess({
             argv: GLib.shell_parse_argv(chk)[1],
             flags: Gio.SubprocessFlags.NONE,
@@ -285,7 +284,7 @@ class ShuZhi extends GObject.Object {
     async _getMotto() {
         let [cmd] = GLib.shell_parse_argv(this._command)[1];
         if(await this._checkCmd(cmd)) return this._execute(this._command);
-        else if(cmd === 'shuzhi.sh') return this._execute('bash %s'.format(Me.dir.get_child('shuzhi.sh').get_path()));
+        else if(cmd === 'shuzhi.sh') return this._execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`);
         else throw new Error('command not found');
     }
 
@@ -298,11 +297,11 @@ class ShuZhi extends GObject.Object {
 
     _setMotto(paint) {
         if('_motto' in this) {
-            this._getMotto().then(scc => { this.motto = scc; }).catch(() => { this.motto = ''; })
+            this._getMotto().then(scc => (this.motto = scc)).catch(() => (this.motto = ''))
                 .finally(() => this._queueRepaint(paint));
         } else {
-            this._getMotto().then(scc => { this.motto = scc; }).catch(() => { this.motto = ''; })
-                .finally(() => { if(!this._checkImage) this._queueRepaint(true); });
+            this._getMotto().then(scc => (this.motto = scc)).catch(() => (this.motto = ''))
+                .finally(() => this._checkImage || this._queueRepaint(true));
         }
     }
 
@@ -324,14 +323,14 @@ class ShuZhi extends GObject.Object {
             copy:     new MenuItem(_('Copy'), this._copyMotto.bind(this)),
             sep1:     new PopupMenu.PopupSeparatorMenuItem(),
             refresh:  new PopupMenu.PopupSubMenuMenuItem(_('Refresh')),
-            sketch:   new DRadioItem(_('Sketch: '), this.sketches, this.sketch, x => { this.sketch = x; }),
+            sketch:   new DRadioItem(_('Sketch: '), this.sketches, this.sketch, x => (this.sketch = x)),
             sep2:     new PopupMenu.PopupSeparatorMenuItem(),
-            settings: new MenuItem(_('Settings'), () => { ExtensionUtils.openPrefs(); }),
+            settings: new MenuItem(_('Settings'), () => ExtensionUtils.openPrefs()),
         };
         [
-            [_('Motto'),  () => { this._setMotto(false); }],
-            [_('Sketch'), () => { this._queueRepaint(true); }],
-            [_('Both'),   () => { this._setMotto(true); }],
+            [_('Motto'),  () => this._setMotto(false)],
+            [_('Sketch'), () => this._queueRepaint(true)],
+            [_('Both'),   () => this._setMotto(true)],
         ].forEach(xs => this._menus.refresh.menu.addMenuItem(new MenuItem(...xs)));
         for(let p in this._menus) this._button.menu.addMenuItem(this._menus[p]);
     }
@@ -363,17 +362,9 @@ class ShuZhi extends GObject.Object {
         let motto = mtt ? Draw.genMotto(context, x, y, conv(mtt, size), this._orient) : Draw.genLogo(this._motto.logo, x, y);
         Draw.drawBackground(context, x, y);
         if(this._drawSketch(context, x, y)) return;
+        mtt ? Draw.drawMotto(context, motto) : Draw.drawLogo(context, motto);
         let path = this.path;
-        if(mtt) {
-            Draw.drawMotto(context, motto); // draw text on the top
-            surface.writeToPNG(path);
-        } else {
-            let img = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
-            let ctx = new Cairo.Context(img);
-            ctx.setSourceSurface(surface, 0, 0); ctx.paint();
-            if(motto.length) { ctx.setSourceSurface(...motto); ctx.paint(); }
-            img.writeToPNG(path);
-        }
+        surface.writeToPNG(path);
         this.desktop = path;
         this._painted = true;
     }

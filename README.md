@@ -41,7 +41,7 @@ git checkout your_gnome_shell_version
 ## Note
 
 * Set the text command to `shuzhi.sh` to enable the builtin script;
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images (SVG & PNG only), see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
 
 ## Acknowledgements
 
