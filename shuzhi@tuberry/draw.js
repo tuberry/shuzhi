@@ -111,47 +111,37 @@ function bezeirCtrls(vertex, smooth = 1, closed = false) {
     return closed ? ctrls.splice(-1).concat(ctrls) : [vertex[0]].concat(ctrls, Array(2).fill(vertex.at(-1)));
 }
 
-function getLunarPhase() {
-    // Ref: https://ecomaan.nl/javascript/moonphase/
-    let moon = Math.abs((new Date().getTime() / 86400000 - 18256.8) / 29.5305882);
-
-    return Math.round((moon - Math.floor(moon)) * 8) % 8;
-}
-
 function genMoon(x, _y) {
-    let phase = getLunarPhase();
-    let [c_x, c_y, r1] = [x * 8 / 10, x / 10, x / 20];
-    switch(phase) {
-    case 1:
-    case 7: {
-        let [r_t, s_t1, e_t1, s_t2, e_t2] = [phase === 1 ? 1 / 4 : 3 / 4, -1 / 2, 1 / 2, -1 / 3, 1 / 3];
-        let [c_x2, c_y2, r2] = [-r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
-        let gd = new Cairo.RadialGradient(c_x2, c_y2, r2, c_x2, c_y2, r2 + r1 / 16);
-        gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
-        return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
-    }
-    case 2:
-    case 6: {
-        let [r_t, s_t1, e_t1] = [phase === 2 ? 1 / 8 : 9 / 8, -1 / 2, 1 / 2];
-        let gd = new Cairo.LinearGradient(0, 0, r1 / 16, 0);
-        gd.addColorStopRGBA(0, 0, 0, 0, 0);
-        gd.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
-        return [c_x, c_y, r1, s_t1, e_t1, r_t, gd];
-    }
-    case 3:
-    case 5: {
-        let [r_t, s_t1, e_t1, s_t2, e_t2] = [phase === 3 ? 1 : -1 / 4, 1 / 2, -1 / 2, -1 / 3, 1 / 3];
-        let [c_x2, c_y2, r2] = [-r1 / Math.sqrt(3), 0, r1 * 2 / Math.sqrt(3)];
-        let gd = new Cairo.RadialGradient(c_x2, c_y2, r2 - r1 / 16, c_x2, c_y2, r2);
-        gd.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
-        gd.addColorStopRGBA(1, 0, 0, 0, 0);
-        return [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd];
-    }
-    case 4:
-        return [c_x, c_y, r1, Color.LIGHT];
-    default:
-        return [];
+    let moon = Math.abs((new Date().getTime() / 86400000 - 18256.8) / 29.5305882);
+    let p = moon - Math.floor(moon);
+    // Ref: https://ecomaan.nl/javascript/moonphase/
+    let [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI,  p > 0.5 ? Math.PI / 4 : -Math.PI / 4];
+    p = parseFloat((1 - Math.abs(2 * p - 1)).toFixed(3));
+    if(p >= 1) {
+        return [c_x, c_y, r, Color.LIGHT];
+    } else if(p === 0.5) {
+        let g = new Cairo.LinearGradient(0, 0, 0, r / 16);
+        g.addColorStopRGBA(0, 0, 0, 0, 0);
+        g.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
+        return [c_x, c_y, r, s_t, e_t, t, g];
+    } else if(p < 0.5) {
+        let m = 1 - 2 * p;
+        let n = 1 / m;
+        let t1 = Math.asin((n - m) / (n + m));
+        let [c_x1, c_y1, r1, s_t1, e_t1] = [0, r * (m - n) / 2, r * (n + m) / 2, t1, Math.PI - t1];
+        let g = new Cairo.RadialGradient(c_x1, c_y1, r1, c_x1, c_y1, r1 + r / 16);
+        g.addColorStopRGBA(0, 0, 0, 0, 0);
+        g.addColorStopRGBA(1, 0.8, 0.8, 0.8, 1);
+        return [c_x, c_y, r, s_t, e_t, c_x1, c_y1, r1, s_t1, e_t1, t, g];
+    } else {
+        let m = 2 * p - 1;
+        let n = 1 / m;
+        let t1 = Math.asin((n - m) / (n + m));
+        let [c_x1, c_y1, r1, s_t1, e_t1] = [0, r * (n - m) / 2, r * (n + m) / 2, Math.PI + t1, 2 * Math.PI - t1];
+        let g = new Cairo.RadialGradient(c_x1, c_y1, r1 - r * Math.min((n - 1) / 2, 1 / 16), c_x1, c_y1, r1);
+        g.addColorStopRGBA(0, 0.8, 0.8, 0.8, 1);
+        g.addColorStopRGBA(1, 0, 0, 0, 0);
+        return [c_x, c_y, r, s_t, e_t, c_x1, c_y1, r1, s_t1, e_t1, t, g];
     }
 }
 
@@ -159,22 +149,22 @@ function drawMoon(cr, pts) {
     cr.save();
     switch(pts.length) {
     case 12: {
-        let [c_x, c_y, r1, s_t1, e_t1, c_x2, c_y2, r2, s_t2, e_t2, r_t, gd] = pts;
+        let [c_x, c_y, r, s_t, e_t, c_x1, c_y1, r1, s_t1, e_t1, t, g] = pts;
         cr.translate(c_x, c_y);
-        cr.rotate(r_t * Math.PI);
-        cr.setSource(gd);
-        cr.arc(0, 0, r1, s_t1 * Math.PI, e_t1 *  Math.PI);
-        cr.arc(c_x2, c_y2, r2, s_t2 * Math.PI, e_t2 *  Math.PI);
+        cr.rotate(t);
+        cr.setSource(g);
+        cr.arc(0, 0, r, s_t, e_t);
+        cr.arc(c_x1, c_y1, r1, s_t1, e_t1);
         cr.setFillRule(Cairo.FillRule.EVEN_ODD);
         cr.fill();
         break;
     }
     case 7: {
-        let [c_x, c_y, r1, s_t, e_t, r_t, gd] = pts;
+        let [c_x, c_y, r, s_t, e_t, t, g] = pts;
         cr.translate(c_x, c_y);
-        cr.rotate(r_t * Math.PI);
-        cr.setSource(gd);
-        cr.arc(0, 0, r1, s_t * Math.PI, e_t * Math.PI);
+        cr.rotate(t);
+        cr.setSource(g);
+        cr.arc(0, 0, r, s_t, e_t);
         cr.setFillRule(Cairo.FillRule.EVEN_ODD);
         cr.fill();
         break;
