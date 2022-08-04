@@ -13,7 +13,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const _ = ExtensionUtils.gettext;
 const Draw = Me.imports.draw;
-const Fields = Me.imports.fields.Fields;
+const { Fields } = Me.imports.fields;
 
 const Style = { Light: 0, Dark: 1, Auto: 2, System: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
@@ -21,10 +21,34 @@ const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', COLOR: 'primary-color', DARK: 'picture-uri-dark' };
 const conv = (ft, sz) => ft.replace(/([0-9.]*)em/g, (mt, s1) => `${sz * s1}`);
 const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child(`${x}-symbolic.svg`).get_path());
-const genParam = (type, name, ...dflt) => GObject.ParamSpec[type](name, name, name, GObject.ParamFlags.READWRITE, ...dflt);
-let [gsettings, dgsettings, ngsettings, tgsettings] = Array(4).fill(null);
 
 Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
+
+class Field {
+    constructor(prop, gset, obj) {
+        this.gset = typeof gset === 'string' ? new Gio.Settings({ schema: gset }) : gset;
+        this.prop = prop;
+        this.bind(obj);
+    }
+
+    _get(x) {
+        return this.gset[`get_${this.prop[x][1]}`](this.prop[x][0]);
+    }
+
+    _set(x, y) {
+        this.gset[`set_${this.prop[x][1]}`](this.prop[x][0], y);
+    }
+
+    bind(a) {
+        let fs = Object.entries(this.prop);
+        fs.forEach(([x]) => { a[x] = this._get(x); });
+        this.gset.connectObject(...fs.flatMap(([x, [y]]) => [`changed::${y}`, () => { a[x] = this._get(x); }]), a);
+    }
+
+    unbind(a) {
+        this.gset.disconnectObject(a);
+    }
+}
 
 class MenuItem extends PopupMenu.PopupMenuItem {
     static {
@@ -80,56 +104,41 @@ class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
     }
 }
 
-class ShuZhi extends GObject.Object {
-    static {
-        GObject.registerClass({
-            Properties: {
-                folder:    genParam('string', 'folder', ''),
-                command:   genParam('string', 'command', ''),
-                style:     genParam('uint', 'style', 0, 3, 0),
-                night:     genParam('boolean', 'night', false),
-                orient:    genParam('uint', 'orient', 0, 1, 0),
-                dsketch:   genParam('uint', 'dsketch', 0, 3, 0),
-                lsketch:   genParam('uint', 'lsketch', 0, 3, 0),
-                display:   genParam('boolean', 'display', false),
-                refresh:   genParam('boolean', 'refresh', false),
-                systray:   genParam('boolean', 'systray', false),
-                scheme:    genParam('string', 'scheme', 'default'),
-                showcolor: genParam('boolean', 'showcolor', false),
-                fontname:  genParam('string', 'fontname', 'Sans 48'),
-                interval:  genParam('uint', 'interval', 10, 300, 60),
-                xdisplay:  genParam('uint', 'xdisplay', 800, 9600, 1920),
-                ydisplay:  genParam('uint', 'ydisplay', 600, 5400, 1080),
-            },
-        }, this);
-    }
-
+class ShuZhi {
     constructor() {
-        super();
         this._onProxyChanged();
         this._bindSettings();
     }
 
     _bindSettings() {
+        this._dfield = new Field({
+            dtcolor: [Desktop.COLOR, 'string'],
+            dtdark:  [Desktop.DARK,  'string'],
+            dtlight: [Desktop.LIGHT, 'string'],
+        }, 'org.gnome.desktop.background', this);
         LightProxy.connectObject('g-properties-changed', this._onProxyChanged.bind(this), this);
-        tgsettings.bind('color-scheme', this, 'scheme', Gio.SettingsBindFlags.GET);
-        ngsettings.bind('night-light-enabled', this, 'night', Gio.SettingsBindFlags.GET);
-        [
-            [Fields.FOLDER,   'folder'],
-            [Fields.STYLE,    'style'],
-            [Fields.DSKETCH,  'dsketch'],
-            [Fields.LSKETCH,  'lsketch'],
-            [Fields.COLOR,    'showcolor'],
-            [Fields.INTERVAL, 'interval'],
-            [Fields.FONT,     'fontname'],
-            [Fields.ORIENT,   'orient'],
-            [Fields.REFRESH,  'refresh'],
-            [Fields.DISPLAY,  'display'],
-            [Fields.XDISPLAY, 'xdisplay'],
-            [Fields.YDISPLAY, 'ydisplay'],
-            [Fields.SYSTRAY,  'systray'],
-            [Fields.COMMAND,  'command'],
-        ].forEach(([x, y, z]) => gsettings.bind(x, this, y, z ?? Gio.SettingsBindFlags.GET));
+        this._tfield = new Field({
+            scheme: ['color-scheme', 'string'],
+        }, 'org.gnome.desktop.interface', this);
+        this._nfield = new Field({
+            night: ['night-light-enabled', 'boolean'],
+        }, 'org.gnome.settings-daemon.plugins.color', this);
+        this._field = new Field({
+            folder:    [Fields.FOLDER,   'string'],
+            style:     [Fields.STYLE,    'uint'],
+            dsketch:   [Fields.DSKETCH,  'uint'],
+            lsketch:   [Fields.LSKETCH,  'uint'],
+            showcolor: [Fields.COLOR,    'boolean'],
+            interval:  [Fields.INTERVAL, 'uint'],
+            fontname:  [Fields.FONT,     'string'],
+            orient:    [Fields.ORIENT,   'uint'],
+            refresh:   [Fields.REFRESH,  'boolean'],
+            display:   [Fields.DISPLAY,  'boolean'],
+            xdisplay:  [Fields.XDISPLAY, 'uint'],
+            ydisplay:  [Fields.YDISPLAY, 'uint'],
+            systray:   [Fields.SYSTRAY,  'boolean'],
+            command:   [Fields.COMMAND,  'string'],
+        }, ExtensionUtils.getSettings(), this);
     }
 
     _styleChanged(prop) {
@@ -220,7 +229,7 @@ class ShuZhi extends GObject.Object {
     }
 
     set sketch(sketch) {
-        gsettings.set_uint(this.dark ? Fields.DSKETCH : Fields.LSKETCH, sketch);
+        this._field._set(this.dark ? 'dsketch' : 'lsketch', sketch);
     }
 
     get dark() {
@@ -291,8 +300,8 @@ class ShuZhi extends GObject.Object {
     get _checkImage() {
         let path = this.path;
         return this._style === Style.System
-            ? dgsettings.get_string(path.endsWith('dark.png') ? Desktop.DARK : Desktop.LIGHT).endsWith(path)
-            : dgsettings.get_string(Desktop.LIGHT).endsWith(path) && dgsettings.get_string(Desktop.DARK).endsWith(path);
+            ? (path.endsWith('dark.png') ? this.dtdark : this.dtlight).endsWith(path)
+            : this.dtlight.endsWith(path) && this.dtdark.endsWith(path);
     }
 
     _setMotto(paint) {
@@ -338,16 +347,17 @@ class ShuZhi extends GObject.Object {
     set desktop(image) {
         if(image) {
             let color = Draw.getBgColor();
-            if(dgsettings.get_string(Desktop.COLOR) !== color) dgsettings.set_string(Desktop.COLOR, color);
+            if(this.dtcolor !== color) this._dfield._set('dtcolor', color);
             if(this._style === Style.System) {
-                if(image.endsWith('dark.png')) !dgsettings.get_string(Desktop.DARK).endsWith(image) && dgsettings.set_string(Desktop.DARK, image);
-                else !dgsettings.get_string(Desktop.LIGHT).endsWith(image) && dgsettings.set_string(Desktop.LIGHT, image);
+                if(image.endsWith('dark.png')) !this.dtdark.endsWith(image) && this._dfield._set('dtdark', image);
+                else !this.dtlight.endsWith(image) && this._dfield._set('dtlight', image);
             } else {
-                if(!dgsettings.get_string(Desktop.LIGHT).endsWith(image)) dgsettings.set_string(Desktop.LIGHT, image);
-                if(!dgsettings.get_string(Desktop.DARK).endsWith(image)) dgsettings.set_string(Desktop.DARK, image);
+                !this.dtlight.endsWith(image) && this._dfield._set('dtlight', image);
+                !this.dtdark.endsWith(image) && this._dfield._set('dtdark', image);
             }
         } else {
-            [Desktop.DARK, Desktop.LIGHT, Desktop.COLOR].forEach(x => dgsettings.reset(x));
+            let vs = Object.values(this._dfield.prop);
+            vs.forEach(([v]) => this._dfield.gset.reset(v));
         }
     }
 
@@ -400,9 +410,10 @@ class ShuZhi extends GObject.Object {
     }
 
     destroy() {
+        ['_field', '_dfield', '_tfield', '_nfield'].forEach(x => this[x].unbind(this));
         LightProxy.disconnectObject(this);
-        // this.desktop = false;
         this.systray = this.refresh = this._points = null;
+        // this.desktop = false;
     }
 }
 
@@ -412,16 +423,12 @@ class Extension {
     }
 
     enable() {
-        gsettings = ExtensionUtils.getSettings();
-        tgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
-        dgsettings = new Gio.Settings({ schema: 'org.gnome.desktop.background' });
-        ngsettings = new Gio.Settings({ schema: 'org.gnome.settings-daemon.plugins.color' });
         this._ext = new ShuZhi();
     }
 
     disable() {
         this._ext.destroy();
-        gsettings = dgsettings = ngsettings = tgsettings = this._ext = null;
+        this._ext = null;
     }
 }
 
