@@ -49,6 +49,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
         this._field_interval = new UI.Spin(10, 300, 30);
         this._field_xdisplay = new UI.Spin(800, 9600, 100);
         this._field_ydisplay = new UI.Spin(600, 5400, 100);
+        this._field_backups  = new UI.Spin(0, 60, 1, _('Max backups'));
         this._field_orient   = new UI.Drop(_('Horizontal'), _('Vertical'));
         this._field_font     = new Gtk.FontButton({ valign: Gtk.Align.CENTER });
         this._field_folder   = new UI.File({ action: Gtk.FileChooserAction.SELECT_FOLDER });
@@ -64,7 +65,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
             [this._field_systray, [_('Enable systray')]],
             [this._field_color, [_('Show color name')]],
             [this._field_refresh, [_('Auto refresh')], this._field_interval],
-            [[_('Picture location')], this._field_folder],
+            [[_('Picture location')], this._field_backups, this._field_folder],
             [[_('Default style')], this._field_style, this._field_lsketch, this._field_dsketch],
             [[_('Text orientation')], this._field_orient],
             [[_('Text font')], this._field_font],
@@ -85,6 +86,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
             [Fields.LSKETCH,  this._field_lsketch,  'selected'],
             [Fields.DSKETCH,  this._field_dsketch,  'selected'],
             [Fields.INTERVAL, this._field_interval, 'value'],
+            [Fields.BACKUPS,  this._field_backups,  'value'],
             [Fields.XDISPLAY, this._field_xdisplay, 'value'],
             [Fields.YDISPLAY, this._field_ydisplay, 'value'],
             [Fields.ORIENT,   this._field_orient,   'selected'],

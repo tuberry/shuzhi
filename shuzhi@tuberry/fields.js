@@ -5,6 +5,7 @@
 
 var Fields = {
     FONT:     'font-name',
+    BACKUPS:  'max-backups',
     COMMAND:  'text-command',
     POINTS:   'points-cache',
     XDISPLAY: 'resolution-x',
