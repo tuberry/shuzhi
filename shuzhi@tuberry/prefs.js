@@ -38,62 +38,43 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
     constructor() {
         super();
         this._buildWidgets();
-        this._bindValues();
         this._buildUI();
     }
 
     _buildWidgets() {
-        this._field_color    = new Gtk.CheckButton();
-        this._field_refresh  = new Gtk.CheckButton();
-        this._field_systray  = new Gtk.CheckButton();
-        this._field_interval = new UI.Spin(10, 300, 30);
-        this._field_xdisplay = new UI.Spin(800, 9600, 100);
-        this._field_ydisplay = new UI.Spin(600, 5400, 100);
-        this._field_backups  = new UI.Spin(0, 60, 1, _('Max backups'));
-        this._field_orient   = new UI.Drop(_('Horizontal'), _('Vertical'));
-        this._field_font     = new Gtk.FontButton({ valign: Gtk.Align.CENTER });
-        this._field_folder   = new UI.File({ action: Gtk.FileChooserAction.SELECT_FOLDER });
-        this._field_command  = new UI.LazyEntry('shuzhi.sh', _('Command to generate the central text'));
-        this._field_dsketch  = new TipDrop([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'));
-        this._field_lsketch  = new TipDrop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees')], _('Light sketches'));
-        this._field_display  = new Adw.ExpanderRow({ title: _('Set resolution'), show_enable_switch: true, subtitle: _('Required only if incorrect') });
-        this._field_style    = new TipDrop([_('Light'), _('Dark'), _('Auto'), _('System')], _('Background color, “Auto” means sync with the Night Light'));
+        this._field = {
+            COLOR:    ['active',           new Gtk.CheckButton()],
+            REFRESH:  ['active',           new Gtk.CheckButton()],
+            SYSTRAY:  ['active',           new Gtk.CheckButton()],
+            INTERVAL: ['value',            new UI.Spin(10, 300, 30)],
+            XDISPLAY: ['value',            new UI.Spin(800, 9600, 100)],
+            YDISPLAY: ['value',            new UI.Spin(600, 5400, 100)],
+            BACKUPS:  ['value',            new UI.Spin(0, 60, 1, _('Max backups'))],
+            ORIENT:   ['selected',         new UI.Drop(_('Horizontal'), _('Vertical'))],
+            FONT:     ['font',             new Gtk.FontButton({ valign: Gtk.Align.CENTER })],
+            FOLDER:   ['file',             new UI.File({ action: Gtk.FileChooserAction.SELECT_FOLDER })],
+            COMMAND:  ['text',             new UI.LazyEntry('shuzhi.sh', _('Command to generate the central text'))],
+            DSKETCH:  ['selected',         new TipDrop([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds'), _('Dark sketches')])],
+            LSKETCH:  ['selected',         new TipDrop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees'), _('Light sketches')])],
+            DISPLAY:  ['enable-expansion', new Adw.ExpanderRow({ title: _('Set resolution'), show_enable_switch: true, subtitle: _('Required only if incorrect') })],
+            STYLE:    ['selected',         new TipDrop([_('Light'), _('Dark'), _('Auto'), _('System'), _('Background color, “Auto” means sync with the Night Light')])],
+        };
+        Object.entries(this._field).forEach(([x, [y, z]]) => gsettings.bind(Fields[x], z, y, Gio.SettingsBindFlags.DEFAULT));
     }
 
     _buildUI() {
         [
-            [this._field_systray, [_('Enable systray')]],
-            [this._field_color, [_('Show color name')]],
-            [this._field_refresh, [_('Auto refresh')], this._field_interval],
-            [[_('Picture location')], this._field_backups, this._field_folder],
-            [[_('Default style')], this._field_style, this._field_lsketch, this._field_dsketch],
-            [[_('Text orientation')], this._field_orient],
-            [[_('Text font')], this._field_font],
-            [[_('Text command')], this._field_command],
+            [this._field.SYSTRAY[1],  [_('Enable systray')]],
+            [this._field.COLOR[1],    [_('Show color name')]],
+            [this._field.REFRESH[1],  [_('Auto refresh')], this._field.INTERVAL[1]],
+            [[_('Picture location')], this._field.BACKUPS[1], this._field.FOLDER[1]],
+            [[_('Default style')],    this._field.STYLE[1], this._field.LSKETCH[1], this._field.DSKETCH[1]],
+            [[_('Text orientation')], this._field.ORIENT[1]],
+            [[_('Text font')],        this._field.FONT[1]],
+            [[_('Text command')],     this._field.COMMAND[1]],
         ].forEach(xs => this.add(new UI.PrefRow(...xs)));
-        [[[_('Height')], this._field_ydisplay], [[_('Width')], this._field_xdisplay]].forEach(xs => this._field_display.add_row(new UI.PrefRow(...xs)));
-        this.add(this._field_display);
-        if(this._field_display.enable_expansion) this._field_display.set_expanded(true);
-    }
-
-    _bindValues() {
-        [
-            [Fields.SYSTRAY,  this._field_systray,  'active'],
-            [Fields.DISPLAY,  this._field_display,  'enable-expansion'],
-            [Fields.COLOR,    this._field_color,    'active'],
-            [Fields.REFRESH,  this._field_refresh,  'active'],
-            [Fields.STYLE,    this._field_style,    'selected'],
-            [Fields.LSKETCH,  this._field_lsketch,  'selected'],
-            [Fields.DSKETCH,  this._field_dsketch,  'selected'],
-            [Fields.INTERVAL, this._field_interval, 'value'],
-            [Fields.BACKUPS,  this._field_backups,  'value'],
-            [Fields.XDISPLAY, this._field_xdisplay, 'value'],
-            [Fields.YDISPLAY, this._field_ydisplay, 'value'],
-            [Fields.ORIENT,   this._field_orient,   'selected'],
-            [Fields.COMMAND,  this._field_command,  'text'],
-            [Fields.FONT,     this._field_font,     'font'],
-            [Fields.FOLDER,   this._field_folder,   'file'],
-        ].forEach(xs => gsettings.bind(...xs, Gio.SettingsBindFlags.DEFAULT));
+        [[[_('Height')], this._field.YDISPLAY[1]], [[_('Width')], this._field.XDISPLAY[1]]].forEach(xs => this._field.DISPLAY[1].add_row(new UI.PrefRow(...xs)));
+        this.add(this._field.DISPLAY[1]);
+        if(this._field.DISPLAY[1].enable_expansion) this._field.DISPLAY[1].set_expanded(true);
     }
 }
-

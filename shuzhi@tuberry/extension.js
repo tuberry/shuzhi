@@ -395,9 +395,9 @@ class ShuZhi {
         mtt ? Draw.drawMotto(context, motto) : Draw.drawLogo(context, motto);
         let path = this.path;
         surface.writeToPNG(path);
-        backup(path, this.backups).catch(noop);
         this.desktop = path;
         this._painted = true;
+        backup(path, this.backups).catch(noop);
     }
 
     _drawSketch(context, x, y) {

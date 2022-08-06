@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-08-05 11:23+0800\n"
+"POT-Creation-Date: 2022-08-06 19:10+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -117,43 +117,43 @@ msgstr "系统"
 msgid "Background color, “Auto” means sync with the Night Light"
 msgstr "背景颜色，“自动”即随夜灯同步切换"
 
-#: prefs.js:65
+#: prefs.js:67
 msgid "Enable systray"
 msgstr "托盘图标"
 
-#: prefs.js:66
+#: prefs.js:68
 msgid "Show color name"
 msgstr "颜色名称"
 
-#: prefs.js:67
+#: prefs.js:69
 msgid "Auto refresh"
 msgstr "自动刷新"
 
-#: prefs.js:68
+#: prefs.js:70
 msgid "Picture location"
 msgstr "图像位置"
 
-#: prefs.js:69
+#: prefs.js:71
 msgid "Default style"
 msgstr "默认样式"
 
-#: prefs.js:70
+#: prefs.js:72
 msgid "Text orientation"
 msgstr "文本方向"
 
-#: prefs.js:71
+#: prefs.js:73
 msgid "Text font"
 msgstr "文本字体"
 
-#: prefs.js:72
+#: prefs.js:74
 msgid "Text command"
 msgstr "文本命令"
 
-#: prefs.js:74
+#: prefs.js:76
 msgid "Height"
 msgstr "高度"
 
-#: prefs.js:74
+#: prefs.js:76
 msgid "Width"
 msgstr "宽度"
 
@@ -162,5 +162,5 @@ msgid "Clear"
 msgstr "清除"
 
 #: ui.js:258
-msgid "Click or Press ENTER to commit changes"
+msgid "Click or press ENTER to commit changes"
 msgstr "单击或按回车提交更改"
