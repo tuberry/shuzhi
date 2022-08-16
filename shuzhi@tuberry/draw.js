@@ -21,7 +21,6 @@ let TextRect = [-1, -1, 0, 0];
 const add = (u, v) => u + v;
 const sinp = t => Math.sin(t * Math.PI);
 const cosp = t => Math.cos(t * Math.PI);
-const mod = (u, v) => u - Math.floor(u / v) * v;
 const conv = (r, t) => [r * cosp(t), r * sinp(t)];
 const overlap = (a, b) => !(a[0] > b[0] + b[2] || b[0] > a[0] + a[2] || a[1] > b[1] + b[3] || b[1] > a[1] + a[3]);
 const forLoop = (f, u, l = 0, s = 1) => {
@@ -101,11 +100,11 @@ function circle(rect) {
 function bezeirCtrls(vertex, smooth = 1, closed = false) {
     // Ref: https://zhuanlan.zhihu.com/p/267693043
     let ctrls = array(vertex.length - (closed ? 1 : 2), i => i + 1).flatMap(i => {
-        let [a, b, c] = [i - 1, i, i + 1].map(x => vertex[mod(x, vertex.length)]);
+        let [a, b, c] = [i - 1, i, i + 1].map(x => vertex[x % vertex.length]); // i - 1 >= 0
         let ls = [a, c].map(x => dis(x, b));
-        let mp = [a, c].map(x => zipWith((u, v) => (u + v) / 2, x, b));
-        let ds = (k => zipWith((u, v) => u + (v - u) * k, ...mp))(ls[0] / (ls[0] + ls[1]));
-        return [mp[0], null, mp[1]].map(x => x ? zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds) : vertex[i]);
+        let ms = [a, c].map(x => zipWith((u, v) => (u + v) / 2, x, b));
+        let ds = (k => zipWith((u, v) => u + (v - u) * k, ...ms))(ls[0] / ls.reduce(add));
+        return (([x, y]) => [x, vertex[i], y])(ms.map(x => zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds)));
     });
 
     return closed ? ctrls.splice(-1).concat(ctrls) : [vertex[0]].concat(ctrls, Array(2).fill(vertex.at(-1)));
@@ -389,7 +388,8 @@ function drawTrees(cr, pts) {
     drawLand(cr, ld);
 }
 
-function genFlower(x, y, l = 20, n = 5) {
+function genFlower([x, y, v, w], z, l = 20, n = 5) {
+    if(z < 8) return [false, w * 0.9, [x, y], trans([x, y], move(conv(gauss(5 / 2, 1) * l, v - 1 / 2)))];
     let da = 2 / (n + 1);
     let t1 = gauss(1 / 2, 1 / 9);
     let rt = rotate(rand(0, 2));
@@ -402,15 +402,25 @@ function genFlower(x, y, l = 20, n = 5) {
 }
 
 function drawFlower(cr, pts, cl) {
-    let [, pt] = pts;
     cr.save();
-    cr.setSourceRGBA(...cl.color);
-    pt.forEach(p => {
-        cr.moveTo(...p[0][1]);
-        cr.curveTo(...p[0][2], ...p[1][2], ...p[1][1]);
-        cr.curveTo(...p[1][0], ...p[0][0], ...p[0][1]);
-    });
-    cr.fill();
+    if(pts.length > 2) {
+        let [, w, s, t] = pts;
+        cr.setLineWidth(w);
+        cr.setSourceRGBA(0.2, 0.2, 0.2, 0.7);
+        cr.setLineCap(Cairo.LineCap.BUTT);
+        cr.moveTo(...s);
+        cr.lineTo(...t);
+        cr.stroke();
+    } else {
+        let [, pt] = pts;
+        cr.setSourceRGBA(...cl.color);
+        pt.forEach(p => {
+            cr.moveTo(...p[0][1]);
+            cr.curveTo(...p[0][2], ...p[1][2], ...p[1][1]);
+            cr.curveTo(...p[1][0], ...p[0][0], ...p[0][1]);
+        });
+        cr.fill();
+    }
     cr.restore();
 }
 
@@ -420,36 +430,32 @@ function genTree(n, x, y, l) {
         if(!vec) return null;
         let t = vec[2] + ang * rand(0.1, 0.9);
         let s = 3 * Math.pow(1 - Math.abs(t), 2) * rand(0.1, 0.9);
-        return s < 0.3 ? null : trans(vec.slice(0, 2), move(conv(s * l, t))).concat(t);
+        return s < 0.3 ? null : trans(vec.slice(0, 2), move(conv(s * l, t - 1 / 2))).concat(t);
     };
-    let root = [[0, 0, 0], branch([0, 0, 0], gauss(0, 1 / 32))];
+    let root = [[x, y, 0], branch([x, y, 0], gauss(0, 1 / 32))];
     let tree = root.concat(scanl((_, ac) => ac.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), array(n - 1), [root[1]]));
-    let thick = i => tree[i] ? tree[i][2] : 0;
-    let merg = (a, b, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
-    forLoop(i => tree[i] && (tree[i][2] = merg(thick(2 * i), thick(2 * i + 1), y / 1024)), 0, tree.length - 1, -1);
-    tree = tree.map(t => t && trans(t.slice(0, 2), rotate(1 / 2), move([x, y])).concat(t[2]));
-    forLoop(i => tree[i] && !(tree[2 * i] && tree[2 * i + 1]) &&
-            (tree[i] = tree[i].concat([genFlower(tree[i][0], tree[i][1], y / 54)])), 2 ** (n - 1) - 1, 1);
+    let merg = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
+    forLoop(i => tree[i] && tree[i].push(merg(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), 0, tree.length - 1, -1);
+    forLoop(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(genFlower(tree[i], i, y / 54)), 2 ** n - 1, 1);
 
     return [tree];
 }
 
 function drawTree(cr, pts) {
     let [tr, cl] = pts;
-    if(tr.length < 4) return;
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
     cr.setSourceRGBA(...Color.DARK);
-    let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][2]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
-    let flower = (i, s) => (tr[i] && tr[i][3]) && (s === tr[i][3][0]) && drawFlower(cr, tr[i][3], cl);
+    let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][3]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
+    let flower = (i, s) => (tr[i] && tr[i][4]) && (s === tr[i][4][0]) && drawFlower(cr, tr[i][4], cl);
     forLoop(i => {
-        (i === 0) && (cr.moveTo(tr[i][0], tr[i][1]), lineTo(i + 1)) || forLoop(j => {
+        forLoop(j => {
             if(!tr[j]) return;
             flower(2 * j, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j);
             flower(2 * j + 1, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j + 1);
             flower(j, true);
-        }, Math.pow(2, i) - 1, Math.pow(2, i - 1));
+        }, Math.pow(2, i) - 1, Math.floor(Math.pow(2, i - 1)));
     }, Math.floor(Math.log2(tr.length)) - 1);
     cr.restore();
 }

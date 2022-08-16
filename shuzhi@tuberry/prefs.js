@@ -8,7 +8,6 @@ const { Adw, Gtk, Gio, GObject } = imports.gi;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const _ = ExtensionUtils.gettext;
-const gsettings = ExtensionUtils.getSettings();
 const { Fields } = Me.imports.fields;
 const UI = Me.imports.ui;
 
@@ -18,16 +17,6 @@ function buildPrefsWidget() {
 
 function init() {
     ExtensionUtils.initTranslations();
-}
-
-class TipDrop extends Gtk.DropDown {
-    static {
-        GObject.registerClass(this);
-    }
-
-    constructor(args, tip) {
-        super({ model: Gtk.StringList.new(args), valign: Gtk.Align.CENTER, tooltip_text: tip || '' });
-    }
 }
 
 class ShuzhiPrefs extends Adw.PreferencesGroup {
@@ -42,6 +31,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
     }
 
     _buildWidgets() {
+        let gsettings = ExtensionUtils.getSettings();
         this._field = {
             COLOR:    ['active',           new Gtk.CheckButton()],
             REFRESH:  ['active',           new Gtk.CheckButton()],
@@ -50,14 +40,14 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
             XDISPLAY: ['value',            new UI.Spin(800, 9600, 100)],
             YDISPLAY: ['value',            new UI.Spin(600, 5400, 100)],
             BACKUPS:  ['value',            new UI.Spin(0, 60, 1, _('Max backups'))],
-            ORIENT:   ['selected',         new UI.Drop(_('Horizontal'), _('Vertical'))],
+            ORIENT:   ['selected',         new UI.Drop([_('Horizontal'), _('Vertical')])],
             FONT:     ['font',             new Gtk.FontButton({ valign: Gtk.Align.CENTER })],
             FOLDER:   ['file',             new UI.File({ action: Gtk.FileChooserAction.SELECT_FOLDER })],
             COMMAND:  ['text',             new UI.LazyEntry('shuzhi.sh', _('Command to generate the central text'))],
-            DSKETCH:  ['selected',         new TipDrop([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds'), _('Dark sketches')])],
-            LSKETCH:  ['selected',         new TipDrop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees'), _('Light sketches')])],
+            DSKETCH:  ['selected',         new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'))],
+            LSKETCH:  ['selected',         new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees')], _('Light sketches'))],
             DISPLAY:  ['enable-expansion', new Adw.ExpanderRow({ title: _('Set resolution'), show_enable_switch: true, subtitle: _('Required only if incorrect') })],
-            STYLE:    ['selected',         new TipDrop([_('Light'), _('Dark'), _('Auto'), _('System'), _('Background color, “Auto” means sync with the Night Light')])],
+            STYLE:    ['selected',         new UI.Drop([_('Light'), _('Dark'), _('Auto'), _('System')], _('Background color, “Auto” means sync with the Night Light'))],
         };
         Object.entries(this._field).forEach(([x, [y, z]]) => gsettings.bind(Fields[x], z, y, Gio.SettingsBindFlags.DEFAULT));
     }

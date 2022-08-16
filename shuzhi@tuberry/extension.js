@@ -25,21 +25,18 @@ const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child
 
 Gio._promisify(Gio.File.prototype, 'copy_async');
 Gio._promisify(Gio.File.prototype, 'delete_async');
-Gio._promisify(Gio.File.prototype, 'query_info_async');
 Gio._promisify(Gio.File.prototype, 'enumerate_children_async');
-Gio._promisify(Gio.FileEnumerator.prototype, 'next_files_async');
 Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
 
 async function backup(path, max) {
     if(max < 1) return;
-    let infos, files = [];
+    let files = [];
     let dir = GLib.path_get_dirname(path);
     let name = GLib.path_get_basename(path).replace(/\..+$/, '');
     let fl = (...as) => Gio.File.new_for_path(GLib.build_filenamev(as));
     await fl(path).copy_async(fl(dir, `${name}-${new Date().toISOString()}.png`), Gio.FileCopyFlags.NONE, GLib.PRIORITY_DEFAULT, null, null);
-    let denum = await fl(dir).enumerate_children_async(Gio.FILE_ATTRIBUTE_STANDARD_NAME, Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, null);
-    while((infos = await denum?.next_files_async(100, GLib.PRIORITY_DEFAULT, null))?.length) files.push(...infos);
-    files = files.flatMap(x => x.get_name().startsWith(`${name}-`) ? [x.get_name()] : []).slice(max + 1);
+    for await (let f of await fl(dir).enumerate_children_async(Gio.FILE_ATTRIBUTE_STANDARD_NAME, Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, null).catch(noop) ?? []) files.push(f);
+    files = files.flatMap(x => x.get_name().startsWith(`${name}-`) ? [x.get_name()] : []).slice(0, -max - 1);
     Promise.all(files.forEach(x => fl(dir, x).delete_async(GLib.PRIORITY_DEFAULT, null))).catch(noop);
 }
 
