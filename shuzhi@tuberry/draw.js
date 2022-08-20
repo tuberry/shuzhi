@@ -111,7 +111,7 @@ function bezeirCtrls(vertex, smooth = 1, closed = false) {
 }
 
 function genMoon(x, _y) {
-    let moon = Math.abs((new Date().getTime() / 86400000 - 18256.8) / 29.5305882);
+    let moon = Math.abs((Date.now() / 86400000 - 18256.8) / 29.5305882);
     let p = moon - Math.floor(moon);
     // Ref: https://ecomaan.nl/javascript/moonphase/
     let [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI,  p > 0.5 ? Math.PI / 4 : -Math.PI / 4];
@@ -429,7 +429,7 @@ function genTree(n, x, y, l) {
     let branch = (vec, ang) => {
         if(!vec) return null;
         let t = vec[2] + ang * rand(0.1, 0.9);
-        let s = 3 * Math.pow(1 - Math.abs(t), 2) * rand(0.1, 0.9);
+        let s = rand(0.1, 0.9) * 3 * (1 - Math.abs(t)) ** 2;
         return s < 0.3 ? null : trans(vec.slice(0, 2), move(conv(s * l, t - 1 / 2))).concat(t);
     };
     let root = [[x, y, 0], branch([x, y, 0], gauss(0, 1 / 32))];
@@ -455,7 +455,7 @@ function drawTree(cr, pts) {
             flower(2 * j, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j);
             flower(2 * j + 1, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j + 1);
             flower(j, true);
-        }, Math.pow(2, i) - 1, Math.floor(Math.pow(2, i - 1)));
+        }, 2 ** i - 1, Math.floor(2 ** (i - 1)));
     }, Math.floor(Math.log2(tr.length)) - 1);
     cr.restore();
 }

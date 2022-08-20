@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-08-06 19:10+0800\n"
+"POT-Creation-Date: 2022-08-20 08:42+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,145 +17,129 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:352
+#: extension.js:341
 msgid "Copy"
 msgstr "复制"
 
-#: extension.js:354
+#: extension.js:343
 msgid "Refresh"
 msgstr "刷新"
 
-#: extension.js:355
+#: extension.js:344
 msgid "Sketch: "
 msgstr "纹理："
 
-#: extension.js:357
+#: extension.js:346
 msgid "Settings"
 msgstr "设置"
 
-#: extension.js:360
+#: extension.js:349
 msgid "Motto"
 msgstr "字句"
 
-#: extension.js:361
+#: extension.js:350
 msgid "Sketch"
 msgstr "纹理"
 
-#: extension.js:362
+#: extension.js:351
 msgid "Both"
 msgstr "全部"
 
-#: prefs.js:52
+#: prefs.js:40
 msgid "Max backups"
 msgstr "备份上限"
 
-#: prefs.js:53
+#: prefs.js:41
 msgid "Horizontal"
 msgstr "水平"
 
-#: prefs.js:53
+#: prefs.js:41
 msgid "Vertical"
 msgstr "竖直"
 
-#: prefs.js:56
+#: prefs.js:44
 msgid "Command to generate the central text"
 msgstr "生成正中文本的命令"
 
-#: prefs.js:57 prefs.js:58
+#: prefs.js:45 prefs.js:46
 msgid "Waves"
 msgstr "波浪"
 
-#: prefs.js:57 prefs.js:58
+#: prefs.js:45 prefs.js:46
 msgid "Ovals"
 msgstr "椭圆"
 
-#: prefs.js:57 prefs.js:58
+#: prefs.js:45 prefs.js:46
 msgid "Blobs"
 msgstr "团子"
 
-#: prefs.js:57
+#: prefs.js:45
 msgid "Clouds"
 msgstr "云纹"
 
-#: prefs.js:57
+#: prefs.js:45
 msgid "Dark sketches"
 msgstr "深色纹理"
 
-#: prefs.js:58
+#: prefs.js:46
 msgid "Trees"
 msgstr "虚树"
 
-#: prefs.js:58
+#: prefs.js:46
 msgid "Light sketches"
 msgstr "浅色纹理"
 
-#: prefs.js:59
-msgid "Set resolution"
-msgstr "设分辨率"
-
-#: prefs.js:59
-msgid "Required only if incorrect"
-msgstr "仅当不正确时需要"
-
-#: prefs.js:60
+#: prefs.js:47
 msgid "Light"
 msgstr "浅色"
 
-#: prefs.js:60
+#: prefs.js:47
 msgid "Dark"
 msgstr "深色"
 
-#: prefs.js:60
+#: prefs.js:47
 msgid "Auto"
 msgstr "自动"
 
-#: prefs.js:60
+#: prefs.js:47
 msgid "System"
 msgstr "系统"
 
-#: prefs.js:60
+#: prefs.js:47
 msgid "Background color, “Auto” means sync with the Night Light"
 msgstr "背景颜色，“自动”即随夜灯同步切换"
 
-#: prefs.js:67
+#: prefs.js:54
 msgid "Enable systray"
 msgstr "托盘图标"
 
-#: prefs.js:68
+#: prefs.js:55
 msgid "Show color name"
 msgstr "颜色名称"
 
-#: prefs.js:69
+#: prefs.js:56
 msgid "Auto refresh"
 msgstr "自动刷新"
 
-#: prefs.js:70
+#: prefs.js:57
 msgid "Picture location"
 msgstr "图像位置"
 
-#: prefs.js:71
+#: prefs.js:58
 msgid "Default style"
 msgstr "默认样式"
 
-#: prefs.js:72
+#: prefs.js:59
 msgid "Text orientation"
 msgstr "文本方向"
 
-#: prefs.js:73
+#: prefs.js:60
 msgid "Text font"
 msgstr "文本字体"
 
-#: prefs.js:74
+#: prefs.js:61
 msgid "Text command"
 msgstr "文本命令"
-
-#: prefs.js:76
-msgid "Height"
-msgstr "高度"
-
-#: prefs.js:76
-msgid "Width"
-msgstr "宽度"
 
 #: ui.js:30
 msgid "Clear"
@@ -164,3 +148,15 @@ msgstr "清除"
 #: ui.js:258
 msgid "Click or press ENTER to commit changes"
 msgstr "单击或按回车提交更改"
+
+#~ msgid "Set resolution"
+#~ msgstr "设分辨率"
+
+#~ msgid "Required only if incorrect"
+#~ msgstr "仅当不正确时需要"
+
+#~ msgid "Height"
+#~ msgstr "高度"
+
+#~ msgid "Width"
+#~ msgstr "宽度"

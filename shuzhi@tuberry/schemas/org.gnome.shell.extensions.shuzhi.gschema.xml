@@ -9,10 +9,6 @@
         <default>false</default>
         <summary>enable auto update</summary>
     </key>
-    <key type="b" name="enable-resolution">
-        <default>false</default>
-        <summary>enable resolution setting</summary>
-    </key>
     <key type="b" name="show-color-name">
         <default>false</default>
         <summary>show color name</summary>
@@ -46,16 +42,6 @@
         <range min="10" max="300"/>
         <default>60</default>
         <summary>refresh interval (mins)</summary>
-    </key>
-    <key type="u" name="resolution-x">
-        <range min="800" max="9600"/>
-        <default>1920</default>
-        <summary>resolution in X axis</summary>
-    </key>
-    <key type="u" name="resolution-y">
-        <range min="600" max="5400"/>
-        <default>1080</default>
-        <summary>resolution in Y axis</summary>
     </key>
     <key type="s" name="font-name">
         <default>"Sans 16"</default>

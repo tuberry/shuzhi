@@ -150,9 +150,6 @@ class ShuZhi {
             fontname:  [Fields.FONT,     'string'],
             orient:    [Fields.ORIENT,   'uint'],
             refresh:   [Fields.REFRESH,  'boolean'],
-            display:   [Fields.DISPLAY,  'boolean'],
-            xdisplay:  [Fields.XDISPLAY, 'uint'],
-            ydisplay:  [Fields.YDISPLAY, 'uint'],
             systray:   [Fields.SYSTRAY,  'boolean'],
             command:   [Fields.COMMAND,  'string'],
         }, ExtensionUtils.getSettings(), this);
@@ -216,11 +213,6 @@ class ShuZhi {
             this._button.destroy();
             this._menus = this._button = null;
         }
-    }
-
-    set display(display) {
-        this._display = display;
-        this._queueRepaint(true);
     }
 
     set lsketch(sketch) {
@@ -379,7 +371,7 @@ class ShuZhi {
     }
 
     repaint() {
-        let [x, y] = this._display ? [this.xdisplay, this.ydisplay] : global.display.get_size();
+        let { width: x, height: y } = Main.layoutManager.findMonitorForActor(Main.panel);
         let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
