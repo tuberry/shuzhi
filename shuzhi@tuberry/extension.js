@@ -96,7 +96,7 @@ class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
 
     setSelected(index) {
         this._index = index;
-        this.label.set_text(`${this._name}${_(this._list[this._index]) ?? ''}`);
+        this.label.set_text(`${this._name}：${_(this._list[index])}`);
         this._items.forEach((y, i) => y.setOrnament(index === i ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE));
     }
 
@@ -341,7 +341,7 @@ class ShuZhi {
             copy:     new MenuItem(_('Copy'), this._copyMotto.bind(this)),
             sep1:     new PopupMenu.PopupSeparatorMenuItem(),
             refresh:  new PopupMenu.PopupSubMenuMenuItem(_('Refresh')),
-            sketch:   new DRadioItem(_('Sketch: '), this.sketches, this.sketch, x => (this.sketch = x)),
+            sketch:   new DRadioItem(_('Sketch'), this.sketches, this.sketch, x => (this.sketch = x)),
             sep2:     new PopupMenu.PopupSeparatorMenuItem(),
             settings: new MenuItem(_('Settings'), () => ExtensionUtils.openPrefs()),
         };

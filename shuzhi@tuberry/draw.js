@@ -375,8 +375,8 @@ function drawBackground(cr, x, y) {
 function genTrees(x, y) {
     let ld = genLand(x, y);
     let cl = Color.getRandColor();
-    let t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6, x / 30);
-    let t2 = genTree(6, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
+    let t1 = genTree(6, rand(2, 5) * x / 20, 5 * y / 6, x / 30);
+    let t2 = genTree(8, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
 
     return [t1, t2, ld].map(v => v.concat([cl]));
 }
