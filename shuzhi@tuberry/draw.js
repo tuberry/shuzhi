@@ -333,7 +333,6 @@ function drawClouds(cr, clouds) {
 
 function genMotto(cr, x, y, text, orien) {
     let layout = PangoCairo.create_layout(cr);
-    layout.set_line_spacing(1.05);
     if(orien) {
         layout.set_width(DV * y * Pango.SCALE);
         layout.get_context().set_base_gravity(Pango.Gravity.EAST);
