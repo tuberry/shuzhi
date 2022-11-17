@@ -315,7 +315,7 @@ class ShuZhi {
 
     _setMotto(paint) {
         if('_motto' in this) {
-            this._getMotto().then(scc => (this.motto = scc)).catch(() => (this.motto = ''))
+            this._getMotto().then(scc => (this.motto = scc)).catch(e => { logError(e, 'shuzhi'); this.motto = ''; })
                 .finally(() => this._queueRepaint(paint));
         } else {
             this._getMotto().then(scc => (this.motto = scc)).catch(() => (this.motto = ''))
@@ -371,7 +371,7 @@ class ShuZhi {
     }
 
     repaint() {
-        let { width: x, height: y } = Main.layoutManager.findMonitorForActor(Main.panel);
+        let { width: x, height: y } = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v);
         let surface = new Cairo.ImageSurface(Cairo.Format.ARGB32, x, y);
         let context = new Cairo.Context(surface);
         if(!this._painted) this._points = [];
