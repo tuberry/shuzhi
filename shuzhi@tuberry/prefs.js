@@ -52,11 +52,11 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
     _buildUI() {
         [
             [this._field.SYSTRAY[1],  [_('Enable systray')]],
-            [this._field.COLOR[1],    [_('Show color name')]],
+            [this._field.COLOR[1],    [_('Color name')]],
             [this._field.REFRESH[1],  [_('Auto refresh')], this._field.INTERVAL[1]],
+            [[_('Text orientation')], this._field.ORIENT[1]],
             [[_('Picture location')], this._field.BACKUPS[1], this._field.FOLDER[1]],
             [[_('Default style')],    this._field.STYLE[1], this._field.LSKETCH[1], this._field.DSKETCH[1]],
-            [[_('Text orientation')], this._field.ORIENT[1]],
             [[_('Text font')],        this._field.FONT[1]],
             [[_('Text command')],     this._field.COMMAND[1]],
         ].forEach(xs => this.add(new UI.PrefRow(...xs)));

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-18 15:04+0800\n"
+"POT-Creation-Date: 2022-11-27 13:32+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,29 +17,33 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:341
+#: extension.js:273
 msgid "Copy"
 msgstr "复制"
 
-#: extension.js:343
-msgid "Refresh"
-msgstr "刷新"
+#: extension.js:274
+msgid "Reset"
+msgstr "重置"
 
-#: extension.js:344 extension.js:350
-msgid "Sketch"
-msgstr "纹理"
-
-#: extension.js:346
-msgid "Settings"
-msgstr "设置"
-
-#: extension.js:349
+#: extension.js:276
 msgid "Motto"
 msgstr "字句"
 
-#: extension.js:351
+#: extension.js:277 extension.js:281
+msgid "Sketch"
+msgstr "纹理"
+
+#: extension.js:278
 msgid "Both"
 msgstr "全部"
+
+#: extension.js:279
+msgid "Refresh"
+msgstr "刷新"
+
+#: extension.js:283
+msgid "Settings"
+msgstr "设置"
 
 #: prefs.js:40
 msgid "Max backups"
@@ -110,7 +114,7 @@ msgid "Enable systray"
 msgstr "托盘图标"
 
 #: prefs.js:55
-msgid "Show color name"
+msgid "Color name"
 msgstr "颜色名称"
 
 #: prefs.js:56
@@ -118,16 +122,16 @@ msgid "Auto refresh"
 msgstr "自动刷新"
 
 #: prefs.js:57
+msgid "Text orientation"
+msgstr "文本方向"
+
+#: prefs.js:58
 msgid "Picture location"
 msgstr "图像位置"
 
-#: prefs.js:58
+#: prefs.js:59
 msgid "Default style"
 msgstr "默认样式"
-
-#: prefs.js:59
-msgid "Text orientation"
-msgstr "文本方向"
 
 #: prefs.js:60
 msgid "Text font"
@@ -137,11 +141,11 @@ msgstr "文本字体"
 msgid "Text command"
 msgstr "文本命令"
 
-#: ui.js:30
+#: ui.js:32
 msgid "Clear"
 msgstr "清除"
 
-#: ui.js:258
+#: ui.js:261
 msgid "Click or press ENTER to commit changes"
 msgstr "单击或按回车提交更改"
 

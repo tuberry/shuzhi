@@ -52,7 +52,7 @@
         <summary>temporary picture location</summary>
     </key>
     <key type="s" name="text-command">
-        <default>""</default>
+        <default>"echo text"</default>
         <summary>text generation command</summary>
     </key>
   </schema>
