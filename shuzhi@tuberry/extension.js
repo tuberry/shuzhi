@@ -159,7 +159,7 @@ class ShuZhi {
     }
 
     set sketch(sketch) {
-        this._field.set(this._dark ? 'dsketch' : 'lsketch', sketch);
+        this.setf(this._dark ? 'dsketch' : 'lsketch', sketch);
     }
 
     set refresh(refresh) {
@@ -231,14 +231,16 @@ class ShuZhi {
     }
 
     _setMotto(paint) {
-        this._genMotto().then(scc => (this.motto = scc)).catch(() => (this.motto = '')).finally(() => {
-            if(this._mlock) {
-                this._queueRepaint(paint);
-            } else {
-                this._mlock = true; // skip when unlocking screen
-                if(!this._checkImg()) this._queueRepaint(true);
-            }
-        });
+        this._genMotto().then(scc => (this.motto = scc))
+            .catch(e => { logError(e); this.motto = ''; })
+            .finally(() => {
+                if(this._mlock) {
+                    this._queueRepaint(paint);
+                } else {
+                    this._mlock = true; // skip when unlocking screen
+                    if(!this._checkImg()) this._queueRepaint(true);
+                }
+            });
     }
 
     _queueRepaint(paint) {
@@ -260,14 +262,13 @@ class ShuZhi {
 
     _addMenuItems() {
         this._menus = {
+            copy:   new MenuItem(_('Copy'), () => this._copyMotto()),
+            reset:  new MenuItem(_('Reset'), () => { this.desktop = false; }),
             refresh: new MenuSection([
                 [_('Motto'),  () => this._setMotto(false)],
                 [_('Sketch'), () => this._queueRepaint(true)],
                 [_('Both'),   () => this._setMotto(true)],
             ], _('Refresh')),
-            sep0:   new PopupMenu.PopupSeparatorMenuItem(),
-            copy:   new MenuItem(_('Copy'), () => this._copyMotto()),
-            reset:  new MenuItem(_('Reset'), () => { this.desktop = false; }),
             sep1:   new PopupMenu.PopupSeparatorMenuItem(),
             sketch: new DRadioItem(_('Sketch'), this.getSketches(), this.sketch, x => (this.sketch = x)),
             sep2:   new PopupMenu.PopupSeparatorMenuItem(),
@@ -286,7 +287,7 @@ class ShuZhi {
                 !this.dpic.endsWith(image) && this.setf('dpic', image, 'd');
             }
         } else {
-            let vs = Object.values(this._dfield.prop);
+            let vs = Object.values(this._dfield.prop.get(this));
             vs.forEach(([v]) => this._dfield.gset.reset(v));
         }
     }

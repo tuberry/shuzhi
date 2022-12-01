@@ -43,7 +43,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
             FOLDER:   ['file',     new UI.File({ action: Gtk.FileChooserAction.SELECT_FOLDER })],
             DSKETCH:  ['selected', new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'))],
             LSKETCH:  ['selected', new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees')], _('Light sketches'))],
-            COMMAND:  ['text',     new UI.LazyEntry(_('# Set to `shuzhi.sh` to use the built-in script'), _('Command to generate the central text'))],
+            COMMAND:  ['text',     new UI.LazyEntry(_('# Set to shuzhi.sh to use the built-in script'), _('Command to generate the central text'))],
             STYLE:    ['selected', new UI.Drop([_('Light'), _('Dark'), _('Auto'), _('System')], _('Background color, “Auto” means sync with the Night Light'))],
         };
         Object.entries(this._field).forEach(([x, [y, z]]) => gsettings.bind(Fields[x], z, y, Gio.SettingsBindFlags.DEFAULT));
