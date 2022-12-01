@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-27 13:32+0800\n"
+"POT-Creation-Date: 2022-12-01 10:25+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,31 +17,31 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:273
-msgid "Copy"
-msgstr "复制"
-
-#: extension.js:274
-msgid "Reset"
-msgstr "重置"
-
-#: extension.js:276
+#: extension.js:264
 msgid "Motto"
 msgstr "字句"
 
-#: extension.js:277 extension.js:281
+#: extension.js:265 extension.js:272
 msgid "Sketch"
 msgstr "纹理"
 
-#: extension.js:278
+#: extension.js:266
 msgid "Both"
 msgstr "全部"
 
-#: extension.js:279
+#: extension.js:267
 msgid "Refresh"
 msgstr "刷新"
 
-#: extension.js:283
+#: extension.js:269
+msgid "Copy"
+msgstr "复制"
+
+#: extension.js:270
+msgid "Reset"
+msgstr "重置"
+
+#: extension.js:274
 msgid "Settings"
 msgstr "设置"
 
@@ -57,37 +57,41 @@ msgstr "水平"
 msgid "Vertical"
 msgstr "竖直"
 
-#: prefs.js:44
-msgid "Command to generate the central text"
-msgstr "生成正中文本的命令"
-
-#: prefs.js:45 prefs.js:46
+#: prefs.js:44 prefs.js:45
 msgid "Waves"
 msgstr "波浪"
 
-#: prefs.js:45 prefs.js:46
+#: prefs.js:44 prefs.js:45
 msgid "Ovals"
 msgstr "椭圆"
 
-#: prefs.js:45 prefs.js:46
+#: prefs.js:44 prefs.js:45
 msgid "Blobs"
 msgstr "团子"
 
-#: prefs.js:45
+#: prefs.js:44
 msgid "Clouds"
 msgstr "云纹"
 
-#: prefs.js:45
+#: prefs.js:44
 msgid "Dark sketches"
 msgstr "深色纹理"
 
-#: prefs.js:46
+#: prefs.js:45
 msgid "Trees"
 msgstr "虚树"
 
-#: prefs.js:46
+#: prefs.js:45
 msgid "Light sketches"
 msgstr "浅色纹理"
+
+#: prefs.js:46
+msgid "# Set to `shuzhi.sh` to use the built-in script"
+msgstr "# 设为`shuzhi.sh`以使用内置脚本"
+
+#: prefs.js:46
+msgid "Command to generate the central text"
+msgstr "生成正中文本的命令"
 
 #: prefs.js:47
 msgid "Light"
