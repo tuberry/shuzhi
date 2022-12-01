@@ -50,7 +50,7 @@ function getBgColor() { return rgba2hex(DarkBg ? Color.DARK : Color.LIGHT); }
 function overlap([x, y, w, h], [m, n, p, q]) {
     let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
     let dh = Math.max(0, Math.min(y + h, n + q) - Math.max(y, n));
-    return dw * dh > 0.08 * w * h;
+    return dw * dh > 0.06 * w * h;
 }
 
 function loop(f, u, l = 0, s = 1) {
@@ -146,7 +146,9 @@ function genCoords(rect, sum = 20, fac = 1 / 5) { // reduce collision
     // Ref: https://stackoverflow.com/a/4382286
     return Y(f => n => n === 0 ? [rect] : f(n - 1).flatMap(([x, y, w, h]) => {
         let [a, b] = [w, h].map(i => Math.round(i * rBimodal(1 / 2, fac)));
-        return [[x, y, a, b], [x + a, y, w - a, b], [x + a, y + b, w - a, h - b], [x, y + b, a, h - b]];
+        return Math.abs(a / w - 1 / 2) < Math.abs(b / h - 1 / 2)
+            ? [[x, y, a, b], [x, y + b, a, h - b], [x + a, y, w - a, h - b], [x + a, y + h - b, w - a, b]]
+            : [[x, y, a, b], [x + a, y, w - a, b], [x, y + b, w - a, h - b], [x + w - a, y + b, a, h - b]];
     }))(Math.ceil(Math.log2(sum) / 2));
 }
 

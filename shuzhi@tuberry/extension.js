@@ -106,8 +106,8 @@ class ShuZhi {
             orient:    [Fields.ORIENT,   'uint',    [null, () => { this._pts.length = 0; }]],
             font:      [Fields.FONT,     'string',  [null, x => Draw.setFontName(x)]],
             showcolor: [Fields.COLOR,    'boolean', [() => this.sketch !== LSketch.Waves]],
-            lsketch:   [Fields.LSKETCH,  'uint',    [() => this._dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
-            dsketch:   [Fields.DSKETCH,  'uint',    [() => !this._dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            lsketch:   [Fields.LSKETCH,  'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            dsketch:   [Fields.DSKETCH,  'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
         }, this, 'redraw').attach({
             style:     [Fields.STYLE,    'uint'],
         }, this, 'murkey');
@@ -124,8 +124,8 @@ class ShuZhi {
         this[k] = out ? out(v) : v;
         let dark = (this.style === Style.Auto && this.night_light) ||
             (this.style === Style.System && this.scheme) || this.style === Style.Dark;
-        if(dark === this._dark) return;
-        this._dark = dark;
+        if(dark === this.dark) return;
+        this.dark = dark;
         this._queueRepaint(true);
         this._menus?.sketch.setList(this.getSketches());
         this._menus?.sketch.setSelected(this.sketch);
@@ -144,7 +144,7 @@ class ShuZhi {
             if(this._button) return;
             this._button = new PanelMenu.Button(0.5, Me.metadata.uuid);
             this._button.menu.actor.add_style_class_name('app-menu');
-            this._button.add_actor(new St.Icon({ gicon: genIcon('florette-symbolic'), style_class: 'shuzhi-systray system-status-icon' }));
+            this._button.add_actor(new St.Icon({ gicon: genIcon('florette-symbolic'), style_class: 'system-status-icon' }));
             Main.panel.addToStatusArea(Me.metadata.uuid, this._button, 0, 'right');
             this._addMenuItems();
         } else {
@@ -155,11 +155,11 @@ class ShuZhi {
     }
 
     get sketch() {
-        return this._dark ? this.dsketch : this.lsketch;
+        return this.dark ? this.dsketch : this.lsketch;
     }
 
     set sketch(sketch) {
-        this.setf(this._dark ? 'dsketch' : 'lsketch', sketch);
+        this.setf(this.dark ? 'dsketch' : 'lsketch', sketch);
     }
 
     set refresh(refresh) {
@@ -186,11 +186,11 @@ class ShuZhi {
     }
 
     getSketches() {
-        return Object.keys(this._dark ? DSketch : LSketch).map(x => _(x));
+        return Object.keys(this.dark ? DSketch : LSketch).map(x => _(x));
     }
 
     getPath() {
-        let file = `/shuzhi-${this._dark ? 'dark.svg' : 'light.svg'}`;
+        let file = `/shuzhi-${this.dark ? 'dark.svg' : 'light.svg'}`;
         return (this.folder || GLib.get_user_cache_dir()) + file;
     }
 
@@ -225,7 +225,7 @@ class ShuZhi {
 
     _checkImg() {
         let path = this.getPath();
-        return this._style === Style.System
+        return this.style === Style.System
             ? (path.endsWith('dark.svg') ? this.dpic : this.lpic).endsWith(path)
             : this.lpic.endsWith(path) && this.dpic.endsWith(path);
     }
@@ -279,7 +279,7 @@ class ShuZhi {
 
     set desktop(image) {
         if(image) {
-            if(this._style === Style.System) {
+            if(this.style === Style.System) {
                 if(image.endsWith('dark.svg')) !this.dpic.endsWith(image) && this.setf('dpic', image, 'd');
                 else !this.lpic.endsWith(image) && this.setf('lpic', image, 'd');
             } else {
@@ -297,7 +297,7 @@ class ShuZhi {
             { width: x, height: y } = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
             sf = new Cairo.SVGSurface(path, x, y),
             cr = new Cairo.Context(sf);
-        Draw.setDarkBg(this._dark);
+        Draw.setDarkBg(this.dark);
         let mtt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
             size = Pango.FontDescription.from_string(this.font).get_size() / 1024,
             motto = mtt ? Draw.genMotto(cr, x, y, em2pg(mtt, size), this.orient) : Draw.genLogo(this._motto.logo, x, y);
@@ -337,7 +337,7 @@ class ShuZhi {
             break;
         case DSketch.Clouds:
         case LSketch.Trees:
-            if(this._dark) {
+            if(this.dark) {
                 if(!this._pts.length) this._pts = Draw.genClouds(x, y);
                 Draw.drawClouds(context, this._pts);
             } else {
