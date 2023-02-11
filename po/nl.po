@@ -1,0 +1,173 @@
+# Dutch translations for gnome-shell-extension-shuzhi package
+# gnome-shell-extension-shuzhi
+# Copyright (C) 2021 THE gnome-shell-extension-shuzhi'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the gnome-shell-extension-shuzhi package.
+# Automatically generated, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-10 05:36+0800\n"
+"PO-Revision-Date: 2021-09-14 14:32+0200\n"
+"Last-Translator: Heimen Stoffels <vistausss@fastmail.com>\n"
+"Language-Team: Dutch <vistausss@fastmail.com>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.0\n"
+
+#: src/ui.js:32
+msgid "Clear"
+msgstr ""
+
+#: src/ui.js:266
+msgid "Click or press ENTER to commit changes"
+msgstr ""
+
+#: src/prefs.js:39
+msgid "Max backups"
+msgstr ""
+
+#: src/prefs.js:40
+msgid "Horizontal"
+msgstr "Horizontaal"
+
+#: src/prefs.js:40
+msgid "Vertical"
+msgstr "Verticaal"
+
+#: src/prefs.js:43 src/prefs.js:44
+msgid "Waves"
+msgstr "Golven"
+
+#: src/prefs.js:43 src/prefs.js:44
+msgid "Ovals"
+msgstr "Ovalen"
+
+#: src/prefs.js:43 src/prefs.js:44
+msgid "Blobs"
+msgstr "Klodders"
+
+#: src/prefs.js:43
+msgid "Clouds"
+msgstr "Wolken"
+
+#: src/prefs.js:43
+msgid "Dark sketches"
+msgstr "Donkere tekeningen"
+
+#: src/prefs.js:44
+msgid "Trees"
+msgstr "Bomen"
+
+#: src/prefs.js:44
+msgid "Light sketches"
+msgstr "Lichte tekeningen"
+
+#: src/prefs.js:45
+msgid "# Set to shuzhi.sh to use the built-in script"
+msgstr ""
+
+#: src/prefs.js:45
+#, fuzzy
+msgid "Command to generate the central text"
+msgstr "Opdracht waarmee de gecentreerde tekst moet worden gemaakt"
+
+#: src/prefs.js:46
+msgid "Light"
+msgstr "Licht"
+
+#: src/prefs.js:46
+msgid "Dark"
+msgstr "Donker"
+
+#: src/prefs.js:46
+msgid "Auto"
+msgstr "Automatisch"
+
+#: src/prefs.js:46
+msgid "System"
+msgstr ""
+
+#: src/prefs.js:46
+msgid "Background color, “Auto” means sync with the Night Light"
+msgstr "De achtergrondkleur - ‘Automatisch’ = synchroniseren met Nachtlicht"
+
+#: src/prefs.js:52
+msgid "Enable systray"
+msgstr "Systeemvakpictogram tonen"
+
+#: src/prefs.js:53
+#, fuzzy
+msgid "Color name"
+msgstr "Kleurnaam tonen"
+
+#: src/prefs.js:54
+msgid "Auto refresh"
+msgstr "Automatisch vernieuwen"
+
+#: src/prefs.js:55
+msgid "Text orientation"
+msgstr "Tekstrichting"
+
+#: src/prefs.js:56
+msgid "Picture location"
+msgstr "Afbeeldingslocatie"
+
+#: src/prefs.js:57
+msgid "Default style"
+msgstr "Standaardstijl"
+
+#: src/prefs.js:58
+msgid "Text font"
+msgstr "Lettertype"
+
+#: src/prefs.js:59
+msgid "Text command"
+msgstr "Tekstopdracht"
+
+#: src/extension.js:265
+msgid "Copy"
+msgstr "Kopiëren"
+
+#: src/extension.js:266
+msgid "Reset"
+msgstr ""
+
+#: src/extension.js:268
+msgid "Motto"
+msgstr "Motto"
+
+#: src/extension.js:269 src/extension.js:273
+msgid "Sketch"
+msgstr "Tekening"
+
+#: src/extension.js:270
+msgid "Both"
+msgstr "Beide"
+
+#: src/extension.js:271
+msgid "Refresh"
+msgstr "Vernieuwen"
+
+#: src/extension.js:275
+msgid "Settings"
+msgstr "Voorkeuren"
+
+#~ msgid "Sketch: "
+#~ msgstr "Tekening: "
+
+#~ msgid "Width"
+#~ msgstr "Breedte"
+
+#~ msgid "Height"
+#~ msgstr "Hoogte"
+
+#~ msgid "Set resolution"
+#~ msgstr "Resolutie instellen"
+
+#~ msgid "Required only if the resolution is incorrect"
+#~ msgstr "Alleen vereist als de resolutie onjuist is"

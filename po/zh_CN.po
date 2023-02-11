@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-12-01 10:38+0800\n"
+"POT-Creation-Date: 2023-02-10 05:36+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,141 +17,141 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: extension.js:264
-msgid "Motto"
-msgstr "字句"
-
-#: extension.js:265 extension.js:272
-msgid "Sketch"
-msgstr "纹理"
-
-#: extension.js:266
-msgid "Both"
-msgstr "全部"
-
-#: extension.js:267
-msgid "Refresh"
-msgstr "刷新"
-
-#: extension.js:269
-msgid "Copy"
-msgstr "复制"
-
-#: extension.js:270
-msgid "Reset"
-msgstr "重置"
-
-#: extension.js:274
-msgid "Settings"
-msgstr "设置"
-
-#: prefs.js:40
-msgid "Max backups"
-msgstr "备份上限"
-
-#: prefs.js:41
-msgid "Horizontal"
-msgstr "水平"
-
-#: prefs.js:41
-msgid "Vertical"
-msgstr "竖直"
-
-#: prefs.js:44 prefs.js:45
-msgid "Waves"
-msgstr "波浪"
-
-#: prefs.js:44 prefs.js:45
-msgid "Ovals"
-msgstr "椭圆"
-
-#: prefs.js:44 prefs.js:45
-msgid "Blobs"
-msgstr "团子"
-
-#: prefs.js:44
-msgid "Clouds"
-msgstr "云纹"
-
-#: prefs.js:44
-msgid "Dark sketches"
-msgstr "深色纹理"
-
-#: prefs.js:45
-msgid "Trees"
-msgstr "虚树"
-
-#: prefs.js:45
-msgid "Light sketches"
-msgstr "浅色纹理"
-
-#: prefs.js:46
-msgid "# Set to shuzhi.sh to use the built-in script"
-msgstr "# 设为shuzhi.sh以使用内置脚本"
-
-#: prefs.js:46
-msgid "Command to generate the central text"
-msgstr "生成正中文本的命令"
-
-#: prefs.js:47
-msgid "Light"
-msgstr "浅色"
-
-#: prefs.js:47
-msgid "Dark"
-msgstr "深色"
-
-#: prefs.js:47
-msgid "Auto"
-msgstr "自动"
-
-#: prefs.js:47
-msgid "System"
-msgstr "系统"
-
-#: prefs.js:47
-msgid "Background color, “Auto” means sync with the Night Light"
-msgstr "背景颜色，“自动”即随夜灯同步切换"
-
-#: prefs.js:54
-msgid "Enable systray"
-msgstr "托盘图标"
-
-#: prefs.js:55
-msgid "Color name"
-msgstr "颜色名称"
-
-#: prefs.js:56
-msgid "Auto refresh"
-msgstr "自动刷新"
-
-#: prefs.js:57
-msgid "Text orientation"
-msgstr "文本方向"
-
-#: prefs.js:58
-msgid "Picture location"
-msgstr "图像位置"
-
-#: prefs.js:59
-msgid "Default style"
-msgstr "默认样式"
-
-#: prefs.js:60
-msgid "Text font"
-msgstr "文本字体"
-
-#: prefs.js:61
-msgid "Text command"
-msgstr "文本命令"
-
-#: ui.js:32
+#: src/ui.js:32
 msgid "Clear"
 msgstr "清除"
 
-#: ui.js:261
+#: src/ui.js:266
 msgid "Click or press ENTER to commit changes"
 msgstr "单击或按回车提交更改"
+
+#: src/prefs.js:39
+msgid "Max backups"
+msgstr "备份上限"
+
+#: src/prefs.js:40
+msgid "Horizontal"
+msgstr "水平"
+
+#: src/prefs.js:40
+msgid "Vertical"
+msgstr "竖直"
+
+#: src/prefs.js:43 src/prefs.js:44
+msgid "Waves"
+msgstr "波浪"
+
+#: src/prefs.js:43 src/prefs.js:44
+msgid "Ovals"
+msgstr "椭圆"
+
+#: src/prefs.js:43 src/prefs.js:44
+msgid "Blobs"
+msgstr "团子"
+
+#: src/prefs.js:43
+msgid "Clouds"
+msgstr "云纹"
+
+#: src/prefs.js:43
+msgid "Dark sketches"
+msgstr "深色纹理"
+
+#: src/prefs.js:44
+msgid "Trees"
+msgstr "虚树"
+
+#: src/prefs.js:44
+msgid "Light sketches"
+msgstr "浅色纹理"
+
+#: src/prefs.js:45
+msgid "# Set to shuzhi.sh to use the built-in script"
+msgstr "# 设为shuzhi.sh以使用内置脚本"
+
+#: src/prefs.js:45
+msgid "Command to generate the central text"
+msgstr "生成正中文本的命令"
+
+#: src/prefs.js:46
+msgid "Light"
+msgstr "浅色"
+
+#: src/prefs.js:46
+msgid "Dark"
+msgstr "深色"
+
+#: src/prefs.js:46
+msgid "Auto"
+msgstr "自动"
+
+#: src/prefs.js:46
+msgid "System"
+msgstr "系统"
+
+#: src/prefs.js:46
+msgid "Background color, “Auto” means sync with the Night Light"
+msgstr "背景颜色，“自动”即随夜灯同步切换"
+
+#: src/prefs.js:52
+msgid "Enable systray"
+msgstr "托盘图标"
+
+#: src/prefs.js:53
+msgid "Color name"
+msgstr "颜色名称"
+
+#: src/prefs.js:54
+msgid "Auto refresh"
+msgstr "自动刷新"
+
+#: src/prefs.js:55
+msgid "Text orientation"
+msgstr "文本方向"
+
+#: src/prefs.js:56
+msgid "Picture location"
+msgstr "图像位置"
+
+#: src/prefs.js:57
+msgid "Default style"
+msgstr "默认样式"
+
+#: src/prefs.js:58
+msgid "Text font"
+msgstr "文本字体"
+
+#: src/prefs.js:59
+msgid "Text command"
+msgstr "文本命令"
+
+#: src/extension.js:265
+msgid "Copy"
+msgstr "复制"
+
+#: src/extension.js:266
+msgid "Reset"
+msgstr "重置"
+
+#: src/extension.js:268
+msgid "Motto"
+msgstr "字句"
+
+#: src/extension.js:269 src/extension.js:273
+msgid "Sketch"
+msgstr "纹理"
+
+#: src/extension.js:270
+msgid "Both"
+msgstr "全部"
+
+#: src/extension.js:271
+msgid "Refresh"
+msgstr "刷新"
+
+#: src/extension.js:275
+msgid "Settings"
+msgstr "设置"
 
 #~ msgid "Sketch: "
 #~ msgstr "纹理："

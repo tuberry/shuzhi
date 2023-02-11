@@ -296,7 +296,7 @@ function drawBlobs(cr, pts) {
 }
 
 function genOvals(x, y) {
-    return sample(genCoords([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect  => {
+    return sample(genCoords([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, rGauss(1, 0.2) * r];
         return [Color.random(DarkBg, 0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];

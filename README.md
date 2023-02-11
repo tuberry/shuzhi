@@ -18,16 +18,21 @@ The latest and supported version should only work on the most current stable ver
 
 ```bash
 git clone https://github.com/tuberry/shuzhi.git && cd shuzhi
-make && make install
-# make LANG=your_language_code mergepo # for translation
+meson setup build && meson install -C build
+# meson setup build -Dtarget=system && meson install -C build # system-wide, default --prefix=/usr/local
 ```
 
-For older versions, it's necessary to switch the git tag before `make`:
+For contributing translations:
 
 ```bash
-# git tag # to see available versions
-git checkout your_gnome_shell_version
+meson setup build && cat po/LINGUAS
+# echo your_lang_code >> po/LINGUAS #if your_lang_code is not in po/LINGUAS
+meson compile gnome-shell-extension-shuzhi-update-po -C build
+nvim po/your_lang_code.po # edit with an editor
+# meson setup build --wipe && meson compile gnome-shell-extension-color-picker-gmo -C build # build mo
 ```
+
+For older versions, it's recommended to install via:
 
 ### E.G.O
 
@@ -41,7 +46,7 @@ git checkout your_gnome_shell_version
 ## Note
 
 * Set the text command to `shuzhi.sh` to enable the builtin script;
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/_shuzhi.fish) for reference;
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/cli/_shuzhi.fish) for reference;
 
 ## Acknowledgements
 
