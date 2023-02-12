@@ -5,7 +5,7 @@ project(
 )
 
 NAME = 'Shu Zhi'
-DESCRIPTION = 'Wallpaper generation extension for GNOME Shell, inspired by Jizhi\\n\\nFor support, please report any issues via the homepage link below.'
+INFO = 'Wallpaper generation extension for GNOME Shell, inspired by Jizhi'
 EID = meson.project_name().replace('gnome-shell-extension-', '')
 UUID = EID + '@tuberry'
 EGO = 'EGO=3985' / 'shu-zhi'
