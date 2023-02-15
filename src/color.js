@@ -3,8 +3,8 @@
 /* exported DARK LIGHT random */
 'use strict';
 
-var DARK = [36 / 255, 36 / 255, 36 / 255, 1];
-var LIGHT = [230 / 255, 230 / 255, 230 / 255, 1];
+var DARK = [0.14, 0.14, 0.14, 1];
+var LIGHT = [0.9, 0.9, 0.9, 1];
 
 // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
 const Colors = [

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-10 05:36+0800\n"
+"POT-Creation-Date: 2023-02-13 16:39+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -129,29 +129,28 @@ msgstr "文本命令"
 msgid "Copy"
 msgstr "复制"
 
-#: src/extension.js:266
-msgid "Reset"
-msgstr "重置"
-
-#: src/extension.js:268
+#: src/extension.js:267
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:269 src/extension.js:273
+#: src/extension.js:268 src/extension.js:272
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:270
+#: src/extension.js:269
 msgid "Both"
 msgstr "全部"
 
-#: src/extension.js:271
+#: src/extension.js:270
 msgid "Refresh"
 msgstr "刷新"
 
-#: src/extension.js:275
+#: src/extension.js:274
 msgid "Settings"
 msgstr "设置"
+
+#~ msgid "Reset"
+#~ msgstr "重置"
 
 #~ msgid "Sketch: "
 #~ msgstr "纹理："

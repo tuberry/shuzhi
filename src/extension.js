@@ -20,6 +20,7 @@ const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
 const noop = () => {};
+const xnor = (x, y) => !x === !y;
 const fl = (...as) => Gio.File.new_for_path(GLib.build_filenamev(as));
 const isBakOf = (x, y) => x.startsWith(`${y}-`) && x.endsWith('.svg');
 const em2pg = (x, y) => x.replace(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
@@ -127,8 +128,7 @@ class ShuZhi {
         if(dark === this.dark) return;
         this.dark = dark;
         this._queueRepaint(true);
-        this._menus?.sketch.setList(this.getSketches());
-        this._menus?.sketch.setSelected(this.sketch);
+        this._menus?.sketch.setList(this.getSketches(), this.sketch);
     }
 
     set redraw([k, v, out]) { // out <- [cond, pre, post];
@@ -140,15 +140,14 @@ class ShuZhi {
     }
 
     set systray(systray) {
+        if(xnor(systray, this._button)) return;
         if(systray) {
-            if(this._button) return;
             this._button = new PanelMenu.Button(0.5, Me.metadata.uuid);
             this._button.menu.actor.add_style_class_name('app-menu');
             this._button.add_actor(new St.Icon({ gicon: genIcon('florette-symbolic'), style_class: 'system-status-icon' }));
             Main.panel.addToStatusArea(Me.metadata.uuid, this._button, 0, 'right');
             this._addMenuItems();
         } else {
-            if(!this._button) return;
             this._button.destroy();
             this._menus = this._button = null;
         }
@@ -263,7 +262,6 @@ class ShuZhi {
     _addMenuItems() {
         this._menus = {
             copy:   new MenuItem(_('Copy'), () => this._copyMotto()),
-            reset:  new MenuItem(_('Reset'), () => { this.desktop = false; }),
             refresh: new MenuSection([
                 [_('Motto'),  () => this._setMotto(false)],
                 [_('Sketch'), () => this._queueRepaint(true)],
