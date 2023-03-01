@@ -31,7 +31,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
     }
 
     _buildWidgets() {
-        this._block = new Block({
+        this._blk = new Block({
             color:  [Fields.COLOR,    'active',   new Gtk.CheckButton()],
             fresh:  [Fields.REFRESH,  'active',   new Gtk.CheckButton()],
             tray:   [Fields.SYSTRAY,  'active',   new Gtk.CheckButton()],
@@ -49,14 +49,14 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
 
     _buildUI() {
         [
-            [this._block.tray,        [_('Enable systray')]],
-            [this._block.color,       [_('Color name')]],
-            [this._block.fresh,       [_('Auto refresh')], this._block.span],
-            [[_('Text orientation')], this._block.orient],
-            [[_('Picture location')], this._block.backup,  this._block.path],
-            [[_('Default style')],    this._block.style,   this._block.lskt, this._block.dskt],
-            [[_('Text font')],        this._block.font],
-            [[_('Text command')],     this._block.cmd],
+            [this._blk.tray,          [_('Enable systray')]],
+            [this._blk.color,         [_('Color name')]],
+            [this._blk.fresh,         [_('Auto refresh')], this._blk.span],
+            [[_('Text orientation')], this._blk.orient],
+            [[_('Picture location')], this._blk.backup,  this._blk.path],
+            [[_('Default style')],    this._blk.style,   this._blk.lskt, this._blk.dskt],
+            [[_('Text font')],        this._blk.font],
+            [[_('Text command')],     this._blk.cmd],
         ].forEach(xs => this.add(new UI.PrefRow(...xs)));
     }
 }

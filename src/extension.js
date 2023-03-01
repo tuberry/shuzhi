@@ -19,10 +19,11 @@ const Style = { Light: 0, Dark: 1, Auto: 2, System: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
+
 const noop = () => {};
 const xnor = (x, y) => !x === !y;
+const bak = (x, y) => x.startsWith(`${y}-`) && x.endsWith('.svg');
 const fl = (...as) => Gio.File.new_for_path(GLib.build_filenamev(as));
-const isBakOf = (x, y) => x.startsWith(`${y}-`) && x.endsWith('.svg');
 const em2pg = (x, y) => x.replace(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
 const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child(`${x}.svg`).get_path());
 
@@ -105,7 +106,7 @@ class ShuZhi {
         }, ExtensionUtils.getSettings(), this).attach({
             folder:    [Fields.FOLDER,   'string'],
             orient:    [Fields.ORIENT,   'uint',    [null, () => { this._pts.length = 0; }]],
-            font:      [Fields.FONT,     'string',  [null, x => Draw.setFontName(x)]],
+            font:      [Fields.FONT,     'string',  [null, x => this.setFontName(x)]],
             showcolor: [Fields.COLOR,    'boolean', [() => this.sketch !== LSketch.Waves]],
             lsketch:   [Fields.LSKETCH,  'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
             dsketch:   [Fields.DSKETCH,  'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
@@ -121,12 +122,17 @@ class ShuZhi {
         this.murkey = ['night_light', LightProxy.NightLightActive];
     }
 
+    setFontName(font) {
+        Draw.setFontName(font);
+        this._font_size = Pango.FontDescription.from_string(font).get_size() / Pango.SCALE;
+    }
+
     set murkey([k, v, out]) {
         this[k] = out ? out(v) : v;
         let dark = (this.style === Style.Auto && this.night_light) ||
             (this.style === Style.System && this.scheme) || this.style === Style.Dark;
         if(dark === this.dark) return;
-        this.dark = dark;
+        Draw.setDarkBg(this.dark = dark);
         this._queueRepaint(true);
         this._menus?.sketch.setList(this.getSketches(), this.sketch);
     }
@@ -204,22 +210,14 @@ class ShuZhi {
         return stdout.replace(/\n*$/, '');
     }
 
-    async _checkCmd(cmd) {
-        let chk = `sh -c "command -v ${cmd}"`;
-        let proc = new Gio.Subprocess({
-            argv: GLib.shell_parse_argv(chk)[1],
-            flags: Gio.SubprocessFlags.NONE,
-        });
-        proc.init(null);
-        await proc.communicate_utf8_async(null, null);
-        return proc.get_successful();
-    }
-
     async _genMotto() {
         let [cmd] = GLib.shell_parse_argv(this._command)[1];
-        if(await this._checkCmd(cmd)) return this._execute(this._command);
-        else if(cmd === 'shuzhi.sh') return this._execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`);
-        else throw new Error('command not found');
+        try {
+            return await this._execute(this._command);
+        } catch(e) {
+            if(cmd === 'shuzhi.sh') return this._execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`);
+            else throw e;
+        }
     }
 
     _checkImg() {
@@ -233,10 +231,10 @@ class ShuZhi {
         this._genMotto().then(scc => (this.motto = scc))
             .catch(e => { logError(e); this.motto = ''; })
             .finally(() => {
-                if(this._mlock) {
+                if(this._synced) {
                     this._queueRepaint(paint);
                 } else {
-                    this._mlock = true; // skip when unlocking screen
+                    this._synced = true; // skip when unlocking screen
                     if(!this._checkImg()) this._queueRepaint(true);
                 }
             });
@@ -245,11 +243,7 @@ class ShuZhi {
     _queueRepaint(paint) {
         if(!['_motto', 'night_light'].every(x => x in this)) return;
         if(paint) this._pts.length = 0;
-        try {
-            this.repaint();
-        } catch(e) {
-            logError(e);
-        }
+        this.repaint();
     }
 
     _copyMotto() {
@@ -294,53 +288,51 @@ class ShuZhi {
         let path = this.getPath(),
             { width: x, height: y } = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
             sf = new Cairo.SVGSurface(path, x, y),
-            cr = new Cairo.Context(sf);
-        Draw.setDarkBg(this.dark);
-        let mtt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
-            size = Pango.FontDescription.from_string(this.font).get_size() / 1024,
-            motto = mtt ? Draw.genMotto(cr, x, y, em2pg(mtt, size), this.orient) : Draw.genLogo(this._motto.logo, x, y);
+            cr = new Cairo.Context(sf),
+            mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
+            sc = mt ? Draw.genMotto(cr, x, y, em2pg(mt, this._font_size), this.orient) : Draw.genLogo(this._motto.logo, x, y);
         Draw.drawBackground(cr);
         this._drawSketch(cr, x, y);
-        mtt ? Draw.drawMotto(cr, motto) : Draw.drawLogo(cr, motto);
+        mt ? Draw.drawMotto(cr, sc) : Draw.drawLogo(cr, sc);
         cr.$dispose();
         sf.finish();
         sf.flush();
-        this.desktop = path;
-        if(this.backups > 0) this._backup(path).catch(noop);
+        this._backup(this.desktop = path).catch(noop);
     }
 
     async _backup(path) {
+        if(!this.backups) return;
         let pics = [],
             dir = GLib.path_get_dirname(path),
             name = GLib.path_get_basename(path).replace(/\..+$/, '');
         await fl(path).copy_async(fl(dir, `${name}-${new Date().toLocaleFormat('%FT%T')}.svg`), Gio.FileCopyFlags.NONE, GLib.PRIORITY_DEFAULT, null, null);
         for await (let f of await fl(dir).enumerate_children_async(Gio.FILE_ATTRIBUTE_STANDARD_NAME, Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, null).catch(noop) ?? []) pics.push(f);
-        pics = pics.flatMap(x => isBakOf(x.get_name(), name) ? [x] : []).slice(0, -this.backups - 1);
+        pics = pics.flatMap(x => bak(x.get_name(), name) ? [x] : []).slice(0, -this.backups - 1);
         Promise.all(pics.forEach(x => x.delete_async(GLib.PRIORITY_DEFAULT, null))).catch(noop);
     }
 
-    _drawSketch(context, x, y) {
+    _drawSketch(cr, x, y) {
         switch(this.sketch) {
         case DSketch.Waves:
             if(!this._pts.length) this._pts = Draw.genWaves(x, y);
-            Draw.drawWaves(context, this._pts, this.showcolor);
+            Draw.drawWaves(cr, this._pts, this.showcolor);
             break;
         case DSketch.Blobs:
             if(!this._pts.length) this._pts = Draw.genBlobs(x, y);
-            Draw.drawBlobs(context, this._pts);
+            Draw.drawBlobs(cr, this._pts);
             break;
         case DSketch.Ovals:
             if(!this._pts.length) this._pts = Draw.genOvals(x, y);
-            Draw.drawOvals(context, this._pts);
+            Draw.drawOvals(cr, this._pts);
             break;
         case DSketch.Clouds:
         case LSketch.Trees:
             if(this.dark) {
                 if(!this._pts.length) this._pts = Draw.genClouds(x, y);
-                Draw.drawClouds(context, this._pts);
+                Draw.drawClouds(cr, this._pts);
             } else {
                 if(!this._pts.length) this._pts = Draw.genTrees(x, y);
-                Draw.drawTrees(context, this._pts);
+                Draw.drawTrees(cr, this._pts);
             }
             break;
         }

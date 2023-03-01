@@ -2,8 +2,8 @@
 # by tuberry
 # depends on fortune-mod-mingju-git (AUR)
 
+set red \#b00a
 set ratio 0.45 # ratio
-set red \#6d0f0f # vermilion
 set bg SZ_BGCOLOR # the bgcolor of wallpaper
 
 function qot -d quote
@@ -29,19 +29,20 @@ function gap -a bd tl -d add-gap
 end
 
 function shuzhi -d 凌寒独自开
-    if contains -- -l $argv || contains -- --logo $argv
+    argparse --ignore-unknown l/logo t/test -- $argv
+    if set -q _flag_l
         echo '' # fallback to the distro logo
         # echo '{"logo":"/usr/share/pixmaps/gnome-logo-text-dark.svg"}'
         return 0
     end
-    if contains -- -t $argv || contains -- --test $argv
+    if set -q _flag_t
         set hb '疏影横斜水清浅，暗香浮动'(fmt 月 fgcolor=white)'黄昏。\n'
         set vb '疏影横斜水清浅\n暗香浮动'(fmt 月 fgcolor=white)'黄昏\n'
         set ht (fmt '「山园小梅」 '(fmt 林逋 bgcolor=$red fgcolor=$bg) font={$ratio}em)
         set vt $ht
     else
         set mj (fortune mingju | sed 's/ ──── //g')
-        set hb (echo $mj[1..-2]\\n | sed 's/[《》 “”]//g;')
+        set hb (echo $mj[1..-2]\\n | sed 's/[《》" “”]//g;')
         set vb (echo $mj[1..-2] | sed 's/[，。：；？、！]/\n/g;s/[《》 “”]//g' | sed '/^\s*$/d')
         set lt (math round -- (printf '%s\n' $vb | wc -L) / 2 / $ratio)
         set vb (echo $vb | sed -z 's/\s/\\\n/g') # GNU sed

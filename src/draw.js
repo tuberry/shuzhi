@@ -13,7 +13,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const Color = Me.imports.color;
 
 let Ratio = 2 / 3,
-    NSpare = [], // cache of normal()
+    NSpare = [],
     FontName = '',
     DarkBg = true,
     TextRect = [-1, -1, 0, 0];
@@ -533,7 +533,7 @@ function genLogo(fn, x, y) {
         setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]);
         return [svg, img];
     } catch(e) {
-        console.warn('shuzhi:', e.message);
+        logError(e);
         setTextRect([-1, -1, 0, 0]);
         return [];
     }
