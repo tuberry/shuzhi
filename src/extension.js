@@ -8,29 +8,23 @@ const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const { GLib, St, GObject, Gio, Pango } = imports.gi;
+
 const LightProxy = Main.panel.statusArea.quickSettings._nightLight._proxy;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const _ = ExtensionUtils.gettext;
+const { xnor, noop, _, execute, fl, fdelete, fcopy, denum } = Me.imports.util;
+const { Fulu, Extension, Symbiont, DEventEmitter } = Me.imports.fubar;
+const { Field } = Me.imports.const;
 const Draw = Me.imports.draw;
-const { Fields, Field } = Me.imports.fields;
 
 const Style = { Light: 0, Dark: 1, Auto: 2, System: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
 
-const noop = () => {};
-const xnor = (x, y) => !x === !y;
 const bak = (x, y) => x.startsWith(`${y}-`) && x.endsWith('.svg');
-const fl = (...as) => Gio.File.new_for_path(GLib.build_filenamev(as));
 const em2pg = (x, y) => x.replace(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
 const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child(`${x}.svg`).get_path());
-
-Gio._promisify(Gio.File.prototype, 'copy_async');
-Gio._promisify(Gio.File.prototype, 'delete_async');
-Gio._promisify(Gio.File.prototype, 'enumerate_children_async');
-Gio._promisify(Gio.Subprocess.prototype, 'communicate_utf8_async');
 
 class MenuItem extends PopupMenu.PopupMenuItem {
     static {
@@ -85,36 +79,46 @@ class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
     }
 }
 
-class ShuZhi {
+class ShuZhi extends DEventEmitter {
     constructor() {
-        this._pts = [];
+        super();
+        this._buildWidgets();
         this._bindSettings();
         this._syncNightLight();
     }
 
     _bindSettings() {
-        this._dfield = new Field({
+        this._fulu_d = new Fulu({
             dpic: [Desktop.DARK,  'string'],
             lpic: [Desktop.LIGHT, 'string'],
         }, 'org.gnome.desktop.background', this);
-        this._field = new Field({
-            interval:  [Fields.INTERVAL, 'uint'],
-            backups:   [Fields.BACKUPS,  'uint'],
-            refresh:   [Fields.REFRESH,  'boolean'],
-            systray:   [Fields.SYSTRAY,  'boolean'],
-            command:   [Fields.COMMAND,  'string'],
+        this._fulu = new Fulu({
+            interval:  [Field.INTERVAL, 'uint'],
+            backups:   [Field.BACKUPS,  'uint'],
+            refresh:   [Field.REFRESH,  'boolean'],
+            systray:   [Field.SYSTRAY,  'boolean'],
+            command:   [Field.COMMAND,  'string'],
         }, ExtensionUtils.getSettings(), this).attach({
-            folder:    [Fields.FOLDER,   'string'],
-            orient:    [Fields.ORIENT,   'uint',    [null, () => { this._pts.length = 0; }]],
-            font:      [Fields.FONT,     'string',  [null, x => this.setFontName(x)]],
-            showcolor: [Fields.COLOR,    'boolean', [() => this.sketch !== LSketch.Waves]],
-            lsketch:   [Fields.LSKETCH,  'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
-            dsketch:   [Fields.DSKETCH,  'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            folder:    [Field.FOLDER,   'string'],
+            orient:    [Field.ORIENT,   'uint',    [null, () => { this._pts.length = 0; }]],
+            font:      [Field.FONT,     'string',  [null, x => this.setFontName(x)]],
+            showcolor: [Field.COLOR,    'boolean', [() => this.sketch !== LSketch.Waves]],
+            lsketch:   [Field.LSKETCH,  'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            dsketch:   [Field.DSKETCH,  'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
         }, this, 'redraw').attach({
-            style:     [Fields.STYLE,    'uint'],
+            style:     [Field.STYLE,    'uint'],
         }, this, 'murkey');
-        this._tfield = new Field({ scheme: ['color-scheme', 'string', x => x === 'prefer-dark'] }, 'org.gnome.desktop.interface', this, 'murkey');
+        this._tfield = new Fulu({ scheme: ['color-scheme', 'string', x => x === 'prefer-dark'] }, 'org.gnome.desktop.interface', this, 'murkey');
         LightProxy.connectObject('g-properties-changed', (_l, p) => p.lookup_value('NightLightActive', null) && this._syncNightLight(), this);
+    }
+
+    _buildWidgets() {
+        this._pts = [];
+        this._sbt_r = new Symbiont(x => clearInterval(x), this, x => x && setInterval(() => this._setMotto(true), this._interval * 60000));
+        new Symbiont(() => {
+            LightProxy.disconnectObject(this);
+            this.systray = null;
+        }, this);
     }
 
     _syncNightLight() {
@@ -168,13 +172,12 @@ class ShuZhi {
     }
 
     set refresh(refresh) {
-        clearInterval(this._refreshId);
-        if(refresh) this._refreshId = setInterval(() => this._setMotto(true), this._interval * 60000);
+        this._sbt_r.reset(this._refresh = refresh);
     }
 
     set interval(interval) {
         this._interval = interval;
-        this.refresh = true;
+        if(this._refresh) this._sbt_r.reset(true);
     }
 
     set command(command) {
@@ -199,23 +202,13 @@ class ShuZhi {
         return (this.folder || GLib.get_user_cache_dir()) + file;
     }
 
-    async _execute(cmd) {
-        let proc = new Gio.Subprocess({
-            argv: GLib.shell_parse_argv(cmd)[1],
-            flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE,
-        });
-        proc.init(null);
-        let [stdout, stderr] = await proc.communicate_utf8_async(null, null);
-        if(proc.get_exit_status()) throw new Error(stderr.trim());
-        return stdout.replace(/\n*$/, '');
-    }
-
     async _genMotto() {
-        let [cmd] = GLib.shell_parse_argv(this._command)[1];
+        let fmt = x => x.replace(/\n*$/, '');
         try {
-            return await this._execute(this._command);
+            return await execute(this._command, fmt);
         } catch(e) {
-            if(cmd === 'shuzhi.sh') return this._execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`);
+            let [cmd] = GLib.shell_parse_argv(this._command).at(1);
+            if(cmd === 'shuzhi.sh') return execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`, fmt);
             else throw e;
         }
     }
@@ -279,8 +272,8 @@ class ShuZhi {
                 !this.dpic.endsWith(image) && this.setf('dpic', image, 'd');
             }
         } else {
-            let vs = Object.values(this._dfield.prop.get(this));
-            vs.forEach(([v]) => this._dfield.gset.reset(v));
+            let vs = Object.values(this._fulu_d.prop.get(this));
+            vs.forEach(([v]) => this._fulu_d.gset.reset(v));
         }
     }
 
@@ -305,10 +298,10 @@ class ShuZhi {
         let pics = [],
             dir = GLib.path_get_dirname(path),
             name = GLib.path_get_basename(path).replace(/\..+$/, '');
-        await fl(path).copy_async(fl(dir, `${name}-${new Date().toLocaleFormat('%FT%T')}.svg`), Gio.FileCopyFlags.NONE, GLib.PRIORITY_DEFAULT, null, null);
-        for await (let f of await fl(dir).enumerate_children_async(Gio.FILE_ATTRIBUTE_STANDARD_NAME, Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, null).catch(noop) ?? []) pics.push(f);
+        await fcopy(fl(path), fl(dir, `${name}-${new Date().toLocaleFormat('%FT%T')}.svg`));
+        for(let f of await denum(fl(dir)).catch(noop) ?? []) pics.push(f);
         pics = pics.flatMap(x => bak(x.get_name(), name) ? [x] : []).slice(0, -this.backups - 1);
-        Promise.all(pics.forEach(x => x.delete_async(GLib.PRIORITY_DEFAULT, null))).catch(noop);
+        Promise.all(pics.forEach(x => fdelete(x))).catch(noop);
     }
 
     _drawSketch(cr, x, y) {
@@ -337,29 +330,8 @@ class ShuZhi {
             break;
         }
     }
-
-    destroy() {
-        ['_field', '_dfield', '_tfield'].forEach(x => this[x].detach(this));
-        LightProxy.disconnectObject(this);
-        this.systray = this.refresh = null;
-    }
-}
-
-class Extension {
-    constructor() {
-        ExtensionUtils.initTranslations();
-    }
-
-    enable() {
-        this._ext = new ShuZhi();
-    }
-
-    disable() {
-        this._ext.destroy();
-        this._ext = null;
-    }
 }
 
 function init() {
-    return new Extension();
+    return new Extension(ShuZhi);
 }

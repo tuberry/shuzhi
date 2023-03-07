@@ -6,7 +6,7 @@
 'use strict';
 
 const Cairo = imports.cairo;
-const { PangoCairo, Pango, GLib, Gtk, Gdk, GdkPixbuf, Rsvg } = imports.gi;
+const { PangoCairo, Pango, GLib, St, Gdk, GdkPixbuf, Rsvg } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -40,7 +40,7 @@ const move = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const affine = (xs, ...ms) => ms.reduce((p, v) => v.map(w => dot(w, p.concat(1))), xs);
 
 const rgba2hex = rgba => `#${rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
-const lookupIcon = a => new Gtk.IconTheme().lookup_icon(a, 256, Gtk.IconLookupFlags.FORCE_SVG)?.get_filename();
+const getIcon = x => new St.IconTheme().lookup_icon(x, 256, St.IconLookupFlags.FORCE_SVG)?.get_filename();
 
 function setDarkBg(dark) { DarkBg = dark; }
 function setFontName(font) { FontName = font; }
@@ -58,21 +58,20 @@ function loop(f, u, l = 0, s = 1) {
     else for(let i = l; i >= u; i += s) f(i);
 }
 
-function rNormal() { // -> [0, 1)
+function rNormal() { // -> [0, 1]
     // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
     if(NSpare.length) {
         return NSpare.pop();
     } else {
-        let u, v, s,
-            trim = x => x < 0 || x >= 1 ? 0.5 : x;
+        let u, v, s;
         do {
             u = 2 * Math.random() - 1;
             v = 2 * Math.random() - 1;
             s = u * u + v * v;
         } while(s >= 1 || s === 0);
         s = Math.sqrt(-2 * Math.log(s) / s);
-        NSpare.push(trim(u * s / 6 + 0.5));
-        return trim(v * s / 6 + 0.5);
+        NSpare.push(Math.clamp(u * s / 6 + 0.5, 0, 1));
+        return Math.clamp(v * s / 6 + 0.5, 0, 1);
     }
 }
 
@@ -323,8 +322,8 @@ function genCloud([x, y, w, h], offset) {
         len = Math.floor(h / offset),
         stp = wave(shuffle(array(len, i => i / len))),
         fst = [[extra(stp[0], stp[1]), y]],
-        ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1)[1], rBool()), fst, array(len));
-    return fst.concat(ret, [[extra(stp.at(-1), stp.at(-2)), ret.at(-1)[1]]]);
+        ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1).at(1), rBool()), fst, array(len));
+    return fst.concat(ret, [[extra(stp.at(-1), stp.at(-2)), ret.at(-1).at(1)]]);
 }
 
 function genClouds(x, y) {
@@ -526,7 +525,7 @@ function drawLand(cr, pts) {
 function genLogo(fn, x, y) {
     try {
         let path = fn ? fn.replace(/~/, GLib.get_home_dir())
-                : lookupIcon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`),
+                : getIcon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`),
             svg = path.endsWith('.svg'),
             img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path),
             { width: w, height: h } = svg ? img.get_pixbuf() : img;
