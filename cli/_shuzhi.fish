@@ -42,8 +42,8 @@ function shuzhi -d 凌寒独自开
         set vt $ht
     else
         set mj (fortune mingju | sed 's/ ──── //g')
-        set hb (echo $mj[1..-2]\\n | sed 's/[《》" “”]//g;')
-        set vb (echo $mj[1..-2] | sed 's/[，。：；？、！]/\n/g;s/[《》 “”]//g' | sed '/^\s*$/d')
+        set hb (echo $mj[1..-2]\\n | sed 's/[《》]//g;')
+        set vb (echo $mj[1..-2] | sed 's/[，。：；？、！]/\n/g;s/[《》]//g' | sed '/^\s*$/d')
         set lt (math round -- (printf '%s\n' $vb | wc -L) / 2 / $ratio)
         set vb (echo $vb | sed -z 's/\s/\\\n/g') # GNU sed
         set tl (echo $mj[-1] | sed 's/《/\n「/g;s/》/」/g;s/ \/ /／/g')

@@ -38,9 +38,7 @@ const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const affine = (xs, ...ms) => ms.reduce((p, v) => v.map(w => dot(w, p.concat(1))), xs);
-
 const rgba2hex = rgba => `#${rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
-const getIcon = x => new St.IconTheme().lookup_icon(x, 256, St.IconLookupFlags.FORCE_SVG)?.get_filename();
 
 function setDarkBg(dark) { DarkBg = dark; }
 function setFontName(font) { FontName = font; }
@@ -525,7 +523,8 @@ function drawLand(cr, pts) {
 function genLogo(fn, x, y) {
     try {
         let path = fn ? fn.replace(/~/, GLib.get_home_dir())
-                : getIcon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`),
+                : new St.IconTheme().lookup_icon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`,
+                    256, St.IconLookupFlags.FORCE_SVG)?.get_filename(),
             svg = path.endsWith('.svg'),
             img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path),
             { width: w, height: h } = svg ? img.get_pixbuf() : img;

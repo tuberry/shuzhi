@@ -7,75 +7,29 @@ const Cairo = imports.cairo;
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
-const { GLib, St, GObject, Gio, Pango } = imports.gi;
+const { GLib, St, Pango } = imports.gi;
 
 const LightProxy = Main.panel.statusArea.quickSettings._nightLight._proxy;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const { Fulu, Extension, DEventEmitter, symbiose, omit, onus } = Me.imports.fubar;
 const { xnor, noop, _, execute, fl, fdelete, fcopy, denum } = Me.imports.util;
-const { Fulu, Extension, Symbiont, DEventEmitter } = Me.imports.fubar;
+const { MenuItem, DRadioItem, TrayIcon } = Me.imports.menu;
 const { Field } = Me.imports.const;
 const Draw = Me.imports.draw;
 
-const Style = { Light: 0, Dark: 1, Auto: 2, System: 3 };
+const Style = { LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
-
 const bak = (x, y) => x.startsWith(`${y}-`) && x.endsWith('.svg');
 const em2pg = (x, y) => x.replace(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
-const genIcon = x => Gio.Icon.new_for_string(Me.dir.get_child('icons').get_child(`${x}.svg`).get_path());
-
-class MenuItem extends PopupMenu.PopupMenuItem {
-    static {
-        GObject.registerClass(this);
-    }
-
-    constructor(text, callback, params) {
-        super(text, params);
-        this.connect('activate', callback);
-    }
-
-    setLabel(label) {
-        if(this.label.text !== label) this.label.set_text(label);
-    }
-}
 
 class MenuSection extends PopupMenu.PopupMenuSection {
     constructor(items, name) {
         super();
         if(name) this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem(name));
         items.forEach(x => this.addMenuItem(new MenuItem(...x)));
-    }
-}
-
-class DRadioItem extends PopupMenu.PopupSubMenuMenuItem {
-    static {
-        GObject.registerClass(this);
-    }
-
-    constructor(name, list, index, cb1, cb2) {
-        super('');
-        this._name = name;
-        this._cb1 = cb1;
-        this._cb2 = cb2 || (x => this._list[x]);
-        this.setList(list, index);
-    }
-
-    setSelected(index) {
-        this._index = index;
-        this.label.set_text(`${this._name}：${this._cb2(this._index) || ''}`);
-        this.menu._getMenuItems().forEach((y, i) => y.setOrnament(index === i ? PopupMenu.Ornament.DOT : PopupMenu.Ornament.NONE));
-    }
-
-    setList(list, index) {
-        let items = this.menu._getMenuItems();
-        let diff = list.length - items.length;
-        if(diff > 0) for(let a = 0; a < diff; a++) this.menu.addMenuItem(new MenuItem('', () => this._cb1(items.length + a)));
-        else if(diff < 0) for(let a = 0; a > diff; a--) items.at(a - 1).destroy();
-        this._list = list;
-        this.menu._getMenuItems().forEach((x, i) => x.setLabel(list[i]));
-        this.setSelected(index ?? this._index);
     }
 }
 
@@ -93,32 +47,30 @@ class ShuZhi extends DEventEmitter {
             lpic: [Desktop.LIGHT, 'string'],
         }, 'org.gnome.desktop.background', this);
         this._fulu = new Fulu({
-            interval:  [Field.INTERVAL, 'uint'],
-            backups:   [Field.BACKUPS,  'uint'],
-            refresh:   [Field.REFRESH,  'boolean'],
-            systray:   [Field.SYSTRAY,  'boolean'],
-            command:   [Field.COMMAND,  'string'],
+            interval:  [Field.SPAN, 'uint'],
+            backups:   [Field.BCK,  'uint'],
+            refresh:   [Field.RFS,  'boolean'],
+            systray:   [Field.STRY, 'boolean'],
+            command:   [Field.CMD,  'string'],
         }, ExtensionUtils.getSettings(), this).attach({
-            folder:    [Field.FOLDER,   'string'],
-            orient:    [Field.ORIENT,   'uint',    [null, () => { this._pts.length = 0; }]],
-            font:      [Field.FONT,     'string',  [null, x => this.setFontName(x)]],
-            showcolor: [Field.COLOR,    'boolean', [() => this.sketch !== LSketch.Waves]],
-            lsketch:   [Field.LSKETCH,  'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
-            dsketch:   [Field.DSKETCH,  'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            folder:    [Field.PATH, 'string'],
+            orient:    [Field.ORNT, 'uint',    [null, () => { this._pts.length = 0; }]],
+            font:      [Field.FONT, 'string',  [null, x => this.setFontName(x)]],
+            showcolor: [Field.CLR,  'boolean', [() => this.sketch !== LSketch.Waves]],
+            lsketch:   [Field.LSKT, 'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            dsketch:   [Field.DSKT, 'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
         }, this, 'redraw').attach({
-            style:     [Field.STYLE,    'uint'],
+            style:     [Field.STL,    'uint'],
         }, this, 'murkey');
         this._tfield = new Fulu({ scheme: ['color-scheme', 'string', x => x === 'prefer-dark'] }, 'org.gnome.desktop.interface', this, 'murkey');
-        LightProxy.connectObject('g-properties-changed', (_l, p) => p.lookup_value('NightLightActive', null) && this._syncNightLight(), this);
+        LightProxy.connectObject('g-properties-changed', () => this._syncNightLight(), onus(this));
     }
 
     _buildWidgets() {
         this._pts = [];
-        this._sbt_r = new Symbiont(x => clearInterval(x), this, x => x && setInterval(() => this._setMotto(true), this._interval * 60000));
-        new Symbiont(() => {
-            LightProxy.disconnectObject(this);
-            this.systray = null;
-        }, this);
+        this._sbt = symbiose(this, () => omit(this, 'systray'), {
+            cycle: [x => clearInterval(x), x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
+        });
     }
 
     _syncNightLight() {
@@ -133,8 +85,8 @@ class ShuZhi extends DEventEmitter {
 
     set murkey([k, v, out]) {
         this[k] = out ? out(v) : v;
-        let dark = (this.style === Style.Auto && this.night_light) ||
-            (this.style === Style.System && this.scheme) || this.style === Style.Dark;
+        let dark = (this.style === Style.AUTO && this.night_light) ||
+            (this.style === Style.SYSTEM && this.scheme) || this.style === Style.DARK;
         if(dark === this.dark) return;
         Draw.setDarkBg(this.dark = dark);
         this._queueRepaint(true);
@@ -150,16 +102,14 @@ class ShuZhi extends DEventEmitter {
     }
 
     set systray(systray) {
-        if(xnor(systray, this._button)) return;
+        if(xnor(systray, this._btn)) return;
         if(systray) {
-            this._button = new PanelMenu.Button(0.5, Me.metadata.uuid);
-            this._button.menu.actor.add_style_class_name('app-menu');
-            this._button.add_actor(new St.Icon({ gicon: genIcon('florette-symbolic'), style_class: 'system-status-icon' }));
-            Main.panel.addToStatusArea(Me.metadata.uuid, this._button, 0, 'right');
+            this._btn = Main.panel.addToStatusArea(Me.metadata.uuid, new PanelMenu.Button(0.5, Me.metadata.uuid));
+            this._btn.menu.actor.add_style_class_name('app-menu');
+            this._btn.add_actor(new TrayIcon('florette-symbolic', true));
             this._addMenuItems();
         } else {
-            this._button.destroy();
-            this._menus = this._button = null;
+            omit(this, '_btn', '_menus');
         }
     }
 
@@ -168,16 +118,16 @@ class ShuZhi extends DEventEmitter {
     }
 
     set sketch(sketch) {
-        this.setf(this.dark ? 'dsketch' : 'lsketch', sketch);
+        this._fulu.set(this.dark ? 'dsketch' : 'lsketch', sketch, this);
     }
 
     set refresh(refresh) {
-        this._sbt_r.reset(this._refresh = refresh);
+        this._sbt.cycle.revive(this._refresh = refresh);
     }
 
     set interval(interval) {
         this._interval = interval;
-        if(this._refresh) this._sbt_r.reset(true);
+        if(this._refresh) this._sbt.cycle.revive(true);
     }
 
     set command(command) {
@@ -203,19 +153,18 @@ class ShuZhi extends DEventEmitter {
     }
 
     async _genMotto() {
-        let fmt = x => x.replace(/\n*$/, '');
         try {
-            return await execute(this._command, fmt);
+            return await execute(this._command);
         } catch(e) {
             let [cmd] = GLib.shell_parse_argv(this._command).at(1);
-            if(cmd === 'shuzhi.sh') return execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`, fmt);
+            if(cmd === 'shuzhi.sh') return execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`);
             else throw e;
         }
     }
 
     _checkImg() {
         let path = this.getPath();
-        return this.style === Style.System
+        return this.style === Style.SYSTEM
             ? (path.endsWith('dark.svg') ? this.dpic : this.lpic).endsWith(path)
             : this.lpic.endsWith(path) && this.dpic.endsWith(path);
     }
@@ -242,8 +191,11 @@ class ShuZhi extends DEventEmitter {
     _copyMotto() {
         let mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
         mt = mt ? em2pg(mt.replace(/SZ_BGCOLOR/g, '#fff'), 16) : this._motto.logo || '';
-        let [ok, , text] = Pango.parse_markup(mt, -1, '');
-        if(ok && text) St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
+        try {
+            St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, Pango.parse_markup(mt, -1, '').at(2));
+        } catch(e) {
+            // ignore
+        }
     }
 
     _addMenuItems() {
@@ -259,17 +211,17 @@ class ShuZhi extends DEventEmitter {
             sep2:   new PopupMenu.PopupSeparatorMenuItem(),
             prefs:  new MenuItem(_('Settings'), () => ExtensionUtils.openPrefs()),
         };
-        for(let p in this._menus) this._button.menu.addMenuItem(this._menus[p]);
+        for(let p in this._menus) this._btn.menu.addMenuItem(this._menus[p]);
     }
 
     set desktop(image) {
         if(image) {
-            if(this.style === Style.System) {
-                if(image.endsWith('dark.svg')) !this.dpic.endsWith(image) && this.setf('dpic', image, 'd');
-                else !this.lpic.endsWith(image) && this.setf('lpic', image, 'd');
+            if(this.style === Style.SYSTEM) {
+                if(image.endsWith('dark.svg')) !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
+                else !this.lpic.endsWith(image) && this._fulu_d.set('lpic', image, this);
             } else {
-                !this.lpic.endsWith(image) && this.setf('lpic', image, 'd');
-                !this.dpic.endsWith(image) && this.setf('dpic', image, 'd');
+                !this.lpic.endsWith(image) && this._fulu_d.set('lpic', image, this);
+                !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
             }
         } else {
             let vs = Object.values(this._fulu_d.prop.get(this));
