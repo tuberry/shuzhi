@@ -157,7 +157,7 @@ class ShuZhi extends DEventEmitter {
             return await execute(this._command);
         } catch(e) {
             let [cmd] = GLib.shell_parse_argv(this._command).at(1);
-            if(cmd === 'shuzhi.sh') return execute(`bash ${Me.dir.get_child('shuzhi.sh').get_path()}`);
+            if(cmd === 'shuzhi.sh') return execute(`bash -c ${Me.dir.get_child('shuzhi.sh').get_path()}`);
             else throw e;
         }
     }
@@ -171,7 +171,7 @@ class ShuZhi extends DEventEmitter {
 
     _setMotto(paint) {
         this._genMotto().then(scc => (this.motto = scc))
-            .catch(e => { logError(e); this.motto = ''; })
+            .catch(() => { this.motto = ''; })
             .finally(() => {
                 if(this._synced) {
                     this._queueRepaint(paint);

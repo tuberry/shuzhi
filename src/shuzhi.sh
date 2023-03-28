@@ -1,13 +1,17 @@
-#!/bin/bash
-# by tuberry & mechtifs
+#!/usr/bin/env gjs
+// vim:filetype=javascript
+// by tuberry & mechtifs
+'use strict'; // workaround for https://gjs.guide/extensions/review-guidelines/review-guidelines.html#scripts-and-binaries
 
-# API from https://github.com/xenv/gushici
-res=$(curl -s https://v1.jinrishici.com/all.json)
-content=$(echo $res | grep -Po '(?<="content" : ")[^"]*')
-test -z $content && exit 1
-author=$(echo $res | grep -Po '(?<="author" : ")[^"]*')
-origin=$(echo $res | grep -Po '(?<="origin" : ")[^"]*' | sed -r 's/\ //g')
-# `SZ_BGCOLOR` is the bgcolor of wallpaper
-title='<span font=\"0.45em\">'「$origin」'<span bgcolor=\"#b00a\" fgcolor=\"SZ_BGCOLOR\">'$author'</span></span>'
-vcontent=$(echo $content | sed -r 's/[，。：；？、！]/\n/g;s/[《》“”]//g;' | sed -r '/^\s*$/d' | sed -z 's/\n/\\n/g')
-printf '{"vtext":"%s%s","htext":"%s\\n%s"}' "$vcontent" "$title" "$content" "$title"
+imports.gi.versions.Soup = '3.0';
+const { Soup } = imports.gi;
+
+let ssn = new Soup.Session({ timeout: 30 }),
+    msg = Soup.Message.new('POST', 'https://v1.jinrishici.com/all.json'),
+    byt = ssn.send_and_read(msg, null),
+    spn = (s, a) => `<span ${Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ')}>${s}</span>`;
+if(msg.statusCode !== Soup.Status.OK) throw new Error(`Unexpected response: ${msg.get_reason_phrase()}`);
+let { content, origin, author } = JSON.parse(new TextDecoder().decode(byt.get_data())),
+    vcontent = content.replaceAll(/[，。：；？、！]/g, '\n').replaceAll(/[《》“”]/g, ''),
+    title = spn(`「${origin}」${spn(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`, { font: '0.45em' });
+print(JSON.stringify({ vtext: `${vcontent}${title}`, htext: `${content}${title}` }));
