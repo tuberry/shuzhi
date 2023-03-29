@@ -41,12 +41,13 @@ For older versions, it's recommended to install via:
 
 ## Note
 
-* Set the text command to `shuzhi.sh` to enable the builtin script;
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh) or [_shuzhi.fish](/cli/_shuzhi.fish) for reference;
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/_cli/shuzhi.gjs) for reference;
+* If you don't want to bother with scripting, set the text command to `shuzhi.sh` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**.
 
 ## Acknowledgements
 
-* [gushichi](https://github.com/xenv/gushici): the API used in [shuzhi.sh](/shuzhi@tuberry/shuzhi.sh).
+* [gushichi](https://github.com/xenv/gushici): the [jinrishici] API.
 
+[jinrishici]:https://www.jinrishici.com/
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/

@@ -169,7 +169,7 @@ function bezeirCtrls(pts, smooth = 1, closed = false) {
 
 function genMoon(x, _y) {
     let p = Math.abs((Date.now() / 86400000 - 18256.8) / 29.5305882) % 1, // Ref: https://ecomaan.nl/javascript/moonphase/
-        [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI,  p > 0.5 ? Math.PI / 4 : -Math.PI / 4],
+        [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI, p > 0.5 ? Math.PI / 4 : -Math.PI / 4],
         q = (1 - Math.abs(2 * p - 1)).toFixed(3);
     if(Math.abs(q - 1) < 0.005) {
         return [c_x, c_y, r, Color.LIGHT];

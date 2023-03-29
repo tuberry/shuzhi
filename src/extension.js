@@ -12,8 +12,8 @@ const { GLib, St, Pango } = imports.gi;
 const LightProxy = Main.panel.statusArea.quickSettings._nightLight._proxy;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+const { xnor, noop, _, execute, fl, fdelete, fcopy, denum, access } = Me.imports.util;
 const { Fulu, Extension, DEventEmitter, symbiose, omit, onus } = Me.imports.fubar;
-const { xnor, noop, _, execute, fl, fdelete, fcopy, denum } = Me.imports.util;
 const { MenuItem, DRadioItem, TrayIcon } = Me.imports.menu;
 const { Field } = Me.imports.const;
 const Draw = Me.imports.draw;
@@ -156,9 +156,13 @@ class ShuZhi extends DEventEmitter {
         try {
             return await execute(this._command);
         } catch(e) {
-            let [cmd] = GLib.shell_parse_argv(this._command).at(1);
-            if(cmd === 'shuzhi.sh') return execute(`bash -c ${Me.dir.get_child('shuzhi.sh').get_path()}`);
-            else throw e;
+            if(GLib.shell_parse_argv(this._command).at(1).at(0) === 'shuzhi.sh') {
+                let { content, origin, author } = JSON.parse(await access('POST', 'https://v1.jinrishici.com/all.json')),
+                    vcontent = content.replaceAll(/[，。：；？、！]/g, '\n').replaceAll(/[《》“”]/g, ''),
+                    span = (s, a) => `<span ${Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ')}>${s}</span>`,
+                    title = span(`「${origin}」${span(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`, { font: '0.45em' });
+                return JSON.stringify({ vtext: `${vcontent}${title}`, htext: `${content}${title}` });
+            } else { throw e; }
         }
     }
 
