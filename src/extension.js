@@ -22,8 +22,7 @@ const Style = { LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
-const bak = (x, y) => x.startsWith(`${y}-`) && x.endsWith('.svg');
-const em2pg = (x, y) => x.replace(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
+const em2pg = (x, y) => x.replaceAll(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
 
 class MenuSection extends PopupMenu.PopupMenuSection {
     constructor(items, name) {
@@ -60,7 +59,7 @@ class ShuZhi extends DEventEmitter {
             lsketch:   [Field.LSKT, 'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
             dsketch:   [Field.DSKT, 'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
         }, this, 'redraw').attach({
-            style:     [Field.STL,    'uint'],
+            style:     [Field.STL,  'uint'],
         }, this, 'murkey');
         this._tfield = new Fulu({ scheme: ['color-scheme', 'string', x => x === 'prefer-dark'] }, 'org.gnome.desktop.interface', this, 'murkey');
         LightProxy.connectObject('g-properties-changed', () => this._syncNightLight(), onus(this));
@@ -69,7 +68,7 @@ class ShuZhi extends DEventEmitter {
     _buildWidgets() {
         this._pts = [];
         this._sbt = symbiose(this, () => omit(this, 'systray'), {
-            cycle: [x => clearInterval(x), x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
+            cycle: [clearInterval, x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
         });
     }
 
@@ -148,7 +147,7 @@ class ShuZhi extends DEventEmitter {
     }
 
     getPath() {
-        let file = `/shuzhi-${this.dark ? 'dark.svg' : 'light.svg'}`;
+        let file = `/shuzhi-${this.dark ? 'd.svg' : 'l.svg'}`;
         return (this.folder || GLib.get_user_cache_dir()) + file;
     }
 
@@ -169,7 +168,7 @@ class ShuZhi extends DEventEmitter {
     _checkImg() {
         let path = this.getPath();
         return this.style === Style.SYSTEM
-            ? (path.endsWith('dark.svg') ? this.dpic : this.lpic).endsWith(path)
+            ? (path.endsWith('d.svg') ? this.dpic : this.lpic).endsWith(path)
             : this.lpic.endsWith(path) && this.dpic.endsWith(path);
     }
 
@@ -194,7 +193,7 @@ class ShuZhi extends DEventEmitter {
 
     _copyMotto() {
         let mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
-        mt = mt ? em2pg(mt.replace(/SZ_BGCOLOR/g, '#fff'), 16) : this._motto.logo || '';
+        mt = mt ? em2pg(mt.replace(/SZ_BGCOLOR/g, '#000'), 16) : this._motto.logo || '';
         try {
             St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, Pango.parse_markup(mt, -1, '').at(2));
         } catch(e) {
@@ -221,15 +220,14 @@ class ShuZhi extends DEventEmitter {
     set desktop(image) {
         if(image) {
             if(this.style === Style.SYSTEM) {
-                if(image.endsWith('dark.svg')) !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
+                if(image.endsWith('d.svg')) !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
                 else !this.lpic.endsWith(image) && this._fulu_d.set('lpic', image, this);
             } else {
                 !this.lpic.endsWith(image) && this._fulu_d.set('lpic', image, this);
                 !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
             }
         } else {
-            let vs = Object.values(this._fulu_d.prop.get(this));
-            vs.forEach(([v]) => this._fulu_d.gset.reset(v));
+            Object.values(this._fulu_d.prop.get(this)).forEach(([v]) => this._fulu_d.gset.reset(v));
         }
     }
 
@@ -251,13 +249,12 @@ class ShuZhi extends DEventEmitter {
 
     async _backup(path) {
         if(!this.backups) return;
-        let pics = [],
-            dir = GLib.path_get_dirname(path),
-            name = GLib.path_get_basename(path).replace(/\..+$/, '');
-        await fcopy(fl(path), fl(dir, `${name}-${new Date().toLocaleFormat('%FT%T')}.svg`));
-        for(let f of await denum(fl(dir)).catch(noop) ?? []) pics.push(f);
-        pics = pics.flatMap(x => bak(x.get_name(), name) ? [x] : []).slice(0, -this.backups - 1);
-        Promise.all(pics.forEach(x => fdelete(x))).catch(noop);
+        let dir = fl(GLib.path_get_dirname(path));
+        [...await denum(dir).catch(noop) ?? []].map(x => x.get_name())
+            .flatMap(x => Date.parse(x.slice(9, 33)) ? [dir.get_child(x)] : [])
+            .slice(0, -this.backups)
+            .forEach(x => fdelete(x));
+        await fcopy(fl(path), fl(path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`)));
     }
 
     _drawSketch(cr, x, y) {

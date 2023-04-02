@@ -7,13 +7,10 @@
 
 const Cairo = imports.cairo;
 const { PangoCairo, Pango, GLib, St, Gdk, GdkPixbuf, Rsvg } = imports.gi;
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
+const Me = imports.misc.extensionUtils.getCurrentExtension();
 const Color = Me.imports.color;
 
 let Ratio = 2 / 3,
-    NSpare = [],
     FontName = '',
     DarkBg = true,
     TextRect = [-1, -1, 0, 0];
@@ -28,12 +25,13 @@ const rand = (l, u) => Math.random() * (u - l) + l;
 const rInt = (l, u) => Math.floor(rand(l, u + 1)); // -> l .. u
 const rN = n => Math.floor(Math.random() * n); // -> 0 .. n - 1
 const rBool = () => Math.random() < 0.5;
+const rNormal = normal();
 
 const Y = f => f(x => Y(f)(x)); // Y combinator
 const scanl = (f, a, xs) => xs.flatMap(x => (a = f(x, a)));
 const zipWith = (f, ...xss) => xss[0].map((_x, i) => f(...xss.map(xs => xs[i])));
 const array = (n, f = i => i) => Array.from({ length: n }, (_x, i) => f(i));
-const dist = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
+const distance = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
 const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = ([x, y]) => [[1, 0, x], [0, 1, y]];
@@ -56,21 +54,24 @@ function loop(f, u, l = 0, s = 1) {
     else for(let i = l; i >= u; i += s) f(i);
 }
 
-function rNormal() { // -> [0, 1]
+function normal() { // -> [0, 1]
     // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
-    if(NSpare.length) {
-        return NSpare.pop();
-    } else {
-        let u, v, s;
-        do {
-            u = 2 * Math.random() - 1;
-            v = 2 * Math.random() - 1;
-            s = u * u + v * v;
-        } while(s >= 1 || s === 0);
-        s = Math.sqrt(-2 * Math.log(s) / s);
-        NSpare.push(Math.clamp(u * s / 6 + 0.5, 0, 1));
-        return Math.clamp(v * s / 6 + 0.5, 0, 1);
-    }
+    let spare = [];
+    return function () {
+        if(spare.length) {
+            return spare.pop();
+        } else {
+            let u, v, s;
+            do {
+                u = 2 * Math.random() - 1;
+                v = 2 * Math.random() - 1;
+                s = u * u + v * v;
+            } while(s >= 1 || s === 0);
+            s = Math.sqrt(-2 * Math.log(s) / s);
+            spare.push(Math.clamp(u * s / 6 + 0.5, 0, 1));
+            return Math.clamp(v * s / 6 + 0.5, 0, 1);
+        }
+    };
 }
 
 function rGauss(mu, sigma, k = 0) { // k <- (-1, 1)
@@ -159,7 +160,7 @@ function bezeirCtrls(pts, smooth = 1, closed = false) {
     // Ref: https://zhuanlan.zhihu.com/p/267693043
     let ctrls = array(pts.length - (closed ? 1 : 2), i => i + 1).flatMap(i => {
         let [a, b, c] = [i - 1, i, i + 1].map(x => pts[x % pts.length]), // i - 1 >= 0
-            ls = [a, c].map(x => dist(x, b)),
+            ls = [a, c].map(x => distance(x, b)),
             ms = [a, c].map(x => zipWith((u, v) => (u + v) / 2, x, b)),
             ds = (k => zipWith((u, v) => u + (v - u) * k, ...ms))(ls[0] / ls.reduce(add));
         return (([x, y]) => [x, pts[i], y])(ms.map(x => zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds)));
@@ -467,7 +468,7 @@ function genTree(n, x, y, l) {
         let s = rand(0.1, 0.9) * 3 * (1 - Math.abs(t)) ** 2;
         return s < 0.3 ? null : affine(vec.slice(0, 2), move(p2ct(s * l, t - 1 / 2))).concat(t);
     };
-    let root = [[x, y, 0], branch([x, y, 0], rGauss(0, 1 / 32))],
+    let root = [[x, y, 0], branch([x, y, 0], rGauss(0, 1 / 64))],
         tree = root.concat(scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root[1]], array(n - 1))),
         merg = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
     loop(i => tree[i] && tree[i].push(merg(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), 0, tree.length - 1, -1);
