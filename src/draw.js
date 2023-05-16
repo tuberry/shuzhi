@@ -9,6 +9,7 @@ const Cairo = imports.cairo;
 const { PangoCairo, Pango, GLib, St, Gdk, GdkPixbuf, Rsvg } = imports.gi;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
 const Color = Me.imports.color;
+const { array } = Me.imports.util;
 
 let Ratio = 2 / 3,
     FontName = '',
@@ -30,18 +31,16 @@ const rNormal = normal();
 const Y = f => f(x => Y(f)(x)); // Y combinator
 const scanl = (f, a, xs) => xs.flatMap(x => (a = f(x, a)));
 const zipWith = (f, ...xss) => xss[0].map((_x, i) => f(...xss.map(xs => xs[i])));
-const array = (n, f = i => i) => Array.from({ length: n }, (_x, i) => f(i));
 const distance = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
 const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const affine = (xs, ...ms) => ms.reduce((p, v) => v.map(w => dot(w, p.concat(1))), xs);
-const rgba2hex = rgba => `#${rgba.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
+const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
 
 function setDarkBg(dark) { DarkBg = dark; }
 function setFontName(font) { FontName = font; }
 function setTextRect(rect) { TextRect = rect; }
-function getBgColor() { return rgba2hex(DarkBg ? Color.DARK : Color.LIGHT); }
 
 function overlap([x, y, w, h], [m, n, p, q]) {
     let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
@@ -76,8 +75,7 @@ function normal() { // -> [0, 1]
 
 function rGauss(mu, sigma, k = 0) { // k <- (-1, 1)
     let n = Math.pow(rNormal(), 1 + Math.log(1 + Math.abs(k)) / Math.log(0.5));
-    if(k < 0) n = 1 - n;
-    return mu + sigma * (6 * n - 3);
+    return mu + sigma * (6 * (k < 0 ? 1 - n : n) - 3);
 }
 
 function rBimodal(mu, s3, k = 0.5) { // k <- (0, 1)
@@ -109,7 +107,7 @@ function rDirichlet(n, a, s = 1) { // -> (0, 1), n <- N+
 
 function shuffle(a) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    loop(i => (j => ([a[i], a[j]] = [a[j], a[i]]))(rN(i)), 1, a.length - 1, -1);
+    loop(i => (j => swap(a, i, j))(rN(i)), 1, a.length - 1, -1);
     return a;
 }
 
@@ -125,11 +123,11 @@ function sample(a, n) { // n < a.length
 
 function wave(a) {
     rBool() ? loop(i => {
-        i !== 0 && a[i] < a[i - 1] && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
-        i !== a.length - 1 && a[i] < a[i + 1] && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
+        if(i !== 0 && a[i] < a[i - 1]) swap(a, i, i - 1);
+        if(i !== a.length - 1 && a[i] < a[i + 1]) swap(a, i, i + 1);
     }, a.length - 1, 0, 2) : loop(i => {
-        i !== 0 && a[i] > a[i - 1] && ([a[i], a[i - 1]] = [a[i - 1], a[i]]);
-        i !== a.length - 1 && a[i] > a[i + 1] && ([a[i], a[i + 1]] = [a[i + 1], a[i]]);
+        if(i !== 0 && a[i] > a[i - 1]) swap(a, i, i - 1);
+        if(i !== a.length - 1 && a[i] > a[i + 1]) swap(a, i, i + 1);
     }, a.length - 1, 0, 2);
     return a;
 }
@@ -381,7 +379,7 @@ function genMotto(cr, x, y, text, vt) {
         pl.set_alignment(Pango.Alignment.CENTER);
     }
     pl.set_font_description(Pango.FontDescription.from_string(FontName));
-    pl.set_markup(text.replace(/SZ_BGCOLOR/g, getBgColor()), -1);
+    pl.set_markup(text.replace(/SZ_BGCOLOR/g, DarkBg ? Color.DHEX : Color.LHEX), -1);
     let [fw, fh] = pl.get_pixel_size();
     let [a, b, c, d] = [x / 2, Ratio * y / 2, fw / 2, fh / 2];
     setTextRect(vt ? [a - d, Math.max(b - c, y / 32), fh, fw] : [a - c, b - d, fw, fh]);

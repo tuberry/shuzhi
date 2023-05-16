@@ -1,19 +1,18 @@
 // vim:fdm=syntax
 // by tuberry
-/* exported DARK LIGHT random */
+/* exported DHEX LHEX DARK LIGHT random */
 'use strict';
 const Me = imports.misc.extensionUtils.getCurrentExtension();
+const rgb2hex = c => `#${c.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
 const { lot } = Me.imports.util;
 
 var DARK = [0.14, 0.14, 0.14, 1];
 var LIGHT = [0.9, 0.9, 0.9, 1];
+var DHEX = rgb2hex(DARK);
+var LHEX = rgb2hex(LIGHT);
 
-function random(dark, alpha = 1) {
-    let { rgb, name } = lot(dark === undefined ? ModerateColors : dark ? LightColors : DarkColors);
-    return { color: rgb.map(x => x / 255).concat(alpha), name };
-}
 // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
-const Colors = [
+const Color = [
     { rgb: [249, 244, 228], name: '乳白' },
     { rgb: [249, 236, 195], name: '杏仁黄' },
     { rgb: [248, 223, 114], name: '茉莉黄' },
@@ -542,8 +541,15 @@ const Colors = [
     { rgb: [129, 119, 110], name: '深灰' },
 ];
 
-// group https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/group#browser_compatibility
-const lightness = ([r, g, b]) =>  0.2126 * r + 0.7152 * g + 0.0722 * b;
-const DarkColors = Colors.filter(x => lightness(x.rgb) <= 128);
-const LightColors = Colors.filter(x => lightness(x.rgb) > 128);
-const ModerateColors = Colors.filter(x => (l => l > 60 && l < 195)(lightness(x.rgb)));
+// Ref: https://stackoverflow.com/a/596243
+const luminate = ([r, g, b]) =>  Math.sqrt(0.299 * r * r  + 0.587 * g * g + 0.114 * b * b) / 255;
+const Colors = Color.map(x => luminate(x.rgb)).reduce((a, x, i) => {
+    a[x > 0.5 ? 1 : 0].push(i);
+    if(x > 0.25 && x < 0.75) a[2].push(i);
+    return a;
+}, [[], [], []]); // -> [Light, Dark, Moderate]
+
+function random(dark, alpha = 1) {
+    let { rgb, name } = Color[lot(Colors.at(dark ?? 2))];
+    return { color: rgb.map(x => x / 255).concat(alpha), name };
+}

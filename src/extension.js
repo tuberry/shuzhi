@@ -13,7 +13,7 @@ const LightProxy = Main.panel.statusArea.quickSettings._nightLight._proxy;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const { xnor, noop, _, execute, fl, fdelete, fcopy, denum, access } = Me.imports.util;
-const { Fulu, Extension, DEventEmitter, symbiose, omit, onus } = Me.imports.fubar;
+const { Fulu, Extension, DummyActor, symbiose, omit, onus } = Me.imports.fubar;
 const { MenuItem, DRadioItem, TrayIcon } = Me.imports.menu;
 const { Field } = Me.imports.const;
 const Draw = Me.imports.draw;
@@ -32,7 +32,7 @@ class MenuSection extends PopupMenu.PopupMenuSection {
     }
 }
 
-class ShuZhi extends DEventEmitter {
+class ShuZhi extends DummyActor {
     constructor() {
         super();
         this._buildWidgets();
