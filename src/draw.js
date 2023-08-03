@@ -37,6 +37,8 @@ const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const move = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const affine = (xs, ...ms) => ms.reduce((p, v) => v.map(w => dot(w, p.concat(1))), xs);
 const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
+const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); };
+const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
 
 function setDarkBg(dark) { DarkBg = dark; }
 function setFontName(font) { FontName = font; }
@@ -46,11 +48,6 @@ function overlap([x, y, w, h], [m, n, p, q]) {
     let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
     let dh = Math.max(0, Math.min(y + h, n + q) - Math.max(y, n));
     return dw * dh > 0.06 * w * h;
-}
-
-function loop(f, u, l = 0, s = 1) {
-    if(s > 0) for(let i = l; i <= u; i += s) f(i);
-    else for(let i = l; i >= u; i += s) f(i);
 }
 
 function normal() { // -> [0, 1]
@@ -74,7 +71,7 @@ function normal() { // -> [0, 1]
 }
 
 function rGauss(mu, sigma, k = 0) { // k <- (-1, 1)
-    let n = Math.pow(rNormal(), 1 + Math.log(1 + Math.abs(k)) / Math.log(0.5));
+    let n = Math.pow(rNormal(), 1 - Math.log2(1 + Math.abs(k)));
     return mu + sigma * (6 * (k < 0 ? 1 - n : n) - 3);
 }
 
@@ -107,7 +104,7 @@ function rDirichlet(n, a, s = 1) { // -> (0, 1), n <- N+
 
 function shuffle(a) {
     // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    loop(i => (j => swap(a, i, j))(rN(i)), 1, a.length - 1, -1);
+    loopr(i => swap(a, rN(i), i), a.length - 1, 1);
     return a;
 }
 
@@ -122,10 +119,10 @@ function sample(a, n) { // n < a.length
 }
 
 function wave(a) {
-    rBool() ? loop(i => {
+    rBool() ? loopl(i => {
         if(i !== 0 && a[i] < a[i - 1]) swap(a, i, i - 1);
         if(i !== a.length - 1 && a[i] < a[i + 1]) swap(a, i, i + 1);
-    }, a.length - 1, 0, 2) : loop(i => {
+    }, a.length - 1, 0, 2) : loopl(i => {
         if(i !== 0 && a[i] > a[i - 1]) swap(a, i, i - 1);
         if(i !== a.length - 1 && a[i] > a[i + 1]) swap(a, i, i + 1);
     }, a.length - 1, 0, 2);
@@ -249,7 +246,7 @@ function drawWaves(cr, waves, show) {
         cr.moveTo(x, y);
         cr.lineTo(0, y);
         cr.lineTo(...p[0]);
-        loop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
+        loopl(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
         cr.closePath();
         cr.fill();
     });
@@ -285,7 +282,7 @@ function drawBlobs(cr, pts) {
         let [color, p] = pt;
         cr.setSourceRGBA(...color);
         cr.moveTo(...p.at(-1));
-        loop(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
+        loopl(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
         cr.fill();
     });
     cr.restore();
@@ -353,7 +350,7 @@ function drawClouds(cr, clouds) {
         // cr.setLineWidth(2);
         cr.setSourceRGBA(...color);
         cr.moveTo(...p[0]);
-        loop(i => {
+        loopl(i => {
             let [x, y, f, d_y] = [...p[i], (p[i + 1][1] - p[i][1]) / 2];
             let flag = x < p[i + 2][0];
             cr.lineTo(x, y);
@@ -469,8 +466,8 @@ function genTree(n, x, y, l) {
     let root = [[x, y, 0], branch([x, y, 0], rGauss(0, 1 / 64))],
         tree = root.concat(scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root[1]], array(n - 1))),
         merg = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
-    loop(i => tree[i] && tree[i].push(merg(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), 0, tree.length - 1, -1);
-    loop(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(genFlower(tree[i], i, y / 54)), 2 ** n - 1, 1);
+    loopr(i => tree[i] && tree[i].push(merg(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), tree.length - 1);
+    loopl(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(genFlower(tree[i], i, y / 54)), 2 ** n - 1, 1);
     return [tree];
 }
 
@@ -482,8 +479,8 @@ function drawTree(cr, pts) {
     cr.setSourceRGBA(...Color.DARK);
     let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][3]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
     let flower = (i, s) => (tr[i] && tr[i][4]) && (s === tr[i][4][0]) && drawFlower(cr, tr[i][4], cl);
-    loop(i => {
-        loop(j => {
+    loopl(i => {
+        loopl(j => {
             if(!tr[j]) return;
             flower(2 * j, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j);
             flower(2 * j + 1, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j + 1);
@@ -506,12 +503,12 @@ function drawLand(cr, pts) {
     cr.rectangle(...rc);
     cr.fill();
     cr.setSourceRGBA(...Color.LIGHT);
-    loop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
-    loop(i => cr.lineTo(...ld[i]), 30, 27);
+    loopl(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
+    loopl(i => cr.lineTo(...ld[i]), 30, 27);
     cr.fill();
     cr.moveTo(...ld.at(-1));
     cr.lineTo(...ld[0]);
-    loop(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
+    loopl(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
     cr.lineTo(...ld.at(-4));
     cr.setSourceRGBA(0, 0, 0, 0.4);
     cr.setLineWidth(sf * 2);

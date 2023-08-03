@@ -9,11 +9,10 @@ const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const { GLib, St, Pango } = imports.gi;
 
-const LightProxy = Main.panel.statusArea.quickSettings._nightLight._proxy;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { xnor, noop, _, execute, fl, fdelete, fcopy, denum, access } = Me.imports.util;
-const { Fulu, Extension, DummyActor, symbiose, omit, onus } = Me.imports.fubar;
+const { xnor, noop, _, execute, fopen, fdelete, fcopy, denum, access } = Me.imports.util;
+const { Fulu, Extension, Destroyable, symbiose, omit, initLightProxy } = Me.imports.fubar;
 const { MenuItem, DRadioItem, TrayIcon } = Me.imports.menu;
 const { Field } = Me.imports.const;
 const Draw = Me.imports.draw;
@@ -32,12 +31,11 @@ class MenuSection extends PopupMenu.PopupMenuSection {
     }
 }
 
-class ShuZhi extends DummyActor {
+class ShuZhi extends Destroyable {
     constructor() {
         super();
         this._buildWidgets();
         this._bindSettings();
-        this._syncNightLight();
     }
 
     _bindSettings() {
@@ -62,19 +60,14 @@ class ShuZhi extends DummyActor {
             style:     [Field.STL,  'uint'],
         }, this, 'murkey');
         this._tfield = new Fulu({ scheme: ['color-scheme', 'string', x => x === 'prefer-dark'] }, 'org.gnome.desktop.interface', this, 'murkey');
-        LightProxy.connectObject('g-properties-changed', () => this._syncNightLight(), onus(this));
     }
 
     _buildWidgets() {
         this._pts = [];
-        this._sbt = symbiose(this, () => omit(this, 'systray'), {
+        this._sbt = symbiose(this, () => omit(this, 'systray', '_light'), {
             cycle: [clearInterval, x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
         });
-    }
-
-    _syncNightLight() {
-        if(LightProxy.NightLightActive === null) return;
-        this.murkey = ['night_light', LightProxy.NightLightActive];
+        this._light = initLightProxy(() => { this.murkey = ['night_light', this._light.NightLightActive]; }, this);
     }
 
     setFontName(font) {
@@ -83,9 +76,9 @@ class ShuZhi extends DummyActor {
     }
 
     set murkey([k, v, out]) {
-        this[k] = out ? out(v) : v;
-        let dark = (this.style === Style.AUTO && this.night_light) ||
-            (this.style === Style.SYSTEM && this.scheme) || this.style === Style.DARK;
+        if(k) this[k] = out ? out(v) : v;
+        let dark = this.style === Style.AUTO ? this.night_light
+            : this.style === Style.SYSTEM ? this.scheme : this.style === Style.DARK;
         if(dark === this.dark) return;
         Draw.setDarkBg(this.dark = dark);
         this._queueRepaint(true);
@@ -104,7 +97,6 @@ class ShuZhi extends DummyActor {
         if(xnor(systray, this._btn)) return;
         if(systray) {
             this._btn = Main.panel.addToStatusArea(Me.metadata.uuid, new PanelMenu.Button(0.5, Me.metadata.uuid));
-            this._btn.menu.actor.add_style_class_name('app-menu');
             this._btn.add_actor(new TrayIcon('florette-symbolic', true));
             this._addMenuItems();
         } else {
@@ -249,12 +241,12 @@ class ShuZhi extends DummyActor {
 
     async _backup(path) {
         if(!this.backups) return;
-        let dir = fl(GLib.path_get_dirname(path));
+        let dir = fopen(GLib.path_get_dirname(path));
         [...await denum(dir).catch(noop) ?? []].map(x => x.get_name())
             .flatMap(x => Date.parse(x.slice(9, 33)) ? [dir.get_child(x)] : [])
             .slice(0, -this.backups)
             .forEach(x => fdelete(x));
-        await fcopy(fl(path), fl(path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`)));
+        await fcopy(fopen(path), fopen(path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`)));
     }
 
     _drawSketch(cr, x, y) {
