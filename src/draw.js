@@ -1,15 +1,17 @@
 // vim:fdm=syntax
 // by tuberry
-/* exported setFontName setDarkBg genWaves drawWaves genBlobs
- * drawBlobs genOvals drawOvals genClouds drawClouds genTrees
- * genMotto drawMotto drawBackground drawTrees genLogo drawLogo */
-'use strict';
 
-const Cairo = imports.cairo;
-const { PangoCairo, Pango, GLib, St, Gdk, GdkPixbuf, Rsvg } = imports.gi;
-const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Color = Me.imports.color;
-const { array } = Me.imports.util;
+import St from 'gi://St';
+import Gdk from 'gi://Gdk';
+import GLib from 'gi://GLib';
+import Rsvg from 'gi://Rsvg';
+import Cairo from 'gi://cairo';
+import Pango from 'gi://Pango';
+import GdkPixbuf from 'gi://GdkPixbuf';
+import PangoCairo from 'gi://PangoCairo';
+
+import { array } from './util.js';
+import * as Color from './color.js';
 
 let Ratio = 2 / 3,
     FontName = '',
@@ -40,8 +42,8 @@ const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
 const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); };
 const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
 
-function setDarkBg(dark) { DarkBg = dark; }
-function setFontName(font) { FontName = font; }
+export function setDarkBg(dark) { DarkBg = dark; }
+export function setFontName(font) { FontName = font; }
 function setTextRect(rect) { TextRect = rect; }
 
 function overlap([x, y, w, h], [m, n, p, q]) {
@@ -109,12 +111,11 @@ function shuffle(a) {
 }
 
 function sample(a, n) { // n < a.length
-    let ret = [];
-    for(let i = a.length - 1, idx = {}, j; i >= a.length - n; i--) {
-        j = rN(i);
+    let ret = [], idx = {};
+    loopr(i => (j => {
         ret.push(idx[j] ?? j);
         idx[j] = idx[i] ?? i;
-    }
+    })(rN(i)), a.length - 1, a.length - n);
     return ret.map(x => a[x]);
 }
 
@@ -230,14 +231,14 @@ function drawMoon(cr, pts) {
     cr.restore();
 }
 
-function genWaves(x, y) {
+export function genWaves(x, y) {
     let [layers, factor, min] = [5, 1 - Ratio, rInt(6, 9)],
         [dt, st] = [factor * y / layers, (1 - factor) * y],
         pts = array(layers, i => (n => bezeirCtrls(array(n + 1, j => [x * j / n, st + rAmp(i, Ratio) * dt])))(min + rN(6)));
     return [[x, y, Color.random(DarkBg, 1 / layers)], pts];
 }
 
-function drawWaves(cr, waves, show) {
+export function drawWaves(cr, waves, show) {
     let [other, pts] = waves;
     let [x, y, color] = other;
     cr.save();
@@ -271,12 +272,12 @@ function drawColor(cr, color) {
     cr.restore();
 }
 
-function genBlobs(x, y) {
+export function genBlobs(x, y) {
     return sample(genCoords([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16)
         .map(rect => [Color.random(DarkBg, 0.5).color, bezeirCtrls(genPolygon(circle(rect)), 1, true)]);
 }
 
-function drawBlobs(cr, pts) {
+export function drawBlobs(cr, pts) {
     cr.save();
     pts.forEach(pt => {
         let [color, p] = pt;
@@ -288,7 +289,7 @@ function drawBlobs(cr, pts) {
     cr.restore();
 }
 
-function genOvals(x, y) {
+export function genOvals(x, y) {
     return sample(genCoords([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, rGauss(1, 0.2) * r];
@@ -296,7 +297,7 @@ function genOvals(x, y) {
     });
 }
 
-function drawOvals(cr, pts) {
+export function drawOvals(cr, pts) {
     pts.forEach(pt => {
         let color = pt[0];
         let [c_x, c_y, e_w, e_h, r_t] = pt[1];
@@ -311,7 +312,7 @@ function drawOvals(cr, pts) {
     });
 }
 
-function genCloud([x, y, w, h], offset) {
+export function genCloud([x, y, w, h], offset) {
     let extra = (a, b) => Math.floor(a > b ? rGauss(x, w * a / 4) : rGauss(x + w, w * (1 - a) / 4)),
         len = Math.floor(h / offset),
         stp = wave(shuffle(array(len, i => i / len))),
@@ -320,7 +321,7 @@ function genCloud([x, y, w, h], offset) {
     return fst.concat(ret, [[extra(stp.at(-1), stp.at(-2)), ret.at(-1).at(1)]]);
 }
 
-function genClouds(x, y) {
+export function genClouds(x, y) {
     let offset = y / 27,
         coords = [[0, 2, 4], [0, 2, 5], [0, 3, 5], [1, 3, 5], [1, 3, 5]][rN(5)],
         genRect = pt => {
@@ -341,7 +342,7 @@ function genClouds(x, y) {
     return [genMoon(x, y), coords.map(c => [Color.random(DarkBg).color, genCloud(genRect(c), offset)])];
 }
 
-function drawClouds(cr, clouds) {
+export function drawClouds(cr, clouds) {
     let [moon, pts] = clouds;
     drawMoon(cr, moon);
     cr.save();
@@ -367,7 +368,7 @@ function drawClouds(cr, clouds) {
     cr.restore();
 }
 
-function genMotto(cr, x, y, text, vt) {
+export function genMotto(cr, x, y, text, vt) {
     let pl = PangoCairo.create_layout(cr);
     if(vt) {
         pl.set_width(Ratio * y * Pango.SCALE);
@@ -383,7 +384,7 @@ function genMotto(cr, x, y, text, vt) {
     return [x, y, pl, vt, fw, fh];
 }
 
-function drawMotto(cr, pts) {
+export function drawMotto(cr, pts) {
     let [x, y, pl, vt, fw, fh] = pts;
     cr.save();
     cr.setSourceRGBA(...DarkBg ? Color.LIGHT : Color.DARK);
@@ -398,14 +399,14 @@ function drawMotto(cr, pts) {
     cr.restore();
 }
 
-function drawBackground(cr) {
+export function drawBackground(cr) {
     cr.save();
     cr.setSourceRGBA(...DarkBg ? Color.DARK : Color.LIGHT);
     cr.paint();
     cr.restore();
 }
 
-function genTrees(x, y) {
+export function genTrees(x, y) {
     let ld = genLand(x, y),
         cl = Color.random(),
         t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6, x / 30),
@@ -413,7 +414,7 @@ function genTrees(x, y) {
     return [t1, t2, ld].map(v => v.concat([cl]));
 }
 
-function drawTrees(cr, pts) {
+export function drawTrees(cr, pts) {
     let [t1, t2, ld] = pts;
     drawTree(cr, t1);
     drawTree(cr, t2);
@@ -455,7 +456,7 @@ function drawFlower(cr, pts, cl) {
     cr.restore();
 }
 
-function genTree(n, x, y, l) {
+export function genTree(n, x, y, l) {
     // Ref: http://fhtr.blogspot.com/2008/12/drawing-tree-with-haskell-and-cairo.html
     let branch = (vec, ang) => {
         if(!vec) return null;
@@ -471,7 +472,7 @@ function genTree(n, x, y, l) {
     return [tree];
 }
 
-function drawTree(cr, pts) {
+export function drawTree(cr, pts) {
     let [tr, cl] = pts;
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
@@ -516,7 +517,7 @@ function drawLand(cr, pts) {
     cr.restore();
 }
 
-function genLogo(fn, x, y) {
+export function genLogo(fn, x, y) {
     try {
         let path = fn ? fn.replace(/~/, GLib.get_home_dir())
                 : new St.IconTheme().lookup_icon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`,
@@ -533,7 +534,7 @@ function genLogo(fn, x, y) {
     }
 }
 
-function drawLogo(cr, pts) {
+export function drawLogo(cr, pts) {
     if(!pts.length) return;
     cr.save();
     let [svg, img] = pts;

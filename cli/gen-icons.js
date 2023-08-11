@@ -1,8 +1,7 @@
 // vim:fdm=syntax
 // by tuberry
-'use strict';
 
-const { Gio } = imports.gi;
+import Gio from 'gi://Gio';
 
 const sp = x => Math.sin(Math.PI * x);
 const cp = x => Math.cos(Math.PI * x);

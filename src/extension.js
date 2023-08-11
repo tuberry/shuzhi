@@ -1,27 +1,27 @@
 // vim:fdm=syntax
 // by tuberry
-/* exported init */
-'use strict';
 
-const Cairo = imports.cairo;
-const Main = imports.ui.main;
-const PanelMenu = imports.ui.panelMenu;
-const PopupMenu = imports.ui.popupMenu;
-const { GLib, St, Pango } = imports.gi;
+import St from 'gi://St';
+import GLib from 'gi://GLib';
+import Cairo from 'gi://cairo';
+import Pango from 'gi://Pango';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const { xnor, noop, _, execute, fopen, fdelete, fcopy, denum, access } = Me.imports.util;
-const { Fulu, Extension, Destroyable, symbiose, omit, initLightProxy } = Me.imports.fubar;
-const { MenuItem, DRadioItem, TrayIcon } = Me.imports.menu;
-const { Field } = Me.imports.const;
-const Draw = Me.imports.draw;
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
+
+import * as Draw from './draw.js';
+import { Field } from './const.js';
+import { MenuItem, DRadioItem, TrayIcon } from './menu.js';
+import { xnor, noop, execute, fopen, fdelete, fcopy, denum, access } from './util.js';
+import { Fulu, BaseExtension, Destroyable, symbiose, omit, getSelf, lightProxy, _ } from './fubar.js';
+
+const em2pg = (x, y) => x.replaceAll(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
 
 const Style = { LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
 const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
-const em2pg = (x, y) => x.replaceAll(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
 
 class MenuSection extends PopupMenu.PopupMenuSection {
     constructor(items, name) {
@@ -32,13 +32,13 @@ class MenuSection extends PopupMenu.PopupMenuSection {
 }
 
 class ShuZhi extends Destroyable {
-    constructor() {
+    constructor(gset) {
         super();
         this._buildWidgets();
-        this._bindSettings();
+        this._bindSettings(gset);
     }
 
-    _bindSettings() {
+    _bindSettings(gset) {
         this._fulu_d = new Fulu({
             dpic: [Desktop.DARK,  'string'],
             lpic: [Desktop.LIGHT, 'string'],
@@ -49,7 +49,7 @@ class ShuZhi extends Destroyable {
             refresh:   [Field.RFS,  'boolean'],
             systray:   [Field.STRY, 'boolean'],
             command:   [Field.CMD,  'string'],
-        }, ExtensionUtils.getSettings(), this).attach({
+        }, gset, this).attach({
             folder:    [Field.PATH, 'string'],
             orient:    [Field.ORNT, 'uint',    [null, () => { this._pts.length = 0; }]],
             font:      [Field.FONT, 'string',  [null, x => this.setFontName(x)]],
@@ -67,7 +67,7 @@ class ShuZhi extends Destroyable {
         this._sbt = symbiose(this, () => omit(this, 'systray', '_light'), {
             cycle: [clearInterval, x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
         });
-        this._light = initLightProxy(() => { this.murkey = ['night_light', this._light.NightLightActive]; }, this);
+        this._light = lightProxy(() => { this.murkey = ['night_light', this._light.NightLightActive]; }, this);
     }
 
     setFontName(font) {
@@ -96,7 +96,7 @@ class ShuZhi extends Destroyable {
     set systray(systray) {
         if(xnor(systray, this._btn)) return;
         if(systray) {
-            this._btn = Main.panel.addToStatusArea(Me.metadata.uuid, new PanelMenu.Button(0.5, Me.metadata.uuid));
+            this._btn = Main.panel.addToStatusArea(getSelf().uuid, new PanelMenu.Button(0.5));
             this._btn.add_actor(new TrayIcon('florette-symbolic', true));
             this._addMenuItems();
         } else {
@@ -204,7 +204,7 @@ class ShuZhi extends Destroyable {
             sep1:   new PopupMenu.PopupSeparatorMenuItem(),
             sketch: new DRadioItem(_('Sketch'), this.getSketches(), this.sketch, x => (this.sketch = x)),
             sep2:   new PopupMenu.PopupSeparatorMenuItem(),
-            prefs:  new MenuItem(_('Settings'), () => ExtensionUtils.openPrefs()),
+            prefs:  new MenuItem(_('Settings'), () => getSelf().openPreferences()),
         };
         for(let p in this._menus) this._btn.menu.addMenuItem(this._menus[p]);
     }
@@ -277,6 +277,4 @@ class ShuZhi extends Destroyable {
     }
 }
 
-function init() {
-    return new Extension(ShuZhi);
-}
+export default class Extension extends BaseExtension { $klass = ShuZhi; }

@@ -6,6 +6,7 @@ custom_target(
   output: icon_name,
   command: [
     find_program('gjs'),
+    '-m',
     meson.source_root() / 'cli/gen-icons.js',
     '@OUTDIR@',
     icon_name

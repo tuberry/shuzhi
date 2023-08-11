@@ -1,15 +1,13 @@
 // vim:fdm=syntax
 // by tuberry
-/* exported DHEX LHEX DARK LIGHT random */
-'use strict';
-const Me = imports.misc.extensionUtils.getCurrentExtension();
-const rgb2hex = c => `#${c.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
-const { lot } = Me.imports.util;
+import { lot } from './util.js';
 
-var DARK = [0.14, 0.14, 0.14, 1];
-var LIGHT = [0.9, 0.9, 0.9, 1];
-var DHEX = rgb2hex(DARK);
-var LHEX = rgb2hex(LIGHT);
+const rgb2hex = c => `#${c.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
+
+export const DARK = [0.14, 0.14, 0.14, 1];
+export const LIGHT = [0.9, 0.9, 0.9, 1];
+export const DHEX = rgb2hex(DARK);
+export const LHEX = rgb2hex(LIGHT);
 
 // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
 const Color = [
@@ -549,7 +547,7 @@ const Colors = Color.map(({ rgb }) => luminate(rgb)).reduce((a, x, i) => {
     return a;
 }, [[], [], []]); // -> [Light, Dark, Moderate]
 
-function random(dark, alpha = 1) {
+export function random(dark, alpha = 1) {
     let { rgb, name } = Color[lot(Colors.at(dark ?? 2))];
     return { color: rgb.map(x => x / 255).concat(alpha), name };
 }

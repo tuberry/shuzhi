@@ -1,35 +1,26 @@
 // vim:fdm=syntax
 // by tuberry
-/* exported init buildPrefsWidget */
-'use strict';
 
-const { Adw, Gtk, GObject } = imports.gi;
+import Adw from 'gi://Adw';
+import Gtk from 'gi://Gtk';
+import GObject from 'gi://GObject';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const { _ } = Me.imports.util;
-const UI = Me.imports.ui;
+import * as UI from './ui.js';
 
-function buildPrefsWidget() {
-    return new ShuzhiPrefs();
-}
+const { _ } = UI;
 
-function init() {
-    ExtensionUtils.initTranslations();
-}
-
-class ShuzhiPrefs extends Adw.PreferencesGroup {
+class ShuZhiPrefs extends Adw.PreferencesGroup {
     static {
         GObject.registerClass(this);
     }
 
-    constructor() {
+    constructor(gset) {
         super();
-        this._buildWidgets();
+        this._buildWidgets(gset);
         this._buildUI();
     }
 
-    _buildWidgets() {
+    _buildWidgets(gset) {
         this._blk = UI.block({
             FONT: ['value',    new UI.Font()],
             CLR:  ['active',   new Gtk.CheckButton()],
@@ -43,7 +34,7 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
             LSKT: ['selected', new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees')], _('Light sketches'))],
             CMD:  ['text',     new UI.LazyEntry(_('# Set to shuzhi.sh to use the built-in script'), _('Command to generate the central text'))],
             STL:  ['selected', new UI.Drop([_('Light'), _('Dark'), _('Auto'), _('System')], _('Background color, “Auto” means sync with the Night Light'))],
-        });
+        }, gset);
     }
 
     _buildUI() {
@@ -59,3 +50,6 @@ class ShuzhiPrefs extends Adw.PreferencesGroup {
         ].forEach(xs => this.add(new UI.PrefRow(...xs)));
     }
 }
+
+export default class Extension extends UI.Prefs { $klass = ShuZhiPrefs; }
+

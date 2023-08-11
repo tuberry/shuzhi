@@ -1,9 +1,7 @@
 // vim:fdm=syntax
 // by tuberry
-/* exported Field */
-'use strict';
 
-var Field = {
+export const Field = {
     FONT: 'font-name',
     BCK:  'max-backups',
     CMD:  'text-command',
