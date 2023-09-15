@@ -14,10 +14,13 @@ import * as Draw from './draw.js';
 import { Field } from './const.js';
 import { MenuItem, DRadioItem, TrayIcon } from './menu.js';
 import { xnor, noop, execute, fopen, fdelete, fcopy, denum, access } from './util.js';
-import { Fulu, BaseExtension, Destroyable, symbiose, omit, getSelf, lightProxy, _ } from './fubar.js';
+import { Fulu, ExtensionBase, Destroyable, symbiose, omit, getSelf, lightProxy, _ } from './fubar.js';
 
-const em2pg = (x, y) => x.replaceAll(/([0-9.]*)em/g, (_m, s1) => `${y * s1}`);
+const em2pg = (x, y) => x.replaceAll(/([0-9.]*)em/g, (_m, p1) => `${y * p1}`);
+const wrap = (s, l) => s.replace(new RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim();
+const span = (s, o) => `<span${Object.entries(o).reduce((a, [k, v]) => `${a} ${k}="${v}"`, '')}>${s}</span>`;
 
+const TitleFactor = 0.45;
 const Style = { LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
@@ -51,9 +54,9 @@ class ShuZhi extends Destroyable {
             command:   [Field.CMD,  'string'],
         }, gset, this).attach({
             folder:    [Field.PATH, 'string'],
-            orient:    [Field.ORNT, 'uint',    [null, () => { this._pts.length = 0; }]],
             font:      [Field.FONT, 'string',  [null, x => this.setFontName(x)]],
             showcolor: [Field.CLR,  'boolean', [() => this.sketch !== LSketch.Waves]],
+            orient:    [Field.ORNT, 'uint',    [null, () => { this._pts.length = 0; }]],
             lsketch:   [Field.LSKT, 'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
             dsketch:   [Field.DSKT, 'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
         }, this, 'redraw').attach({
@@ -68,6 +71,7 @@ class ShuZhi extends Destroyable {
             cycle: [clearInterval, x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
         });
         this._light = lightProxy(() => { this.murkey = ['night_light', this._light.NightLightActive]; }, this);
+        [this._dsketches, this._lsketches] = [DSketch, LSketch].map(x => Object.keys(x).map(y => _(y)));
     }
 
     setFontName(font) {
@@ -82,7 +86,7 @@ class ShuZhi extends Destroyable {
         if(dark === this.dark) return;
         Draw.setDarkBg(this.dark = dark);
         this._queueRepaint(true);
-        this._menus?.sketch.setList(this.getSketches(), this.sketch);
+        this._menus?.sketch.setList(this.sketches, this.sketch);
     }
 
     set redraw([k, v, out]) { // out <- [cond, pre, post];
@@ -97,7 +101,7 @@ class ShuZhi extends Destroyable {
         if(xnor(systray, this._btn)) return;
         if(systray) {
             this._btn = Main.panel.addToStatusArea(getSelf().uuid, new PanelMenu.Button(0.5));
-            this._btn.add_actor(new TrayIcon('florette-symbolic', true));
+            this._btn.add_child(new TrayIcon('florette-symbolic', true));
             this._addMenuItems();
         } else {
             omit(this, '_btn', '_menus');
@@ -134,8 +138,8 @@ class ShuZhi extends Destroyable {
         }
     }
 
-    getSketches() {
-        return Object.keys(this.dark ? DSketch : LSketch).map(x => _(x));
+    get sketches() {
+        return this.dark ? this._dsketches : this._lsketches;
     }
 
     getPath() {
@@ -149,10 +153,12 @@ class ShuZhi extends Destroyable {
         } catch(e) {
             if(GLib.shell_parse_argv(this._command).at(1).at(0) === 'shuzhi.sh') {
                 let { content, origin, author } = JSON.parse(await access('POST', 'https://v1.jinrishici.com/all.json')),
-                    vcontent = content.replaceAll(/[，。：；？、！]/g, '\n').replaceAll(/[《》“”]/g, ''),
-                    span = (s, a) => `<span ${Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ')}>${s}</span>`,
-                    title = span(`「${origin}」${span(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`, { font: '0.45em' });
-                return JSON.stringify({ vtext: `${vcontent}${title}`, htext: `${content}${title}` });
+                    poet = `${span(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`,
+                    title = span(`\n「${origin}」 ${poet}`, { font: `${TitleFactor}em` }),
+                    vcontent = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
+                    vheight = Math.round(vcontent.split('\n').reduce((a, x) => Math.max(a, x.length), 1) / TitleFactor),
+                    vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, { font: `${TitleFactor}em` });
+                return JSON.stringify({ vtext: `${vcontent}${vtitle}`, htext: `${content}${title}` });
             } else { throw e; }
         }
     }
@@ -165,7 +171,7 @@ class ShuZhi extends Destroyable {
     }
 
     _setMotto(paint) {
-        this._genMotto().then(scc => (this.motto = scc))
+        this._genMotto().then(scc => { this.motto = scc; })
             .catch(() => { this.motto = ''; })
             .finally(() => {
                 if(this._synced) {
@@ -202,11 +208,11 @@ class ShuZhi extends Destroyable {
                 [_('Both'),   () => this._setMotto(true)],
             ], _('Refresh')),
             sep1:   new PopupMenu.PopupSeparatorMenuItem(),
-            sketch: new DRadioItem(_('Sketch'), this.getSketches(), this.sketch, x => (this.sketch = x)),
+            sketch: new DRadioItem(_('Sketch'), this.sketches, this.sketch, x => { this.sketch = x; }),
             sep2:   new PopupMenu.PopupSeparatorMenuItem(),
             prefs:  new MenuItem(_('Settings'), () => getSelf().openPreferences()),
         };
-        for(let p in this._menus) this._btn.menu.addMenuItem(this._menus[p]);
+        Object.values(this._menus).forEach(x => this._btn.menu.addMenuItem(x));
     }
 
     set desktop(image) {
@@ -225,7 +231,7 @@ class ShuZhi extends Destroyable {
 
     repaint() {
         let path = this.getPath(),
-            { width: x, height: y } = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
+            { width: x, height: y } = Main.layoutManager.monitors.reduce((a, v) => a.height * a.width > v.height * v.width ? a : v),
             sf = new Cairo.SVGSurface(path, x, y),
             cr = new Cairo.Context(sf),
             mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
@@ -277,4 +283,4 @@ class ShuZhi extends Destroyable {
     }
 }
 
-export default class Extension extends BaseExtension { $klass = ShuZhi; }
+export default class Extension extends ExtensionBase { $klass = ShuZhi; }

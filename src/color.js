@@ -1,6 +1,6 @@
 // vim:fdm=syntax
 // by tuberry
-import { lot } from './util.js';
+import { lot, luminance } from './util.js';
 
 const rgb2hex = c => `#${c.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`;
 
@@ -539,9 +539,7 @@ const Color = [
     { rgb: [129, 119, 110], name: '深灰' },
 ];
 
-// Ref: https://stackoverflow.com/a/596243
-const luminate = ([r, g, b]) => Math.sqrt(0.299 * r * r  + 0.587 * g * g + 0.114 * b * b);
-const Colors = Color.map(({ rgb }) => luminate(rgb)).reduce((a, x, i) => {
+const Colors = Color.map(({ rgb: [r, g, b] }) => luminance({ r, g, b })).reduce((a, x, i) => {
     a[x >= 128 ? 1 : 0].push(i);
     if(x > 64 && x < 192) a[2].push(i);
     return a;

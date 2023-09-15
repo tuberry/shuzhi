@@ -2,7 +2,6 @@
 // by tuberry
 
 import St from 'gi://St';
-import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 import Rsvg from 'gi://Rsvg';
 import Cairo from 'gi://cairo';
@@ -10,8 +9,8 @@ import Pango from 'gi://Pango';
 import GdkPixbuf from 'gi://GdkPixbuf';
 import PangoCairo from 'gi://PangoCairo';
 
-import { array } from './util.js';
 import * as Color from './color.js';
+import { array, fopen } from './util.js';
 
 let Ratio = 2 / 3,
     FontName = '',
@@ -33,18 +32,20 @@ const rNormal = normal();
 const Y = f => f(x => Y(f)(x)); // Y combinator
 const scanl = (f, a, xs) => xs.flatMap(x => (a = f(x, a)));
 const zipWith = (f, ...xss) => xss[0].map((_x, i) => f(...xss.map(xs => xs[i])));
-const distance = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
-const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
+const lerp = (a, b, t) => zipWith((u, v) => (1 - t) * u + t * v, a, b);
+const norm2 = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
+const move = (a, r, t) => zipWith(add, a, p2ct(r, t));
+const translate = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
-const move = ([x, y]) => [[1, 0, x], [0, 1, y]];
-const affine = (xs, ...ms) => ms.reduce((p, v) => v.map(w => dot(w, p.concat(1))), xs);
+const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
+const affine = (xs, ...ms) => ms.reduce((a, m) => m.map(v => dot(v, a.concat(1))), xs);
 const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
+const pie = (a, s = 1) => (m => a.map(x => x * s / m))(a.reduce(add));
 const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); };
 const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
 
 export function setDarkBg(dark) { DarkBg = dark; }
 export function setFontName(font) { FontName = font; }
-function setTextRect(rect) { TextRect = rect; }
 
 function overlap([x, y, w, h], [m, n, p, q]) {
     let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
@@ -98,10 +99,8 @@ function rGamma(a, b = 1) { // a:alpha == k > 0, b:beta == 1 / theta > 0
     return d * v / b;
 }
 
-function rDirichlet(n, a, s = 1) { // -> (0, 1), n <- N+
-    let ret = shuffle(array(n, () => rGamma(a)));
-    let sum = ret.reduce(add, 0);
-    return ret.map(x => x * s / sum);
+function rDirichlet(n, a, s = 1) { // n <- N+
+    return pie(array(n, () => rGamma(a)), s);
 }
 
 function shuffle(a) {
@@ -130,16 +129,15 @@ function wave(a) {
     return a;
 }
 
-function genPolygon([x, y, r], n = 6, a = 4, dt_r = 0.2) {
+function genPolygon([x, y, r], n = 5, a = 8, dt_r = 0.25) {
     // Ref: https://stackoverflow.com/a/25276331
-    return scanl(add, rand(0, 2), rDirichlet(n, a, 2))
-        .map(t => zipWith(add, [x, y], p2ct(rGauss(1, dt_r) * r, t)));
+    return scanl(add, rand(0, 2), rDirichlet(n, a, 2)).map(t => move([x, y], rGauss(0.95, dt_r) * r, t));
 }
 
-function genCoords(rect, sum = 20, fac = 1 / 5) { // reduce collision
+function genLattices(rect, sum = 20, factor = 1 / 5) { // reduce collision
     // Ref: https://stackoverflow.com/a/4382286
     return Y(f => n => n === 0 ? [rect] : f(n - 1).flatMap(([x, y, w, h]) => {
-        let [a, b] = [w, h].map(i => Math.round(i * rBimodal(1 / 2, fac)));
+        let [a, b] = [w, h].map(i => Math.round(i * rBimodal(1 / 2, factor)));
         return Math.abs(a / w - 1 / 2) < Math.abs(b / h - 1 / 2)
             ? [[x, y, a, b], [x, y + b, a, h - b], [x + a, y, w - a, h - b], [x + a, y + h - b, w - a, b]]
             : [[x, y, a, b], [x + a, y, w - a, b], [x, y + b, w - a, h - b], [x + w - a, y + b, a, h - b]];
@@ -152,16 +150,27 @@ function circle([x, y, w, h]) {
     return ctr.concat(r);
 }
 
-function bezeirCtrls(pts, smooth = 1, closed = false) {
+function genBezeirCtrls([a, b, c], smooth) {
     // Ref: https://zhuanlan.zhihu.com/p/267693043
-    let ctrls = array(pts.length - (closed ? 1 : 2), i => i + 1).flatMap(i => {
-        let [a, b, c] = [i - 1, i, i + 1].map(x => pts[x % pts.length]), // i - 1 >= 0
-            ls = [a, c].map(x => distance(x, b)),
-            ms = [a, c].map(x => zipWith((u, v) => (u + v) / 2, x, b)),
-            ds = (k => zipWith((u, v) => u + (v - u) * k, ...ms))(ls[0] / ls.reduce(add));
-        return (([x, y]) => [x, pts[i], y])(ms.map(x => zipWith((u, v, w) => u + (v - w) * smooth, b, x, ds)));
-    });
-    return closed ? ctrls.splice(-1).concat(ctrls) : [pts[0]].concat(ctrls, [pts.at(-1), pts.at(-1)]);
+    let ms = [a, c].map(x => lerp(x, b, 1 / 2)),
+        d = lerp(...ms, 1 / (1 + norm2(c, b) / norm2(a, b))),
+        [e, f] = ms.map(x => zipWith((u, v, w) => u + (v - w) * smooth, b, x, d));
+    return [e, b, f];
+}
+
+function genBezeirCurve(pts, smooth = 1, closed = false) { // -> [start, ...ctrls]
+    if(closed) {
+        let ctrls = array(pts.length, i => genBezeirCtrls(array(3, j => pts[(i + j) % pts.length]), smooth)).flat();
+        return [pts[0], ctrls.at(-1), ...ctrls.slice(0, -1)];
+    } else {
+        let ctrls = array(pts.length - 2, i => genBezeirCtrls(array(3, j => pts[i + j]), smooth)).flat();
+        return [pts[0], pts[0], ...ctrls, pts.at(-1), pts.at(-1)];
+    }
+}
+
+function drawBezeirCurve(cr, [start, ...pts]) {
+    cr.moveTo(...start);
+    loopl(i => cr.curveTo(...array(3, j => pts[i + j]).flat()), pts.length - 1, 0, 3);
 }
 
 function genMoon(x, _y) {
@@ -234,38 +243,34 @@ function drawMoon(cr, pts) {
 export function genWaves(x, y) {
     let [layers, factor, min] = [5, 1 - Ratio, rInt(6, 9)],
         [dt, st] = [factor * y / layers, (1 - factor) * y],
-        pts = array(layers, i => (n => bezeirCtrls(array(n + 1, j => [x * j / n, st + rAmp(i, Ratio) * dt])))(min + rN(6)));
+        pts = array(layers, i => (n => genBezeirCurve(array(n + 1, j => [x * j / n, st + rAmp(i, Ratio) * dt])))(min + rN(6)));
     return [[x, y, Color.random(DarkBg, 1 / layers)], pts];
 }
 
 export function drawWaves(cr, waves, show) {
-    let [other, pts] = waves;
-    let [x, y, color] = other;
+    let [[x, y, color], pts] = waves;
     cr.save();
     cr.setSourceRGBA(...color.color);
     pts.forEach(p => {
-        cr.moveTo(x, y);
+        drawBezeirCurve(cr, p);
+        cr.lineTo(x, y);
         cr.lineTo(0, y);
-        cr.lineTo(...p[0]);
-        loopl(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
-        cr.closePath();
         cr.fill();
     });
-    show && drawColor(cr, other);
+    show && drawColor(cr, x, y, color);
     cr.restore();
 }
 
-function drawColor(cr, color) {
+function drawColor(cr, x, y, color) {
     if(!FontName) return;
-    let [x, y, cl] = color;
+    cr.save();
     (fg => cr.setSourceRGBA(fg, fg, fg, 0.1))(DarkBg ? 1 : 0);
     let pl = PangoCairo.create_layout(cr);
     let ft = Pango.FontDescription.from_string(FontName);
     ft.set_size(x * Pango.SCALE / 15);
     pl.set_font_description(ft);
     pl.get_context().set_base_gravity(Pango.Gravity.EAST);
-    pl.set_markup(cl.name, -1);
-    cr.save();
+    pl.set_markup(color.name, -1);
     cr.moveTo(x, 0.03 * y);
     cr.rotate(Math.PI / 2);
     PangoCairo.show_layout(cr, pl);
@@ -273,8 +278,8 @@ function drawColor(cr, color) {
 }
 
 export function genBlobs(x, y) {
-    return sample(genCoords([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16)
-        .map(rect => [Color.random(DarkBg, 0.5).color, bezeirCtrls(genPolygon(circle(rect)), 1, true)]);
+    return sample(genLattices([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16)
+        .map(rect => [Color.random(DarkBg, 0.5).color, genBezeirCurve(genPolygon(circle(rect)), 1, true)]);
 }
 
 export function drawBlobs(cr, pts) {
@@ -282,15 +287,14 @@ export function drawBlobs(cr, pts) {
     pts.forEach(pt => {
         let [color, p] = pt;
         cr.setSourceRGBA(...color);
-        cr.moveTo(...p.at(-1));
-        loopl(i => cr.curveTo(...p[i], ...p[i + 1], ...p[i + 2]), p.length - 1, 0, 3);
+        drawBezeirCurve(cr, p);
         cr.fill();
     });
     cr.restore();
 }
 
 export function genOvals(x, y) {
-    return sample(genCoords([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect => {
+    return sample(genLattices([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, rGauss(1, 0.2) * r];
         return [Color.random(DarkBg, 0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
@@ -299,8 +303,7 @@ export function genOvals(x, y) {
 
 export function drawOvals(cr, pts) {
     pts.forEach(pt => {
-        let color = pt[0];
-        let [c_x, c_y, e_w, e_h, r_t] = pt[1];
+        let [color, [c_x, c_y, e_w, e_h, r_t]] = pt;
         cr.save();
         cr.setSourceRGBA(...color);
         cr.translate(c_x, c_y);
@@ -313,12 +316,12 @@ export function drawOvals(cr, pts) {
 }
 
 export function genCloud([x, y, w, h], offset) {
-    let extra = (a, b) => Math.floor(a > b ? rGauss(x, w * a / 4) : rGauss(x + w, w * (1 - a) / 4)),
+    let mend = (a, b) => Math.floor(a > b ? rGauss(x, w * a / 4) : rGauss(x + w, w * (1 - a) / 4)),
         len = Math.floor(h / offset),
         stp = wave(shuffle(array(len, i => i / len))),
-        fst = [[extra(stp[0], stp[1]), y]],
-        ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1).at(1), rBool()), fst, array(len));
-    return fst.concat(ret, [[extra(stp.at(-1), stp.at(-2)), ret.at(-1).at(1)]]);
+        fst = [mend(stp[0], stp[1]), y],
+        ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1).at(1), rBool()), [fst], array(len));
+    return [fst, ...ret, [mend(stp.at(-1), stp.at(-2)), ret.at(-1).at(1)]];
 }
 
 export function genClouds(x, y) {
@@ -380,7 +383,7 @@ export function genMotto(cr, x, y, text, vt) {
     pl.set_markup(text.replace(/SZ_BGCOLOR/g, DarkBg ? Color.DHEX : Color.LHEX), -1);
     let [fw, fh] = pl.get_pixel_size();
     let [a, b, c, d] = [x / 2, Ratio * y / 2, fw / 2, fh / 2];
-    setTextRect(vt ? [a - d, Math.max(b - c, y / 32), fh, fw] : [a - c, b - d, fw, fh]);
+    TextRect = vt ? [a - d, Math.max(b - c, y / 32), fh, fw] : [a - c, b - d, fw, fh];
     return [x, y, pl, vt, fw, fh];
 }
 
@@ -411,7 +414,7 @@ export function genTrees(x, y) {
         cl = Color.random(),
         t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6, x / 30),
         t2 = genTree(6, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
-    return [t1, t2, ld].map(v => v.concat([cl]));
+    return [t1, t2, ld].map(v => v.concat(cl));
 }
 
 export function drawTrees(cr, pts) {
@@ -422,21 +425,20 @@ export function drawTrees(cr, pts) {
 }
 
 function genFlower([x, y, v, w], z, l = 20, n = 5) {
-    if(z < 8) return [false, w * 0.9, [x, y], affine([x, y], move(p2ct(rGauss(5 / 2, 1) * l, v - 1 / 2)))];
-    let da = 2 / (n + 1),
-        t1 = rGauss(1 / 2, 1 / 9),
-        rt = rotate(rand(0, 2)),
-        fc = 1 - Math.abs(t1 * 2 - 1),
-        stp = array(n, () => rGauss(1, 1 / 2 - fc)),
-        tran = p => affine(p, [[1, cosp(t1) * fc, 0], [0, sinp(t1) * fc, 0]], rt, move([x, y]));
-    return [sinp(t1) * fc > 0.6, scanl(add, 0, (m => stp.map(s => s * da / m))(stp.reduce(add)))
-        .map((s, i) => [i, i + 1].map(t => [0.05, 0.1, 1].map(r => tran(p2ct(r * l, s + t * da)))))];
+    if(z < 8) return [w * 0.9, [x, y], move([x, y], rGauss(5 / 2, 1) * l, v - 1 / 2), false];
+    let dt = 2 / (n + 1),
+        it = rotate(rand(0, 2)),
+        st = rGauss(1 / 2, 1 / 9),
+        fc = 1 - Math.abs(st * 2 - 1),
+        stp = pie(array(n, () => rGauss(1, 1 / 2 - fc)), dt),
+        cast = (r, t) => affine(p2ct(r, t), [[1, cosp(st) * fc, 0], [0, sinp(st) * fc, 0]], it, translate([x, y]));
+    return [scanl(add, 0, stp).map((s, i) => [i, i + 1].map(j => [0.05, 0.1, 1].map(r => cast(r * l, s + j * dt)))), sinp(st) * fc > 0.6];
 }
 
 function drawFlower(cr, pts, cl) {
     cr.save();
     if(pts.length > 2) {
-        let [, w, s, t] = pts;
+        let [w, s, t] = pts;
         cr.setLineWidth(w);
         cr.setSourceRGBA(0.2, 0.2, 0.2, 0.7);
         cr.setLineCap(Cairo.LineCap.BUTT);
@@ -444,7 +446,7 @@ function drawFlower(cr, pts, cl) {
         cr.lineTo(...t);
         cr.stroke();
     } else {
-        let [, pt] = pts;
+        let [pt] = pts;
         cr.setSourceRGBA(...cl.color);
         pt.forEach(p => {
             cr.moveTo(...p[0][1]);
@@ -462,12 +464,12 @@ export function genTree(n, x, y, l) {
         if(!vec) return null;
         let t = vec[2] + ang * rand(0.1, 0.9);
         let s = rand(0.1, 0.9) * 3 * (1 - Math.abs(t)) ** 2;
-        return s < 0.3 ? null : affine(vec.slice(0, 2), move(p2ct(s * l, t - 1 / 2))).concat(t);
+        return s < 0.3 ? null : move(vec.slice(0, 2), s * l, t - 1 / 2).concat(t);
     };
     let root = [[x, y, 0], branch([x, y, 0], rGauss(0, 1 / 64))],
         tree = root.concat(scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root[1]], array(n - 1))),
-        merg = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
-    loopr(i => tree[i] && tree[i].push(merg(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), tree.length - 1);
+        meld = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
+    loopr(i => tree[i] && tree[i].push(meld(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), tree.length - 1);
     loopl(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(genFlower(tree[i], i, y / 54)), 2 ** n - 1, 1);
     return [tree];
 }
@@ -479,7 +481,7 @@ export function drawTree(cr, pts) {
     cr.setLineJoin(Cairo.LineJoin.ROUND);
     cr.setSourceRGBA(...Color.DARK);
     let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][3]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
-    let flower = (i, s) => (tr[i] && tr[i][4]) && (s === tr[i][4][0]) && drawFlower(cr, tr[i][4], cl);
+    let flower = (i, s) => (tr[i] && tr[i][4]) && (s === tr[i][4].at(-1)) && drawFlower(cr, tr[i][4], cl);
     loopl(i => {
         loopl(j => {
             if(!tr[j]) return;
@@ -492,25 +494,25 @@ export function drawTree(cr, pts) {
 }
 
 function genLand(x, y, n = 20, f = 5 / 6) {
-    let land = bezeirCtrls(zipWith((u, v) => [u * x / n, v === 40 ? f * y : rGauss(v * y / 48, y / 96)],
+    let riverbed = genBezeirCurve(zipWith((u, v) => [u * x / n, v === 40 ? f * y : rGauss(v * y / 48, y / 96)],
         array(10, i => i + 5), [40, 40, 42, 44, 45, 46, 46, 43, 40, 40]), 0.3);
-    return [y / 1024, [0, 7 * y / 8, x, y / 8], land.concat([[x, f * y], [x, y], [0, y], [0, f * y]])];
+    return [y / 1024, [0, 7 * y / 8, x, y / 8], riverbed, [[x, f * y], [x, y], [0, y], [0, f * y]]];
 }
 
 function drawLand(cr, pts) {
-    let [sf, rc, ld, cl] = pts;
+    let [sf, rc, rb, ld, cl] = pts;
     cr.save();
     cr.setSourceRGBA(...cl.color.slice(0, 3), 0.4);
     cr.rectangle(...rc);
     cr.fill();
     cr.setSourceRGBA(...Color.LIGHT);
-    loopl(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
-    loopl(i => cr.lineTo(...ld[i]), 30, 27);
+    drawBezeirCurve(cr, rb);
+    loopl(i => cr.lineTo(...ld[i]), ld.length - 1);
     cr.fill();
     cr.moveTo(...ld.at(-1));
+    cr.lineTo(...rb[0]);
+    drawBezeirCurve(cr, rb);
     cr.lineTo(...ld[0]);
-    loopl(i => cr.curveTo(...ld[i], ...ld[i + 1], ...ld[i + 2]), 26, 0, 3);
-    cr.lineTo(...ld.at(-4));
     cr.setSourceRGBA(0, 0, 0, 0.4);
     cr.setLineWidth(sf * 2);
     cr.stroke();
@@ -523,13 +525,14 @@ export function genLogo(fn, x, y) {
                 : new St.IconTheme().lookup_icon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`,
                     256, St.IconLookupFlags.FORCE_SVG)?.get_filename(),
             svg = path.endsWith('.svg'),
-            img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path),
-            { width: w, height: h } = svg ? img.get_pixbuf() : img;
-        setTextRect([(x - w) / 2, (y * 0.8 - h) / 2, w, h]);
+            img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path) && // NOTE: avoid `uncatchable exception` assertion
+            St.TextureCache.get_default().load_file_to_cairo_surface(fopen(path), 1, 1),
+            { width: w, height: h } = svg ? img : { width: img.getWidth(), height: img.getHeight() };
+        TextRect = [(x - w) / 2, (y * 0.8 - h) / 2, w, h];
         return [svg, img];
     } catch(e) {
         logError(e);
-        setTextRect([-1, -1, 0, 0]);
+        TextRect = [-1, -1, 0, 0];
         return [];
     }
 }
@@ -542,7 +545,7 @@ export function drawLogo(cr, pts) {
     if(svg) {
         img.render_document(cr, new Rsvg.Rectangle({ x, y, width, height }));
     } else {
-        Gdk.cairo_set_source_pixbuf(cr, img, x, y);
+        cr.setSourceSurface(img, x, y);
         cr.paint();
     }
     cr.restore();
