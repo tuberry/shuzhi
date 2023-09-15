@@ -1,10 +1,8 @@
-#!/usr/bin/env gjs
-// vim:filetype=javascript
+#!/usr/bin/env -S gjs -m
+// vim:ft=javascript
 // by tuberry & mechtifs
-'use strict'; // workaround for https://gjs.guide/extensions/review-guidelines/review-guidelines.html#scripts-and-binaries
 
-imports.gi.versions.Soup = '3.0';
-const { Soup } = imports.gi;
+import Soup from 'gi://Soup/?version=3.0';
 
 let ssn = new Soup.Session({ timeout: 30 }),
     msg = Soup.Message.new('POST', 'https://v1.jinrishici.com/all.json'),
