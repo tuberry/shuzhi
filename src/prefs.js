@@ -32,7 +32,7 @@ class ShuZhiPrefs extends Adw.PreferencesGroup {
             ORNT: ['selected', new UI.Drop([_('Horizontal'), _('Vertical')])],
             DSKT: ['selected', new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Clouds')], _('Dark sketches'))],
             LSKT: ['selected', new UI.Drop([_('Waves'), _('Ovals'), _('Blobs'), _('Trees')], _('Light sketches'))],
-            CMD:  ['text',     new UI.LazyEntry(_('# Set to shuzhi.sh to use the built-in script'), _('Command to generate the central text'))],
+            CMD:  ['value',    new UI.LazyEntry(_('# Set to shuzhi.sh to use the built-in script'), _('Command to generate the central text'))],
             STL:  ['selected', new UI.Drop([_('Light'), _('Dark'), _('Auto'), _('System')], _('Background color, “Auto” means sync with the Night Light'))],
         }, gset);
     }
@@ -52,4 +52,3 @@ class ShuZhiPrefs extends Adw.PreferencesGroup {
 }
 
 export default class Extension extends UI.Prefs { $klass = ShuZhiPrefs; }
-

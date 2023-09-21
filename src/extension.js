@@ -16,11 +16,6 @@ import { MenuItem, DRadioItem, TrayIcon } from './menu.js';
 import { xnor, noop, execute, fopen, fdelete, fcopy, denum, access } from './util.js';
 import { Fulu, ExtensionBase, Destroyable, symbiose, omit, getSelf, lightProxy, _ } from './fubar.js';
 
-const em2pg = (x, y) => x.replaceAll(/([0-9.]*)em/g, (_m, p1) => `${y * p1}`);
-const wrap = (s, l) => s.replace(new RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim();
-const span = (s, o) => `<span${Object.entries(o).reduce((a, [k, v]) => `${a} ${k}="${v}"`, '')}>${s}</span>`;
-
-const TitleFactor = 0.45;
 const Style = { LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3 };
 const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
 const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
@@ -54,7 +49,7 @@ class ShuZhi extends Destroyable {
             command:   [Field.CMD,  'string'],
         }, gset, this).attach({
             folder:    [Field.PATH, 'string'],
-            font:      [Field.FONT, 'string',  [null, x => this.setFontName(x)]],
+            font:      [Field.FONT, 'string',  [null, x => Draw.setFontName(x)]],
             showcolor: [Field.CLR,  'boolean', [() => this.sketch !== LSketch.Waves]],
             orient:    [Field.ORNT, 'uint',    [null, () => { this._pts.length = 0; }]],
             lsketch:   [Field.LSKT, 'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
@@ -72,11 +67,6 @@ class ShuZhi extends Destroyable {
         });
         this._light = lightProxy(() => { this.murkey = ['night_light', this._light.NightLightActive]; }, this);
         [this._dsketches, this._lsketches] = [DSketch, LSketch].map(x => Object.keys(x).map(y => _(y)));
-    }
-
-    setFontName(font) {
-        Draw.setFontName(font);
-        this._font_size = Pango.FontDescription.from_string(font).get_size() / Pango.SCALE;
     }
 
     set murkey([k, v, out]) {
@@ -152,12 +142,15 @@ class ShuZhi extends Destroyable {
             return await execute(this._command);
         } catch(e) {
             if(GLib.shell_parse_argv(this._command).at(1).at(0) === 'shuzhi.sh') {
-                let { content, origin, author } = JSON.parse(await access('POST', 'https://v1.jinrishici.com/all.json')),
+                let size = 45,
+                    wrap = (s, l) => s.replace(new RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim(),
+                    span = (s, o) => `<span${Object.entries(o).reduce((a, [k, v]) => `${a} ${k}="${v}"`, '')}>${s}</span>`,
+                    { content, origin, author } = JSON.parse(await access('POST', 'https://v1.jinrishici.com/all.json')),
                     poet = `${span(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`,
-                    title = span(`\n「${origin}」 ${poet}`, { font: `${TitleFactor}em` }),
+                    title = span(`\n「${origin}」 ${poet}`, { size: `${size}%` }),
                     vcontent = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
-                    vheight = Math.round(vcontent.split('\n').reduce((a, x) => Math.max(a, x.length), 1) / TitleFactor),
-                    vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, { font: `${TitleFactor}em` });
+                    vheight = Math.round(vcontent.split('\n').reduce((a, x) => Math.max(a, x.length), 1) * 100 / size),
+                    vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, { size: `${size}%` });
                 return JSON.stringify({ vtext: `${vcontent}${vtitle}`, htext: `${content}${title}` });
             } else { throw e; }
         }
@@ -191,7 +184,7 @@ class ShuZhi extends Destroyable {
 
     _copyMotto() {
         let mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
-        mt = mt ? em2pg(mt.replace(/SZ_BGCOLOR/g, '#000'), 16) : this._motto.logo || '';
+        mt = mt ? mt.replace(/SZ_BGCOLOR/g, '#000') : this._motto.logo || '';
         try {
             St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, Pango.parse_markup(mt, -1, '').at(2));
         } catch(e) {
@@ -201,7 +194,7 @@ class ShuZhi extends Destroyable {
 
     _addMenuItems() {
         this._menus = {
-            copy:   new MenuItem(_('Copy'), () => this._copyMotto()),
+            copy: new MenuItem(_('Copy'), () => this._copyMotto()),
             refresh: new MenuSection([
                 [_('Motto'),  () => this._setMotto(false)],
                 [_('Sketch'), () => this._queueRepaint(true)],
@@ -235,7 +228,7 @@ class ShuZhi extends Destroyable {
             sf = new Cairo.SVGSurface(path, x, y),
             cr = new Cairo.Context(sf),
             mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
-            sc = mt ? Draw.genMotto(cr, x, y, em2pg(mt, this._font_size), this.orient) : Draw.genLogo(this._motto.logo, x, y);
+            sc = mt ? Draw.genMotto(cr, x, y, mt, this.orient) : Draw.genLogo(this._motto.logo, x, y);
         Draw.drawBackground(cr);
         this._drawSketch(cr, x, y);
         mt ? Draw.drawMotto(cr, sc) : Draw.drawLogo(cr, sc);
@@ -247,11 +240,9 @@ class ShuZhi extends Destroyable {
 
     async _backup(path) {
         if(!this.backups) return;
-        let dir = fopen(GLib.path_get_dirname(path));
-        [...await denum(dir).catch(noop) ?? []].map(x => x.get_name())
-            .flatMap(x => Date.parse(x.slice(9, 33)) ? [dir.get_child(x)] : [])
-            .slice(0, -this.backups)
-            .forEach(x => fdelete(x));
+        let dir = GLib.path_get_dirname(path);
+        let baks = await denum(dir, x => (y => Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name()));
+        baks.flat().slice(0, -this.backups).forEach(x => fdelete(fopen(dir, x)));
         await fcopy(fopen(path), fopen(path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`)));
     }
 

@@ -129,7 +129,7 @@ function wave(a) {
     return a;
 }
 
-function genPolygon([x, y, r], n = 5, a = 8, dt_r = 0.25) {
+function genPolygon([x, y, r], n = 6, a = 8, dt_r = 0.25) {
     // Ref: https://stackoverflow.com/a/25276331
     return scanl(add, rand(0, 2), rDirichlet(n, a, 2)).map(t => move([x, y], rGauss(0.95, dt_r) * r, t));
 }
