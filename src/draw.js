@@ -129,7 +129,7 @@ function wave(a) {
     return a;
 }
 
-function genPolygon([x, y, r], n = 5, a = 8, dt_r = 0.25) {
+function genPolygon([x, y, r], n = 6, a = 8, dt_r = 0.25) {
     // Ref: https://stackoverflow.com/a/25276331
     return scanl(add, rand(0, 2), rDirichlet(n, a, 2)).map(t => move([x, y], rGauss(0.95, dt_r) * r, t));
 }
@@ -263,6 +263,7 @@ export function drawWaves(cr, waves, show) {
 
 function drawColor(cr, x, y, color) {
     if(!FontName) return;
+    cr.save();
     (fg => cr.setSourceRGBA(fg, fg, fg, 0.1))(DarkBg ? 1 : 0);
     let pl = PangoCairo.create_layout(cr);
     let ft = Pango.FontDescription.from_string(FontName);
@@ -270,7 +271,6 @@ function drawColor(cr, x, y, color) {
     pl.set_font_description(ft);
     pl.get_context().set_base_gravity(Pango.Gravity.EAST);
     pl.set_markup(color.name, -1);
-    cr.save();
     cr.moveTo(x, 0.03 * y);
     cr.rotate(Math.PI / 2);
     PangoCairo.show_layout(cr, pl);

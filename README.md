@@ -48,6 +48,6 @@ For older versions (< 44), it's recommended to install via:
 
 * [gushichi](https://github.com/xenv/gushici): the [jinrishici] API.
 
-[jinrishici]:https://www.jinrishici.com/
+[jinrishici]:https://www.jinrishici.com/doc/#protocol
 [license]:https://img.shields.io/badge/license-GPLv3-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/
