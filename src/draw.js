@@ -29,7 +29,7 @@ const rN = n => Math.floor(Math.random() * n); // -> 0 .. n - 1
 const rBool = () => Math.random() < 0.5;
 const rNormal = normal();
 
-const Y = f => f(x => Y(f)(x)); // Y combinator
+const Y = f => f((...xs) => Y(f)(...xs)); // Y combinator
 const scanl = (f, a, xs) => xs.flatMap(x => (a = f(x, a)));
 const zipWith = (f, ...xss) => xss[0].map((_x, i) => f(...xss.map(xs => xs[i])));
 const lerp = (a, b, t) => zipWith((u, v) => (1 - t) * u + t * v, a, b);
@@ -38,7 +38,7 @@ const move = (a, r, t) => zipWith(add, a, p2ct(r, t));
 const translate = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
 const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
-const affine = (xs, ...ms) => ms.reduce((a, m) => m.map(v => dot(v, a.concat(1))), xs);
+const affine = (xs, ...ms) => ms.reduce((p, m) => m.map(v => dot(v, p.concat(1))), xs);
 const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
 const pie = (a, s = 1) => (m => a.map(x => x * s / m))(a.reduce(add));
 const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); };
@@ -525,7 +525,7 @@ export function genLogo(fn, x, y) {
                 : new St.IconTheme().lookup_icon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`,
                     256, St.IconLookupFlags.FORCE_SVG)?.get_filename(),
             svg = path.endsWith('.svg'),
-            img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path) && // NOTE: avoid `uncatchable exception` assertion
+            img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path) && // HACK: avoid `uncatchable exception` assertion
             St.TextureCache.get_default().load_file_to_cairo_surface(fopen(path), 1, 1),
             { width: w, height: h } = svg ? img : { width: img.getWidth(), height: img.getHeight() };
         TextRect = [(x - w) / 2, (y * 0.8 - h) / 2, w, h];

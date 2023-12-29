@@ -134,7 +134,7 @@ class ShuZhi extends Destroyable {
 
     getPath() {
         let file = `/shuzhi-${this.dark ? 'd.svg' : 'l.svg'}`;
-        return (this.folder || GLib.get_user_cache_dir()) + file;
+        return (this.folder || GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)) + file;
     }
 
     async _genMotto() {
@@ -144,12 +144,12 @@ class ShuZhi extends Destroyable {
             if(GLib.shell_parse_argv(this._command).at(1).at(0) === 'shuzhi.sh') {
                 let size = 45,
                     wrap = (s, l) => s.replace(new RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim(),
-                    span = (s, o) => `<span${Object.entries(o).reduce((a, [k, v]) => `${a} ${k}="${v}"`, '')}>${s}</span>`,
+                    span = (s, o) => `<span${Object.entries(o).reduce((p, [k, v]) => `${p} ${k}="${v}"`, '')}>${s}</span>`,
                     { content, origin, author } = JSON.parse(await access('POST', 'https://v1.jinrishici.com/all.json')),
                     poet = `${span(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`,
                     title = span(`\n「${origin}」 ${poet}`, { size: `${size}%` }),
                     vcontent = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
-                    vheight = Math.round(vcontent.split('\n').reduce((a, x) => Math.max(a, x.length), 1) * 100 / size),
+                    vheight = Math.round(vcontent.split('\n').reduce((p, x) => Math.max(p, x.length), 1) * 100 / size),
                     vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, { size: `${size}%` });
                 return JSON.stringify({ vtext: `${vcontent}${vtitle}`, htext: `${content}${title}` });
             } else { throw e; }
@@ -224,7 +224,7 @@ class ShuZhi extends Destroyable {
 
     repaint() {
         let path = this.getPath(),
-            { width: x, height: y } = Main.layoutManager.monitors.reduce((a, v) => a.height * a.width > v.height * v.width ? a : v),
+            { width: x, height: y } = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
             sf = new Cairo.SVGSurface(path, x, y),
             cr = new Cairo.Context(sf),
             mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
@@ -240,8 +240,9 @@ class ShuZhi extends Destroyable {
 
     async _backup(path) {
         if(!this.backups) return;
-        let dir = GLib.path_get_dirname(path);
-        let baks = await denum(dir, x => (y => Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name()));
+        let dir = GLib.path_get_dirname(path),
+            head = path.endsWith('d.svg') ? 'shuzhi-d-' : 'shuzhi-l-',
+            baks = await denum(dir, x => (y => y.startsWith(head) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name()));
         baks.flat().slice(0, -this.backups).forEach(x => fdelete(fopen(dir, x)));
         await fcopy(fopen(path), fopen(path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`)));
     }
