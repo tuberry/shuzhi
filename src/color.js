@@ -539,10 +539,10 @@ const Color = [
     { rgb: [129, 119, 110], name: '深灰' },
 ];
 
-const Colors = Color.map(({ rgb: [r, g, b] }) => luminance({ r, g, b })).reduce((a, x, i) => {
-    a[x >= 128 ? 1 : 0].push(i);
-    if(x > 64 && x < 192) a[2].push(i);
-    return a;
+const Colors = Color.map(({ rgb: [r, g, b] }) => luminance({ r, g, b })).reduce((p, x, i) => {
+    p[x >= 128 ? 1 : 0].push(i);
+    if(x > 64 && x < 192) p[2].push(i);
+    return p;
 }, [[], [], []]); // -> [Light, Dark, Moderate]
 
 export function random(dark, alpha = 1) {

@@ -11,5 +11,5 @@ let ssn = new Soup.Session({ timeout: 30 }),
 if(msg.statusCode !== Soup.Status.OK) throw new Error(`Unexpected response: ${msg.get_reason_phrase()}`);
 let { content, origin, author } = JSON.parse(new TextDecoder().decode(byt.get_data())),
     vcontent = content.replaceAll(/[，。：；？、！]/g, '\n').replaceAll(/[《》“”]/g, ''),
-    title = spn(`「${origin}」${spn(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`, { font: '0.45em' });
+    title = spn(`「${origin}」${spn(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`, { size: '45%' });
 print(JSON.stringify({ vtext: `${vcontent}${title}`, htext: `${content}${title}` }));

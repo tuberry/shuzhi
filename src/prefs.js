@@ -51,4 +51,4 @@ class ShuZhiPrefs extends Adw.PreferencesGroup {
     }
 }
 
-export default class Extension extends UI.Prefs { $klass = ShuZhiPrefs; }
+export default class PrefsWigdet extends UI.Prefs { $klass = ShuZhiPrefs; }
