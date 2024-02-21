@@ -1,5 +1,5 @@
-// vim:fdm=syntax
-// by tuberry
+// SPDX-FileCopyrightText: tuberry
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 import St from 'gi://St';
 import GLib from 'gi://GLib';
@@ -10,10 +10,10 @@ import GdkPixbuf from 'gi://GdkPixbuf';
 import PangoCairo from 'gi://PangoCairo';
 
 import * as Color from './color.js';
-import { array, fopen } from './util.js';
+import {lookupIcon} from './menu.js';
+import {array, fopen, noop} from './util.js';
 
-let Ratio = 2 / 3,
-    FontName = '',
+let RATIO = 2 / 3,
     DarkBg = true,
     TextRect = [-1, -1, 0, 0];
 
@@ -22,6 +22,7 @@ const sinp = t => Math.sin(t * Math.PI);
 const cosp = t => Math.cos(t * Math.PI);
 const p2ct = (r, t) => [r * cosp(t), r * sinp(t)];
 
+const rColor = (alpha = 1, type = DarkBg ? Color.Type.LIGHT : Color.Type.DARK) => Color.random(alpha, type);
 const rAmp = (u, v) => Math.random() * 2 * v + u - v;
 const rand = (l, u) => Math.random() * (u - l) + l;
 const rInt = (l, u) => Math.floor(rand(l, u + 1)); // -> l .. u
@@ -33,7 +34,7 @@ const Y = f => f((...xs) => Y(f)(...xs)); // Y combinator
 const scanl = (f, a, xs) => xs.flatMap(x => (a = f(x, a)));
 const zipWith = (f, ...xss) => xss[0].map((_x, i) => f(...xss.map(xs => xs[i])));
 const lerp = (a, b, t) => zipWith((u, v) => (1 - t) * u + t * v, a, b);
-const norm2 = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b));
+const distance = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b)); // euclidean metric
 const move = (a, r, t) => zipWith(add, a, p2ct(r, t));
 const translate = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
@@ -45,7 +46,6 @@ const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); };
 const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
 
 export function setDarkBg(dark) { DarkBg = dark; }
-export function setFontName(font) { FontName = font; }
 
 function overlap([x, y, w, h], [m, n, p, q]) {
     let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
@@ -153,7 +153,7 @@ function circle([x, y, w, h]) {
 function genBezeirCtrls([a, b, c], smooth) {
     // Ref: https://zhuanlan.zhihu.com/p/267693043
     let ms = [a, c].map(x => lerp(x, b, 1 / 2)),
-        d = lerp(...ms, 1 / (1 + norm2(c, b) / norm2(a, b))),
+        d = lerp(...ms, 1 / (1 + distance(c, b) / distance(a, b))),
         [e, f] = ms.map(x => zipWith((u, v, w) => u + (v - w) * smooth, b, x, d));
     return [e, b, f];
 }
@@ -168,7 +168,7 @@ function genBezeirCurve(pts, smooth = 1, closed = false) { // -> [start, ...ctrl
     }
 }
 
-function drawBezeirCurve(cr, [start, ...pts]) {
+function linkBezeirCurve(cr, [start, ...pts]) {
     cr.moveTo(...start);
     loopl(i => cr.curveTo(...array(3, j => pts[i + j]).flat()), pts.length - 1, 0, 3);
 }
@@ -178,7 +178,7 @@ function genMoon(x, _y) {
         [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI, p > 0.5 ? Math.PI / 4 : -Math.PI / 4],
         q = (1 - Math.abs(2 * p - 1)).toFixed(3);
     if(Math.abs(q - 1) < 0.005) {
-        return [c_x, c_y, r, Color.LIGHT];
+        return [c_x, c_y, r, Color.BgColor.LIGHT];
     } else if(Math.abs(q - 0.5) < 0.005) {
         let g = new Cairo.LinearGradient(0, 0, 0, r / 16);
         g.addColorStopRGBA(0, 0, 0, 0, 0);
@@ -230,8 +230,8 @@ function drawMoon(cr, pts) {
         break;
     }
     case 4: {
-        let [c_x, c_y, r1, color] = pts;
-        cr.setSourceRGBA(...color);
+        let [c_x, c_y, r1, cl] = pts;
+        cr.setSourceRGBA(...cl);
         cr.arc(c_x, c_y, r1, 0, 2 * Math.PI);
         cr.fill();
         break;
@@ -241,36 +241,37 @@ function drawMoon(cr, pts) {
 }
 
 export function genWaves(x, y) {
-    let [layers, factor, min] = [5, 1 - Ratio, rInt(6, 9)],
+    let [layers, factor, min] = [5, 1 - RATIO, rInt(6, 9)],
         [dt, st] = [factor * y / layers, (1 - factor) * y],
-        pts = array(layers, i => (n => genBezeirCurve(array(n + 1, j => [x * j / n, st + rAmp(i, Ratio) * dt])))(min + rN(6)));
-    return [[x, y, Color.random(DarkBg, 1 / layers)], pts];
+        pts = array(layers, i => (n => genBezeirCurve(array(n + 1, j => [x * j / n, st + rAmp(i, RATIO) * dt])))(min + rN(6)));
+    return [x, y, rColor(1 / layers), pts];
 }
 
-export function drawWaves(cr, waves, show) {
-    let [[x, y, color], pts] = waves;
+export function drawWaves(cr, waves, opts) {
+    let [x, y, {color: cl, name}, pts] = waves;
     cr.save();
-    cr.setSourceRGBA(...color.color);
+    cr.setSourceRGBA(...cl);
     pts.forEach(p => {
-        drawBezeirCurve(cr, p);
+        linkBezeirCurve(cr, p);
         cr.lineTo(x, y);
         cr.lineTo(0, y);
         cr.fill();
     });
-    show && drawColor(cr, x, y, color);
+    drawColor(cr, x, y, cl, name, opts);
     cr.restore();
 }
 
-function drawColor(cr, x, y, color) {
-    if(!FontName) return;
+function drawColor(cr, x, y, cl, name, [show, font, style]) {
+    if(!show) return;
     cr.save();
-    (fg => cr.setSourceRGBA(fg, fg, fg, 0.1))(DarkBg ? 1 : 0);
+    if(style) cr.setSourceRGBA(...cl.with(3, 1));
+    else if(DarkBg) cr.setSourceRGBA(1, 1, 1, 0.1);
+    else cr.setSourceRGBA(0, 0, 0, 0.1);
     let pl = PangoCairo.create_layout(cr);
-    let ft = Pango.FontDescription.from_string(FontName);
-    ft.set_size(x * Pango.SCALE / 15);
-    pl.set_font_description(ft);
+    font.set_size(x * Pango.SCALE / 15);
+    pl.set_font_description(font);
     pl.get_context().set_base_gravity(Pango.Gravity.EAST);
-    pl.set_markup(color.name, -1);
+    pl.set_markup(name, -1);
     cr.moveTo(x, 0.03 * y);
     cr.rotate(Math.PI / 2);
     PangoCairo.show_layout(cr, pl);
@@ -279,15 +280,15 @@ function drawColor(cr, x, y, color) {
 
 export function genBlobs(x, y) {
     return sample(genLattices([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16)
-        .map(rect => [Color.random(DarkBg, 0.5).color, genBezeirCurve(genPolygon(circle(rect)), 1, true)]);
+        .map(rect => [rColor(0.5).color, genBezeirCurve(genPolygon(circle(rect)), 1, true)]);
 }
 
 export function drawBlobs(cr, pts) {
     cr.save();
     pts.forEach(pt => {
-        let [color, p] = pt;
-        cr.setSourceRGBA(...color);
-        drawBezeirCurve(cr, p);
+        let [cl, p] = pt;
+        cr.setSourceRGBA(...cl);
+        linkBezeirCurve(cr, p);
         cr.fill();
     });
     cr.restore();
@@ -297,15 +298,15 @@ export function genOvals(x, y) {
     return sample(genLattices([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, rGauss(1, 0.2) * r];
-        return [Color.random(DarkBg, 0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
+        return [rColor(0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
     });
 }
 
 export function drawOvals(cr, pts) {
     pts.forEach(pt => {
-        let [color, [c_x, c_y, e_w, e_h, r_t]] = pt;
+        let [cl, [c_x, c_y, e_w, e_h, r_t]] = pt;
         cr.save();
-        cr.setSourceRGBA(...color);
+        cr.setSourceRGBA(...cl);
         cr.translate(c_x, c_y);
         cr.rotate(r_t * Math.PI);
         cr.scale(e_w, e_h);
@@ -342,7 +343,7 @@ export function genClouds(x, y) {
             let w = rInt(h * 2, e * offset * 7);
             return [rInt(a * x, b * x) + f[0] * x, rInt(c * y, d * y) + f[1] * y, w, h];
         };
-    return [genMoon(x, y), coords.map(c => [Color.random(DarkBg).color, genCloud(genRect(c), offset)])];
+    return [genMoon(x, y), coords.map(c => [rColor().color, genCloud(genRect(c), offset)])];
 }
 
 export function drawClouds(cr, clouds) {
@@ -350,9 +351,9 @@ export function drawClouds(cr, clouds) {
     drawMoon(cr, moon);
     cr.save();
     pts.forEach(pt => {
-        let [color, p] = pt;
+        let [cl, p] = pt;
         // cr.setLineWidth(2);
-        cr.setSourceRGBA(...color);
+        cr.setSourceRGBA(...cl);
         cr.moveTo(...p[0]);
         loopl(i => {
             let [x, y, f, d_y] = [...p[i], (p[i + 1][1] - p[i][1]) / 2];
@@ -371,18 +372,14 @@ export function drawClouds(cr, clouds) {
     cr.restore();
 }
 
-export function genMotto(cr, x, y, text, vt) {
+export function genMotto(cr, x, y, text, vt, ft) {
     let pl = PangoCairo.create_layout(cr);
-    if(vt) {
-        pl.set_width(Ratio * y * Pango.SCALE);
-        pl.get_context().set_base_gravity(Pango.Gravity.EAST);
-    } else {
-        pl.set_alignment(Pango.Alignment.CENTER);
-    }
-    pl.set_font_description(Pango.FontDescription.from_string(FontName));
-    pl.set_markup(text.replace(/SZ_BGCOLOR/g, DarkBg ? Color.DHEX : Color.LHEX), -1);
+    if(vt) pl.get_context().set_base_gravity(Pango.Gravity.EAST);
+    else pl.set_alignment(Pango.Alignment.CENTER);
+    pl.set_font_description(ft); // HACK: workaround for lack of 'background-clip: text'(css)
+    pl.set_markup(text.replace(/SZ_BGCOLOR/g, DarkBg ? Color.BgHex.DARK : Color.BgHex.LIGHT), -1);
     let [fw, fh] = pl.get_pixel_size();
-    let [a, b, c, d] = [x / 2, Ratio * y / 2, fw / 2, fh / 2];
+    let [a, b, c, d] = [x / 2, RATIO * y / 2, fw / 2, fh / 2];
     TextRect = vt ? [a - d, Math.max(b - c, y / 32), fh, fw] : [a - c, b - d, fw, fh];
     return [x, y, pl, vt, fw, fh];
 }
@@ -390,13 +387,13 @@ export function genMotto(cr, x, y, text, vt) {
 export function drawMotto(cr, pts) {
     let [x, y, pl, vt, fw, fh] = pts;
     cr.save();
-    cr.setSourceRGBA(...DarkBg ? Color.LIGHT : Color.DARK);
+    cr.setSourceRGBA(...DarkBg ? Color.BgColor.LIGHT : Color.BgColor.DARK);
     if(vt) {
-        let dy = fw < y * (Ratio - 1 / 16) ? 0 : y / 32;
-        cr.moveTo((x + fh) / 2, (Ratio * y - fw) / 2 + dy);
+        let dy = fw < y * (RATIO - 1 / 16) ? 0 : y / 32;
+        cr.moveTo((x + fh) / 2, (RATIO * y - fw) / 2 + dy);
         cr.rotate(Math.PI / 2);
     } else {
-        cr.moveTo((x - fw) / 2, (Ratio * y - fh) / 2);
+        cr.moveTo((x - fw) / 2, (RATIO * y - fh) / 2);
     }
     PangoCairo.show_layout(cr, pl);
     cr.restore();
@@ -404,24 +401,25 @@ export function drawMotto(cr, pts) {
 
 export function drawBackground(cr) {
     cr.save();
-    cr.setSourceRGBA(...DarkBg ? Color.DARK : Color.LIGHT);
+    cr.setSourceRGBA(...DarkBg ? Color.BgColor.DARK : Color.BgColor.LIGHT);
     cr.paint();
     cr.restore();
 }
 
 export function genTrees(x, y) {
     let ld = genLand(x, y),
-        cl = Color.random(),
+        cl = rColor(1, Color.Type.MODERATE).color,
         t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6, x / 30),
         t2 = genTree(6, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
-    return [t1, t2, ld].map(v => v.concat(cl));
+    return [t1, t2, ld, cl];
 }
 
 export function drawTrees(cr, pts) {
-    let [t1, t2, ld] = pts;
-    drawTree(cr, t1);
-    drawTree(cr, t2);
-    drawLand(cr, ld);
+    let [t1, t2, ld, cl] = pts;
+    drawLand(cr, ld, cl, () => {
+        drawTree(cr, t1, cl);
+        drawTree(cr, t2, cl);
+    });
 }
 
 function genFlower([x, y, v, w], z, l = 20, n = 5) {
@@ -447,7 +445,7 @@ function drawFlower(cr, pts, cl) {
         cr.stroke();
     } else {
         let [pt] = pts;
-        cr.setSourceRGBA(...cl.color);
+        cr.setSourceRGBA(...cl);
         pt.forEach(p => {
             cr.moveTo(...p[0][1]);
             cr.curveTo(...p[0][2], ...p[1][2], ...p[1][1]);
@@ -471,63 +469,60 @@ export function genTree(n, x, y, l) {
         meld = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
     loopr(i => tree[i] && tree[i].push(meld(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), tree.length - 1);
     loopl(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(genFlower(tree[i], i, y / 54)), 2 ** n - 1, 1);
-    return [tree];
+    return tree;
 }
 
-export function drawTree(cr, pts) {
-    let [tr, cl] = pts;
+export function drawTree(cr, pts, cl = rColor().color) {
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
-    cr.setSourceRGBA(...Color.DARK);
-    let lineTo = i => tr[i] && (cr.setLineWidth(tr[i][3]), cr.lineTo(tr[i][0], tr[i][1]), cr.stroke());
-    let flower = (i, s) => (tr[i] && tr[i][4]) && (s === tr[i][4].at(-1)) && drawFlower(cr, tr[i][4], cl);
+    cr.setSourceRGBA(...Color.BgColor.DARK);
+    let lineTo = i => pts[i] && (cr.setLineWidth(pts[i][3]), cr.lineTo(pts[i][0], pts[i][1]), cr.stroke());
+    let flower = (i, s) => (pts[i] && pts[i][4]) && (s === pts[i][4].at(-1)) && drawFlower(cr, pts[i][4], cl);
     loopl(i => {
         loopl(j => {
-            if(!tr[j]) return;
-            flower(2 * j, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j);
-            flower(2 * j + 1, false), cr.moveTo(tr[j][0], tr[j][1]), lineTo(2 * j + 1);
+            if(!pts[j]) return;
+            flower(2 * j, false), cr.moveTo(pts[j][0], pts[j][1]), lineTo(2 * j);
+            flower(2 * j + 1, false), cr.moveTo(pts[j][0], pts[j][1]), lineTo(2 * j + 1);
             flower(j, true);
         }, 2 ** i - 1, Math.floor(2 ** (i - 1)));
-    }, Math.floor(Math.log2(tr.length)) - 1);
+    }, Math.floor(Math.log2(pts.length)) - 1);
     cr.restore();
 }
 
 function genLand(x, y, n = 20, f = 5 / 6) {
-    let riverbed = genBezeirCurve(zipWith((u, v) => [u * x / n, v === 40 ? f * y : rGauss(v * y / 48, y / 96)],
-        array(10, i => i + 5), [40, 40, 42, 44, 45, 46, 46, 43, 40, 40]), 0.3);
-    return [y / 1024, [0, 7 * y / 8, x, y / 8], riverbed, [[x, f * y], [x, y], [0, y], [0, f * y]]];
+    let riverbed = genBezeirCurve(zipWith((u, v) => [u * x / n, v === 0 ? f * y : rGauss(f + v / 48, 1 / 96) * y],
+        array(10, i => i + 5), [0, 0, 2, 4, 5, 6, 6, 3, 0, 0]), 0.3);
+    return [y / 512, [0, 7 * y / 8, x, y / 8], f * y, x, riverbed];
 }
 
-function drawLand(cr, pts) {
-    let [sf, rc, rb, ld, cl] = pts;
+function drawLand(cr, pts, cl = rColor().color, tree = noop) {
+    let [lw, rs, ld, wd, rb] = pts;
     cr.save();
-    cr.setSourceRGBA(...cl.color.slice(0, 3), 0.4);
-    cr.rectangle(...rc);
-    cr.fill();
-    cr.setSourceRGBA(...Color.LIGHT);
-    drawBezeirCurve(cr, rb);
-    loopl(i => cr.lineTo(...ld[i]), ld.length - 1);
-    cr.fill();
-    cr.moveTo(...ld.at(-1));
+    cr.moveTo(0, ld);
     cr.lineTo(...rb[0]);
-    drawBezeirCurve(cr, rb);
-    cr.lineTo(...ld[0]);
+    linkBezeirCurve(cr, rb);
+    cr.lineTo(wd, ld);
     cr.setSourceRGBA(0, 0, 0, 0.4);
-    cr.setLineWidth(sf * 2);
-    cr.stroke();
+    cr.setLineWidth(lw);
+    cr.strokePreserve();
+    [[wd, 0], [0, 0], [0, ld]].forEach(p => cr.lineTo(...p));
+    cr.clip();
+    cr.rectangle(...rs);
+    cr.setSourceRGBA(...cl.with(3, 0.4));
+    cr.fill();
+    tree();
     cr.restore();
 }
 
 export function genLogo(fn, x, y) {
     try {
         let path = fn ? fn.replace(/~/, GLib.get_home_dir())
-                : new St.IconTheme().lookup_icon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`,
-                    256, St.IconLookupFlags.FORCE_SVG)?.get_filename(),
+                : lookupIcon(`${GLib.get_os_info('LOGO') || 'gnome-logo'}-${DarkBg ? 'text-dark' : 'text'}`)?.get_filename(),
             svg = path.endsWith('.svg'),
             img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path) && // HACK: avoid `uncatchable exception` assertion
             St.TextureCache.get_default().load_file_to_cairo_surface(fopen(path), 1, 1),
-            { width: w, height: h } = svg ? img : { width: img.getWidth(), height: img.getHeight() };
+            {width: w, height: h} = svg ? img : {width: img.getWidth(), height: img.getHeight()};
         TextRect = [(x - w) / 2, (y * 0.8 - h) / 2, w, h];
         return [svg, img];
     } catch(e) {
@@ -543,7 +538,7 @@ export function drawLogo(cr, pts) {
     let [svg, img] = pts;
     let [x, y, width, height] = TextRect;
     if(svg) {
-        img.render_document(cr, new Rsvg.Rectangle({ x, y, width, height }));
+        img.render_document(cr, new Rsvg.Rectangle({x, y, width, height}));
     } else {
         cr.setSourceSurface(img, x, y);
         cr.paint();
