@@ -1,5 +1,6 @@
 #!/bin/fish
-# by tuberry
+# SPDX-FileCopyrightText: tuberry
+# SPDX-License-Identifier: GPL-3.0-or-later
 # depends on fortune-mod-mingju-git (AUR)
 
 set red \#b00a

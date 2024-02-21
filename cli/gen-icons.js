@@ -1,30 +1,31 @@
-// vim:fdm=syntax
-// by tuberry
+// SPDX-FileCopyrightText: tuberry
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 import Gio from 'gi://Gio';
+import {array} from '../src/util.js';
 
-const sp = x => Math.sin(Math.PI * x);
-const cp = x => Math.cos(Math.PI * x);
+const L = 16; // length (side)
+const M = 1 / 16; // margin
+const W = 1 - 2 * M; // width (content)
+const C = 'dimgrey'; // color
+const XFM = `fill="${C}" transform="translate(${M} ${M}) scale(${W} ${W})"`;
+const SVG = `viewBox="0 0 1 1" width="${L}" height="${L}" xmlns="http://www.w3.org/2000/svg"`;
+const save = (text, name) => Gio.File.new_for_path(ARGV.concat(name).join('/'))
+    .replace_contents(text, null, false, Gio.FileCreateFlags.NONE, null);
 
-const L = 16;
-const n = 1 / 16;
-const m = n * L;
-const W = L - 2 * m;
-const fill = 'fill="#444"';
+let a = Math.sin(Math.PI / 5),
+    b = Math.cos(Math.PI / 5),
+    c = Math.cos(Math.PI / 10),
+    d = 1 / (2 * (a + b * c)),
+    e = 1 - (2 * a + b + b * b) * d + 1 / 2,
+    f = d * a,
+    g = f * 3 / 4,
+    p2ct = (r, t) => [1 / 2 + r * Math.cos(Math.PI * t), e + r * Math.sin(Math.PI * t)],
+    penta = array(5, i => p2ct(d, 1 / 2 + i * (2 / 5)));
 
-let w = W / 2,
-    c = w * 5 / 16,
-    R = w / (sp(1 / 5) + cp(1 / 5) * cp(1 / 10)),
-    d = R * (1 - cp(1 / 5)) * cp(1 / 5) / 2,
-    r = R * sp(1 / 5),
-    pt = (x, y) => [m + w + x * cp(y), m + w + x * sp(y) + d],
-    P = Array.from({ length: 5 }, (_x, i) => pt(R, 1 / 2 + i * 2 / 5));
-
-Gio.File.new_for_path(ARGV.join('/')).replace_contents(`<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${L}" version="1.1">
- <path d="M ${P.at(-1).join(' ')}
-\t${P.map(([x, y]) => `A ${r} ${r} 0 0 1 ${x} ${y}`).join('\n\t')}
-\tM ${w + m} ${w + m + d} h -${c}
-\ta ${c} ${c} 0 0 0 ${c * 2} 0
-\ta ${c} ${c} 0 0 0 -${c * 2} 0"
- ${fill}/>
-</svg>`, null, false, Gio.FileCreateFlags.NONE, null);
+save(`<svg ${SVG}>
+  <g ${XFM}>
+    <path d="M ${penta.at(-1).join(' ')} ${penta.map(([x, y]) => `A ${f} ${f} 0 0 1 ${x} ${y}`).join(' ')}
+      M ${1 / 2 - g} ${e} a ${g} ${g} 0 0 0 ${g * 2} 0 a ${g} ${g} 0 0 0 -${g * 2} 0 Z"/>
+  </g>
+</svg>`);

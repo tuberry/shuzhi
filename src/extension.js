@@ -1,25 +1,23 @@
-// vim:fdm=syntax
-// by tuberry
+// SPDX-FileCopyrightText: tuberry
+// SPDX-License-Identifier: GPL-3.0-or-later
 
-import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Cairo from 'gi://cairo';
 import Pango from 'gi://Pango';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import * as Draw from './draw.js';
-import { Field } from './const.js';
-import { MenuItem, DRadioItem, TrayIcon } from './menu.js';
-import { xnor, noop, execute, fopen, fdelete, fcopy, denum, access } from './util.js';
-import { Fulu, ExtensionBase, Destroyable, symbiose, omit, getSelf, lightProxy, _ } from './fubar.js';
+import {Field} from './const.js';
+import {MenuItem, RadioItem, PanelButton} from './menu.js';
+import {xnor, noop, execute, fdelete, fcopy, readdir, request, capitalize, lot, has} from './util.js';
+import {Fulu, ExtensionBase, Destroyable, symbiose, omit, getSelf, bindNight, _, copy} from './fubar.js';
 
-const Style = { LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3 };
-const LSketch = { Waves: 0, Ovals: 1, Blobs: 2, Trees: 3 };
-const DSketch = { Waves: 0, Ovals: 1, Blobs: 2, Clouds: 3 };
-const Desktop = { LIGHT: 'picture-uri', DARK: 'picture-uri-dark' };
+const Style = {LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3};
+const Desktop = {LIGHT: 'picture-uri', DARK: 'picture-uri-dark'};
+const LSketch = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, TREE: 4};
+const DSketch = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, CLOUD: 4};
 
 class MenuSection extends PopupMenu.PopupMenuSection {
     constructor(items, name) {
@@ -37,61 +35,75 @@ class ShuZhi extends Destroyable {
     }
 
     _bindSettings(gset) {
-        this._fulu_d = new Fulu({
+        this._fulu_bg = new Fulu({
             dpic: [Desktop.DARK,  'string'],
             lpic: [Desktop.LIGHT, 'string'],
         }, 'org.gnome.desktop.background', this);
+        this._fulu_if = new Fulu({
+            scheme: ['color-scheme', 'string', x => x === 'prefer-dark'],
+        }, 'org.gnome.desktop.interface', this, 'murkey').attach({
+            scaling: ['text-scaling-factor', 'double'],
+        }, this, 'font');
         this._fulu = new Fulu({
-            interval:  [Field.SPAN, 'uint'],
-            backups:   [Field.BCK,  'uint'],
-            refresh:   [Field.RFS,  'boolean'],
-            systray:   [Field.STRY, 'boolean'],
-            command:   [Field.CMD,  'string'],
+            interval: [Field.SPAN, 'uint'],
+            backups:  [Field.BCK,  'uint'],
+            refresh:  [Field.RFS,  'boolean'],
+            systray:  [Field.STRY, 'boolean'],
+            command:  [Field.CMD,  'string'],
         }, gset, this).attach({
-            folder:    [Field.PATH, 'string'],
-            font:      [Field.FONT, 'string',  [null, x => Draw.setFontName(x)]],
-            showcolor: [Field.CLR,  'boolean', [() => this.sketch !== LSketch.Waves]],
-            orient:    [Field.ORNT, 'uint',    [null, () => { this._pts.length = 0; }]],
-            lsketch:   [Field.LSKT, 'uint',    [() => this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
-            dsketch:   [Field.DSKT, 'uint',    [() => !this.dark, () => { this._pts.length = 0; }, x => this._menus?.sketch.setSelected(x)]],
+            folder:      [Field.PATH, 'string'],
+            orient:      [Field.ORNT, 'uint',    {clear: true}],
+            show_color:  [Field.CLR,  'boolean', {check: () => this._skt?.type !== LSketch.WAVE}],
+            color_style: [Field.CLST, 'uint',    {check: () => this._skt?.type !== LSketch.WAVE}],
+            lsketch:     [Field.LSKT, 'uint',    {check: () => this.dark, clear: true, cover: x => this._menus?.sketch.setChosen(x)}],
+            dsketch:     [Field.DSKT, 'uint',    {check: () => !this.dark, clear: true, cover: x => this._menus?.sketch.setChosen(x)}],
+            color_font:  [Field.CLFT, 'string',  {convert: x => Pango.FontDescription.from_string(x), check: () => this._skt?.type !== LSketch.WAVE}],
         }, this, 'redraw').attach({
-            style:     [Field.STL,  'uint'],
-        }, this, 'murkey');
-        this._tfield = new Fulu({ scheme: ['color-scheme', 'string', x => x === 'prefer-dark'] }, 'org.gnome.desktop.interface', this, 'murkey');
+            style: [Field.STL,  'uint'],
+        }, this, 'murkey').attach({
+            fontname: [Field.FONT, 'string'],
+        }, this, 'font');
+        bindNight(x => ['_night', x], this, 'murkey');
     }
 
     _buildWidgets() {
-        this._pts = [];
-        this._sbt = symbiose(this, () => omit(this, 'systray', '_light'), {
-            cycle: [clearInterval, x => x && setInterval(() => this._setMotto(true), this._interval * 60000)],
+        this._sbt = symbiose(this, () => omit(this, 'systray'), {
+            cycle: [clearInterval, x => x && setInterval(() => this._updateMotto(true), this._interval * 60000)],
         });
-        this._light = lightProxy(() => { this.murkey = ['night_light', this._light.NightLightActive]; }, this);
-        [this._dsketches, this._lsketches] = [DSketch, LSketch].map(x => Object.keys(x).map(y => _(y)));
+        [this._dsketch, this._lsketch] = [DSketch, LSketch].map(x => Object.values(x).filter(y => y !== x.LUCK));
     }
 
-    set murkey([k, v, out]) {
-        if(k) this[k] = out ? out(v) : v;
-        let dark = this.style === Style.AUTO ? this.night_light
+    set font([k, v]) {
+        this[k] = v;
+        if(!has(this, 'fontname', 'scaling')) return;
+        let font = Pango.FontDescription.from_string(this.fontname);
+        font.set_size(font.get_size() * this.scaling);
+        this.redraw = ['_font', font];
+    }
+
+    set murkey([k, v, cb]) {
+        this[k] = cb?.(v) ?? v;
+        if(!has(this, '_night')) return;
+        let dark = this.style === Style.AUTO ? this._night
             : this.style === Style.SYSTEM ? this.scheme : this.style === Style.DARK;
         if(dark === this.dark) return;
         Draw.setDarkBg(this.dark = dark);
         this._queueRepaint(true);
-        this._menus?.sketch.setList(this.sketches, this.sketch);
+        this._menus?.sketch.setOptions(this.sketches, this.sketch);
     }
 
-    set redraw([k, v, out]) { // out <- [cond, pre, post];
-        this[k] = v;
-        if(out?.[0]?.(v)) return;
-        out?.[1]?.(v);
-        this._queueRepaint();
-        out?.[2]?.(v);
+    set redraw([k, v, cb = {}]) {
+        let {convert, check, clear, cover} = cb;
+        this[k] = convert?.(v) ?? v;
+        if(check?.(v)) return;
+        this._queueRepaint(clear);
+        cover?.(v);
     }
 
     set systray(systray) {
         if(xnor(systray, this._btn)) return;
         if(systray) {
-            this._btn = Main.panel.addToStatusArea(getSelf().uuid, new PanelMenu.Button(0.5));
-            this._btn.add_child(new TrayIcon('florette-symbolic', true));
+            this._btn = new PanelButton('florette-symbolic');
             this._addMenuItems();
         } else {
             omit(this, '_btn', '_menus');
@@ -112,29 +124,28 @@ class ShuZhi extends Destroyable {
 
     set interval(interval) {
         this._interval = interval;
-        if(this._refresh) this._sbt.cycle.revive(true);
+        this._sbt.cycle.revive(this._refresh);
     }
 
     set command(command) {
         this._command = command;
-        this._setMotto(false);
+        this._updateMotto(false);
     }
 
     set motto(motto) {
         try {
             this._motto = JSON.parse(motto);
         } catch(e) {
-            this._motto = !motto || motto.startsWith('file://') ? { logo: motto || '' } : { vtext: motto, htext: motto };
+            this._motto = !motto || motto.startsWith('file://') ? {logo: motto || ''} : {vtext: motto, htext: motto};
         }
     }
 
     get sketches() {
-        return this.dark ? this._dsketches : this._lsketches;
+        return Object.keys(this.dark ? DSketch : LSketch).map(y => _(capitalize(y)));
     }
 
     getPath() {
-        let file = `/shuzhi-${this.dark ? 'd.svg' : 'l.svg'}`;
-        return (this.folder || GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)) + file;
+        return `${this.folder || GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)}/shuzhi-${this.dark ? 'd.svg' : 'l.svg'}`;
     }
 
     async _genMotto() {
@@ -143,27 +154,27 @@ class ShuZhi extends Destroyable {
         } catch(e) {
             if(GLib.shell_parse_argv(this._command).at(1).at(0) === 'shuzhi.sh') {
                 let size = 45,
-                    wrap = (s, l) => s.replace(new RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim(),
+                    wrap = (s, l) => s.replace(RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim(),
                     span = (s, o) => `<span${Object.entries(o).reduce((p, [k, v]) => `${p} ${k}="${v}"`, '')}>${s}</span>`,
-                    { content, origin, author } = JSON.parse(await access('POST', 'https://v1.jinrishici.com/all.json')),
-                    poet = `${span(author, { bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR' })}`,
-                    title = span(`\n「${origin}」 ${poet}`, { size: `${size}%` }),
+                    {content, origin, author} = JSON.parse(await request('POST', 'https://v1.jinrishici.com/all.json')),
+                    poet = `${span(author, {bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR'})}`,
+                    title = span(`\n「${origin}」 ${poet}`, {size: `${size}%`}),
                     vcontent = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
                     vheight = Math.round(vcontent.split('\n').reduce((p, x) => Math.max(p, x.length), 1) * 100 / size),
-                    vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, { size: `${size}%` });
-                return JSON.stringify({ vtext: `${vcontent}${vtitle}`, htext: `${content}${title}` });
+                    vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, {size: `${size}%`});
+                return JSON.stringify({vtext: `${vcontent}${vtitle}`, htext: `${content}${title}`});
             } else { throw e; }
         }
     }
 
-    _checkImg() {
+    _checkPath() {
         let path = this.getPath();
         return this.style === Style.SYSTEM
             ? (path.endsWith('d.svg') ? this.dpic : this.lpic).endsWith(path)
             : this.lpic.endsWith(path) && this.dpic.endsWith(path);
     }
 
-    _setMotto(paint) {
+    _updateMotto(paint) {
         this._genMotto().then(scc => { this.motto = scc; })
             .catch(() => { this.motto = ''; })
             .finally(() => {
@@ -171,37 +182,41 @@ class ShuZhi extends Destroyable {
                     this._queueRepaint(paint);
                 } else {
                     this._synced = true; // skip when unlocking screen
-                    if(!this._checkImg()) this._queueRepaint(true);
+                    if(!this._checkPath()) this._queueRepaint(true);
                 }
             });
     }
 
-    _queueRepaint(paint) {
-        if(!['_motto', 'night_light'].every(x => x in this)) return;
-        if(paint) this._pts.length = 0;
+    _queueRepaint(clear) {
+        if(!has(this, '_motto', '_night')) return;
+        if(clear) this._skt = null;
         this.repaint();
     }
 
     _copyMotto() {
-        let mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
-        mt = mt ? mt.replace(/SZ_BGCOLOR/g, '#000') : this._motto.logo || '';
+        if(!this._motto) return;
+        let mt = this._getMotto();
         try {
-            St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, Pango.parse_markup(mt, -1, '').at(2));
+            copy(Pango.parse_markup(mt.replace(/SZ_BGCOLOR/g, '#000'), -1, '').at(2) || this._motto.logo);
         } catch(e) {
             // ignore
         }
+    }
+
+    _getMotto() {
+        return this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
     }
 
     _addMenuItems() {
         this._menus = {
             copy: new MenuItem(_('Copy'), () => this._copyMotto()),
             refresh: new MenuSection([
-                [_('Motto'),  () => this._setMotto(false)],
+                [_('Motto'),  () => this._updateMotto(false)],
                 [_('Sketch'), () => this._queueRepaint(true)],
-                [_('Both'),   () => this._setMotto(true)],
+                [_('Both'),   () => this._updateMotto(true)],
             ], _('Refresh')),
             sep1:   new PopupMenu.PopupSeparatorMenuItem(),
-            sketch: new DRadioItem(_('Sketch'), this.sketches, this.sketch, x => { this.sketch = x; }),
+            sketch: new RadioItem(_('Sketch'), this.sketches, this.sketch, x => { this.sketch = x; }),
             sep2:   new PopupMenu.PopupSeparatorMenuItem(),
             prefs:  new MenuItem(_('Settings'), () => getSelf().openPreferences()),
         };
@@ -211,24 +226,24 @@ class ShuZhi extends Destroyable {
     set desktop(image) {
         if(image) {
             if(this.style === Style.SYSTEM) {
-                if(image.endsWith('d.svg')) !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
-                else !this.lpic.endsWith(image) && this._fulu_d.set('lpic', image, this);
+                if(image.endsWith('d.svg')) !this.dpic.endsWith(image) && this._fulu_bg.set('dpic', image, this);
+                else !this.lpic.endsWith(image) && this._fulu_bg.set('lpic', image, this);
             } else {
-                !this.lpic.endsWith(image) && this._fulu_d.set('lpic', image, this);
-                !this.dpic.endsWith(image) && this._fulu_d.set('dpic', image, this);
+                !this.lpic.endsWith(image) && this._fulu_bg.set('lpic', image, this);
+                !this.dpic.endsWith(image) && this._fulu_bg.set('dpic', image, this);
             }
         } else {
-            Object.values(this._fulu_d.prop.get(this)).forEach(([v]) => this._fulu_d.gset.reset(v));
+            Object.values(this._fulu_bg.prop.get(this)).forEach(([v]) => this._fulu_bg.gset.reset(v));
         }
     }
 
     repaint() {
         let path = this.getPath(),
-            { width: x, height: y } = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
+            {width: x, height: y} = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
             sf = new Cairo.SVGSurface(path, x, y),
             cr = new Cairo.Context(sf),
-            mt = this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext,
-            sc = mt ? Draw.genMotto(cr, x, y, mt, this.orient) : Draw.genLogo(this._motto.logo, x, y);
+            mt = this._getMotto(),
+            sc = mt ? Draw.genMotto(cr, x, y, mt, this.orient, this._font, this.scaling) : Draw.genLogo(this._motto.logo, x, y);
         Draw.drawBackground(cr);
         this._drawSketch(cr, x, y);
         mt ? Draw.drawMotto(cr, sc) : Draw.drawLogo(cr, sc);
@@ -242,35 +257,32 @@ class ShuZhi extends Destroyable {
         if(!this.backups) return;
         let dir = GLib.path_get_dirname(path),
             head = path.endsWith('d.svg') ? 'shuzhi-d-' : 'shuzhi-l-',
-            baks = await denum(dir, x => (y => y.startsWith(head) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name()));
-        baks.flat().slice(0, -this.backups).forEach(x => fdelete(fopen(dir, x)));
-        await fcopy(fopen(path), fopen(path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`)));
+            baks = await readdir(dir, x => (y => y.startsWith(head) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name())).catch(noop) ?? [];
+        baks.flat().slice(0, -this.backups).forEach(x => fdelete(`${dir}/${x}`));
+        await fcopy(path, path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`));
+    }
+
+    _genSketch(x, y) {
+        let type = this.dark
+            ? this.dsketch === DSketch.LUCK ? lot(this._dsketch) : this.dsketch
+            : this.lsketch === LSketch.LUCK ? lot(this._lsketch) : this.lsketch;
+        switch(type) {
+        case LSketch.WAVE: return {type, dots: Draw.genWaves(x, y)};
+        case LSketch.BLOB: return {type, dots: Draw.genBlobs(x, y)};
+        case LSketch.OVAL: return {type, dots: Draw.genOvals(x, y)};
+        case LSketch.TREE:
+        case DSketch.CLOUD: return {type, dots: this.dark ? Draw.genClouds(x, y) : Draw.genTrees(x, y)};
+        }
     }
 
     _drawSketch(cr, x, y) {
-        switch(this.sketch) {
-        case DSketch.Waves:
-            if(!this._pts.length) this._pts = Draw.genWaves(x, y);
-            Draw.drawWaves(cr, this._pts, this.showcolor);
-            break;
-        case DSketch.Blobs:
-            if(!this._pts.length) this._pts = Draw.genBlobs(x, y);
-            Draw.drawBlobs(cr, this._pts);
-            break;
-        case DSketch.Ovals:
-            if(!this._pts.length) this._pts = Draw.genOvals(x, y);
-            Draw.drawOvals(cr, this._pts);
-            break;
-        case DSketch.Clouds:
-        case LSketch.Trees:
-            if(this.dark) {
-                if(!this._pts.length) this._pts = Draw.genClouds(x, y);
-                Draw.drawClouds(cr, this._pts);
-            } else {
-                if(!this._pts.length) this._pts = Draw.genTrees(x, y);
-                Draw.drawTrees(cr, this._pts);
-            }
-            break;
+        this._skt ??= this._genSketch(x, y);
+        switch(this._skt.type) {
+        case LSketch.WAVE: Draw.drawWaves(cr, this._skt.dots, [this.show_color, this.color_font, this.color_style]); break;
+        case LSketch.BLOB: Draw.drawBlobs(cr, this._skt.dots); break;
+        case LSketch.OVAL: Draw.drawOvals(cr, this._skt.dots); break;
+        case LSketch.TREE:
+        case DSketch.CLOUD: if(this.dark) Draw.drawClouds(cr, this._skt.dots); else Draw.drawTrees(cr, this._skt.dots); break;
         }
     }
 }

@@ -5,7 +5,7 @@
 Wallpaper generation extension for GNOME Shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
 >望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*<br>
-[![license]](/LICENSE)
+[![license]](/LICENSE.md)
 <br>
 
 ![shuzhi](https://user-images.githubusercontent.com/17917040/108039729-7453cc00-7077-11eb-9d91-4beebcef9e97.png)
@@ -39,15 +39,15 @@ For older versions (< 44), it's recommended to install via:
 ![szpref](https://user-images.githubusercontent.com/17917040/155916819-c07054a9-78a4-4ca1-9f39-31f4c85e4256.png)
 
 
-## Note
+## Notes
 
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/_cli/shuzhi.gjs) for reference;
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/cli/_shuzhi.gjs) for reference;
 * If you don't want to bother with scripting, set the text command to `shuzhi.sh` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**.
 
 ## Acknowledgements
 
-* [gushichi](https://github.com/xenv/gushici): the [jinrishici] API.
+* [gushichi][jinrishici]: the API
 
-[jinrishici]:https://www.jinrishici.com/doc/#protocol
-[license]:https://img.shields.io/badge/license-GPLv3-green.svg
+[jinrishici]:https://github.com/xenv/gushici
+[license]:https://img.shields.io/badge/license-GPLv3+-green.svg
 [EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/
