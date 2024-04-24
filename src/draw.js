@@ -11,7 +11,7 @@ import PangoCairo from 'gi://PangoCairo';
 
 import * as Color from './color.js';
 import {lookupIcon} from './menu.js';
-import {array, fopen, noop} from './util.js';
+import {array, fopen, noop, Y} from './util.js';
 
 let RATIO = 2 / 3,
     DarkBg = true,
@@ -30,7 +30,6 @@ const rN = n => Math.floor(Math.random() * n); // -> 0 .. n - 1
 const rBool = () => Math.random() < 0.5;
 const rNormal = normal();
 
-const Y = f => f((...xs) => Y(f)(...xs)); // Y combinator
 const scanl = (f, a, xs) => xs.flatMap(x => (a = f(x, a)));
 const zipWith = (f, ...xss) => xss[0].map((_x, i) => f(...xss.map(xs => xs[i])));
 const lerp = (a, b, t) => zipWith((u, v) => (1 - t) * u + t * v, a, b);

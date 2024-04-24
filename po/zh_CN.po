@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-18 16:12+0800\n"
+"POT-Creation-Date: 2024-04-24 18:17+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,27 +17,27 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/ui.js:305
+#: src/ui.js:322
 msgid "All"
 msgstr "全部"
 
-#: src/ui.js:305
+#: src/ui.js:322
 msgid "Normal"
 msgstr "常规"
 
-#: src/ui.js:305
+#: src/ui.js:322
 msgid "Symbolic"
 msgstr "符号"
 
-#: src/ui.js:343
+#: src/ui.js:360
 msgid "Clear"
 msgstr "清除"
 
-#: src/ui.js:445
+#: src/ui.js:462
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:577
+#: src/ui.js:606
 msgid "Click or press ENTER to commit changes"
 msgstr "单击或按回车提交更改"
 
@@ -69,7 +69,7 @@ msgstr "水平"
 msgid "Vertical"
 msgstr "竖直"
 
-#: src/prefs.js:34
+#: src/prefs.js:34 src/prefs.js:49
 msgid "Text orientation"
 msgstr "文本方向"
 
@@ -106,8 +106,8 @@ msgid "Light sketches"
 msgstr "浅色纹理"
 
 #: src/prefs.js:37
-msgid "# Set to shuzhi.sh to use the built-in script"
-msgstr "# 设为shuzhi.sh以使用内置脚本"
+msgid "# Set to shuzhi.sh to use the jinrishici API"
+msgstr "# 设为shuzhi.sh以使用今日诗词API"
 
 #: src/prefs.js:37
 msgid "Command to generate the central text"
@@ -153,35 +153,35 @@ msgstr "图像位置"
 msgid "Default style"
 msgstr "默认样式"
 
-#: src/prefs.js:49
+#: src/prefs.js:50
 msgid "Text font"
 msgstr "文本字体"
 
-#: src/prefs.js:50
+#: src/prefs.js:51
 msgid "Text command"
 msgstr "文本命令"
 
-#: src/extension.js:212
+#: src/extension.js:202
 msgid "Copy"
 msgstr "复制"
 
-#: src/extension.js:214
+#: src/extension.js:204
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:215 src/extension.js:219
+#: src/extension.js:205 src/extension.js:209
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:216
+#: src/extension.js:206
 msgid "Both"
 msgstr "全部"
 
-#: src/extension.js:217
+#: src/extension.js:207
 msgid "Refresh"
 msgstr "刷新"
 
-#: src/extension.js:221
+#: src/extension.js:211
 msgid "Settings"
 msgstr "设置"
 

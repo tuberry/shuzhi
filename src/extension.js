@@ -10,9 +10,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import * as Draw from './draw.js';
 import {Field} from './const.js';
-import {MenuItem, RadioItem, PanelButton} from './menu.js';
-import {xnor, noop, execute, fdelete, fcopy, readdir, request, capitalize, lot, has} from './util.js';
-import {Fulu, ExtensionBase, Destroyable, symbiose, omit, getSelf, bindNight, _, copy} from './fubar.js';
+import {MenuItem, RadioItem, Systray} from './menu.js';
+import {noop, execute, fdelete, fcopy, readdir, request, capitalize, lot, has} from './util.js';
+import {Setting, Extension, Mortal, Source, Cancel, Light, degrade, myself, _, copy} from './fubar.js';
 
 const Style = {LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3};
 const Desktop = {LIGHT: 'picture-uri', DARK: 'picture-uri-dark'};
@@ -27,245 +27,218 @@ class MenuSection extends PopupMenu.PopupMenuSection {
     }
 }
 
-class ShuZhi extends Destroyable {
+class ShuZhi extends Mortal {
     constructor(gset) {
         super();
-        this._buildWidgets();
-        this._bindSettings(gset);
+        this.$buildWidgets();
+        this.$bindSettings(gset);
+        this.$src.light.summon();
     }
 
-    _bindSettings(gset) {
-        this._fulu_bg = new Fulu({
+    $bindSettings(gset) {
+        this.$set_bg = new Setting({
             dpic: [Desktop.DARK,  'string'],
             lpic: [Desktop.LIGHT, 'string'],
         }, 'org.gnome.desktop.background', this);
-        this._fulu_if = new Fulu({
+        this.$set_if = new Setting({
             scheme: ['color-scheme', 'string', x => x === 'prefer-dark'],
-        }, 'org.gnome.desktop.interface', this, 'murkey').attach({
+        }, 'org.gnome.desktop.interface', this, () => this.$onLightPut()).attach({
             scaling: ['text-scaling-factor', 'double'],
-        }, this, 'font');
-        this._fulu = new Fulu({
-            interval: [Field.SPAN, 'uint'],
-            backups:  [Field.BCK,  'uint'],
-            refresh:  [Field.RFS,  'boolean'],
-            systray:  [Field.STRY, 'boolean'],
-            command:  [Field.CMD,  'string'],
+        }, this, () => this.$onFontPut());
+        let redrawSketch = x => { this.$menu?.sketch.setChosen(x); this.$redraw(true); };
+        let redrawOnWave = () => { if(this.$skt?.type === LSketch.WAVE) this.$redraw(); };
+        this.$set = new Setting({
+            backups:     [Field.BCK,  'uint'],
+            interval:    [Field.SPAN, 'uint',    x => this.$src.cycle.reload(x)],
+            refresh:     [Field.RFS,  'boolean', x => this.$src.cycle.toggle(x)],
+            systray:     [Field.STRY, 'boolean', x => this.$src.systray.toggle(x)],
+            color_show:  [Field.CLR,  'boolean', null, redrawOnWave],
+            color_style: [Field.CLST, 'uint',    null, redrawOnWave],
+            folder:      [Field.PATH, 'string',  null, () => this.$redraw()],
+            orient:      [Field.ORNT, 'uint',    null, () => this.$redraw(true)],
+            dsketch:     [Field.DSKT, 'uint',    null, x => this.dark && redrawSketch(x)],
+            lsketch:     [Field.LSKT, 'uint',    null, x => !this.dark && redrawSketch(x)],
+            color_font:  [Field.CLFT, 'string',  x => Pango.FontDescription.from_string(x), redrawOnWave],
+            command:     [Field.CMD,  'string',  x => { this.$builtin = x.trim() === 'shuzhi.sh'; }, () => this.loadMotto(true)],
         }, gset, this).attach({
-            folder:      [Field.PATH, 'string'],
-            orient:      [Field.ORNT, 'uint',    {clear: true}],
-            show_color:  [Field.CLR,  'boolean', {check: () => this._skt?.type !== LSketch.WAVE}],
-            color_style: [Field.CLST, 'uint',    {check: () => this._skt?.type !== LSketch.WAVE}],
-            lsketch:     [Field.LSKT, 'uint',    {check: () => this.dark, clear: true, cover: x => this._menus?.sketch.setChosen(x)}],
-            dsketch:     [Field.DSKT, 'uint',    {check: () => !this.dark, clear: true, cover: x => this._menus?.sketch.setChosen(x)}],
-            color_font:  [Field.CLFT, 'string',  {convert: x => Pango.FontDescription.from_string(x), check: () => this._skt?.type !== LSketch.WAVE}],
-        }, this, 'redraw').attach({
-            style: [Field.STL,  'uint'],
-        }, this, 'murkey').attach({
+            style: [Field.STL, 'uint'],
+        }, this, () => this.$onLightPut()).attach({
             fontname: [Field.FONT, 'string'],
-        }, this, 'font');
-        bindNight(x => ['_night', x], this, 'murkey');
+        }, this, () => this.$onFontPut());
     }
 
-    _buildWidgets() {
-        this._sbt = symbiose(this, () => omit(this, 'systray'), {
-            cycle: [clearInterval, x => x && setInterval(() => this._updateMotto(true), this._interval * 60000)],
-        });
-        [this._dsketch, this._lsketch] = [DSketch, LSketch].map(x => Object.values(x).filter(y => y !== x.LUCK));
+    $buildWidgets() {
+        this.$src = degrade({
+            cancel: new Cancel(),
+            systray: new Source(() => this.$genSystray()),
+            light: new Light(x => { this.night = x; this.$onLightPut(); }),
+            cycle: new Source((x = this.interval) => setInterval(() => this.loadMotto(true), x * 60000), clearInterval),
+        }, this);
+        [this.$dsketch, this.$lsketch] = [DSketch, LSketch].map(x => Object.values(x).filter(y => y !== x.LUCK));
+        [this.dsketches, this.lsketches] = [DSketch, LSketch].map(x => Object.keys(x).map(y => _(capitalize(y))));
     }
 
-    set font([k, v]) {
-        this[k] = v;
-        if(!has(this, 'fontname', 'scaling')) return;
-        let font = Pango.FontDescription.from_string(this.fontname);
-        font.set_size(font.get_size() * this.scaling);
-        this.redraw = ['_font', font];
+    $onFontPut() {
+        this.font = Pango.FontDescription.from_string(this.fontname ?? 'Serif 32');
+        this.font.set_size(this.font.get_size() * (this.scaling ?? 1));
+        this.$redraw();
     }
 
-    set murkey([k, v, cb]) {
-        this[k] = cb?.(v) ?? v;
-        if(!has(this, '_night')) return;
-        let dark = this.style === Style.AUTO ? this._night
+    $onLightPut() {
+        if(!has(this, 'night')) return;
+        let dark = this.style === Style.AUTO ? this.night
             : this.style === Style.SYSTEM ? this.scheme : this.style === Style.DARK;
         if(dark === this.dark) return;
         Draw.setDarkBg(this.dark = dark);
-        this._queueRepaint(true);
-        this._menus?.sketch.setOptions(this.sketches, this.sketch);
+        this.$menu?.sketch.setOptions(this.sketches, this.sketch);
+        this.$redraw(true);
     }
 
-    set redraw([k, v, cb = {}]) {
-        let {convert, check, clear, cover} = cb;
-        this[k] = convert?.(v) ?? v;
-        if(check?.(v)) return;
-        this._queueRepaint(clear);
-        cover?.(v);
-    }
-
-    set systray(systray) {
-        if(xnor(systray, this._btn)) return;
-        if(systray) {
-            this._btn = new PanelButton('florette-symbolic');
-            this._addMenuItems();
-        } else {
-            omit(this, '_btn', '_menus');
-        }
+    get $menu() {
+        return this.$src.systray.hub?.$menu;
     }
 
     get sketch() {
         return this.dark ? this.dsketch : this.lsketch;
     }
 
-    set sketch(sketch) {
-        this._fulu.set(this.dark ? 'dsketch' : 'lsketch', sketch, this);
+    get sketches() {
+        return this.dark ? this.dsketches : this.lsketches;
     }
 
-    set refresh(refresh) {
-        this._sbt.cycle.revive(this._refresh = refresh);
-    }
-
-    set interval(interval) {
-        this._interval = interval;
-        this._sbt.cycle.revive(this._refresh);
-    }
-
-    set command(command) {
-        this._command = command;
-        this._updateMotto(false);
-    }
-
-    set motto(motto) {
+    setMotto(clear, motto) {
         try {
-            this._motto = JSON.parse(motto);
+            this.motto = JSON.parse(motto);
         } catch(e) {
-            this._motto = !motto || motto.startsWith('file://') ? {logo: motto || ''} : {vtext: motto, htext: motto};
+            this.motto = !motto || motto.startsWith('file://') ? {logo: motto || ''} : {vtext: motto, htext: motto};
+        } finally {
+            if(this.$inited) {
+                this.$redraw(clear);
+            } else {
+                this.$inited = true; // skip when unlocking screen
+                if(!this.checkPath()) this.$redraw(true);
+            }
         }
     }
 
-    get sketches() {
-        return Object.keys(this.dark ? DSketch : LSketch).map(y => _(capitalize(y)));
+    getMotto() {
+        return this.orient ? this.motto.vtext || this.motto.htext : this.motto.htext || this.motto.vtext;
+    }
+
+    copyMotto() {
+        if(!this.motto) return;
+        let text = this.getMotto() || this.motto.logo;
+        try {
+            copy(Pango.parse_markup(text.replace(/SZ_BGCOLOR/g, '#000'), -1, '').at(2));
+        } catch(e) {
+            copy(text);
+        }
+    }
+
+    async loadMotto(clear, cancel = this.$src.cancel.reborn()) {
+        try {
+            this.setMotto(clear, await execute(this.command, null, cancel));
+        } catch(e) {
+            if(Cancel.cancelled(e)) return;
+            if(this.$builtin) {
+                try {
+                    this.setMotto(clear, await this.$fetchMotto(cancel));
+                } catch(e1) {
+                    if(Cancel.cancelled(e1)) return;
+                    this.setMotto(clear);
+                }
+            } else {
+                this.setMotto(clear);
+            }
+        }
+    }
+
+    async $fetchMotto(cancel = null) {
+        let size = 45,
+            url = 'https://v1.jinrishici.com/all.json',
+            wrap = (s, l) => s.replace(RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim(),
+            span = (s, o) => `<span${Object.entries(o).reduce((p, [k, v]) => `${p} ${k}="${v}"`, '')}>${s}</span>`,
+            {content, origin, author} = JSON.parse(await request('POST', url, null, cancel)),
+            poet = `${span(author, {bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR'})}`,
+            title = span(`\n「${origin}」 ${poet}`, {size: `${size}%`}),
+            vcontent = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
+            vheight = Math.round(vcontent.split('\n').reduce((p, x) => Math.max(p, x.length), 1) * 100 / size),
+            vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, {size: `${size}%`});
+        return JSON.stringify({vtext: `${vcontent}${vtitle}`, htext: `${content}${title}`});
     }
 
     getPath() {
         return `${this.folder || GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)}/shuzhi-${this.dark ? 'd.svg' : 'l.svg'}`;
     }
 
-    async _genMotto() {
-        try {
-            return await execute(this._command);
-        } catch(e) {
-            if(GLib.shell_parse_argv(this._command).at(1).at(0) === 'shuzhi.sh') {
-                let size = 45,
-                    wrap = (s, l) => s.replace(RegExp(`(.{1,${l}})`, 'g'), '$1\n').trim(),
-                    span = (s, o) => `<span${Object.entries(o).reduce((p, [k, v]) => `${p} ${k}="${v}"`, '')}>${s}</span>`,
-                    {content, origin, author} = JSON.parse(await request('POST', 'https://v1.jinrishici.com/all.json')),
-                    poet = `${span(author, {bgcolor: '#b00a', fgcolor: 'SZ_BGCOLOR'})}`,
-                    title = span(`\n「${origin}」 ${poet}`, {size: `${size}%`}),
-                    vcontent = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
-                    vheight = Math.round(vcontent.split('\n').reduce((p, x) => Math.max(p, x.length), 1) * 100 / size),
-                    vtitle = span(`${wrap(`「${origin}`, vheight)}」 ${poet}`, {size: `${size}%`});
-                return JSON.stringify({vtext: `${vcontent}${vtitle}`, htext: `${content}${title}`});
-            } else { throw e; }
-        }
-    }
-
-    _checkPath() {
+    checkPath() {
         let path = this.getPath();
         return this.style === Style.SYSTEM
             ? (path.endsWith('d.svg') ? this.dpic : this.lpic).endsWith(path)
             : this.lpic.endsWith(path) && this.dpic.endsWith(path);
     }
 
-    _updateMotto(paint) {
-        this._genMotto().then(scc => { this.motto = scc; })
-            .catch(() => { this.motto = ''; })
-            .finally(() => {
-                if(this._synced) {
-                    this._queueRepaint(paint);
-                } else {
-                    this._synced = true; // skip when unlocking screen
-                    if(!this._checkPath()) this._queueRepaint(true);
-                }
-            });
-    }
-
-    _queueRepaint(clear) {
-        if(!has(this, '_motto', '_night')) return;
-        if(clear) this._skt = null;
-        this.repaint();
-    }
-
-    _copyMotto() {
-        if(!this._motto) return;
-        let mt = this._getMotto();
-        try {
-            copy(Pango.parse_markup(mt.replace(/SZ_BGCOLOR/g, '#000'), -1, '').at(2) || this._motto.logo);
-        } catch(e) {
-            // ignore
-        }
-    }
-
-    _getMotto() {
-        return this.orient ? this._motto.vtext || this._motto.htext : this._motto.htext || this._motto.vtext;
-    }
-
-    _addMenuItems() {
-        this._menus = {
-            copy: new MenuItem(_('Copy'), () => this._copyMotto()),
-            refresh: new MenuSection([
-                [_('Motto'),  () => this._updateMotto(false)],
-                [_('Sketch'), () => this._queueRepaint(true)],
-                [_('Both'),   () => this._updateMotto(true)],
-            ], _('Refresh')),
-            sep1:   new PopupMenu.PopupSeparatorMenuItem(),
-            sketch: new RadioItem(_('Sketch'), this.sketches, this.sketch, x => { this.sketch = x; }),
-            sep2:   new PopupMenu.PopupSeparatorMenuItem(),
-            prefs:  new MenuItem(_('Settings'), () => getSelf().openPreferences()),
-        };
-        Object.values(this._menus).forEach(x => this._btn.menu.addMenuItem(x));
-    }
-
-    set desktop(image) {
-        if(image) {
-            if(this.style === Style.SYSTEM) {
-                if(image.endsWith('d.svg')) !this.dpic.endsWith(image) && this._fulu_bg.set('dpic', image, this);
-                else !this.lpic.endsWith(image) && this._fulu_bg.set('lpic', image, this);
-            } else {
-                !this.lpic.endsWith(image) && this._fulu_bg.set('lpic', image, this);
-                !this.dpic.endsWith(image) && this._fulu_bg.set('dpic', image, this);
-            }
-        } else {
-            Object.values(this._fulu_bg.prop.get(this)).forEach(([v]) => this._fulu_bg.gset.reset(v));
-        }
-    }
-
-    repaint() {
+    $redraw(clear) {
+        if(!has(this, 'motto', 'night')) return;
+        if(clear) this.$skt = null;
         let path = this.getPath(),
             {width: x, height: y} = Main.layoutManager.monitors.reduce((p, v) => p.height * p.width > v.height * v.width ? p : v),
-            sf = new Cairo.SVGSurface(path, x, y),
-            cr = new Cairo.Context(sf),
-            mt = this._getMotto(),
-            sc = mt ? Draw.genMotto(cr, x, y, mt, this.orient, this._font, this.scaling) : Draw.genLogo(this._motto.logo, x, y);
+            surface = new Cairo.SVGSurface(path, x, y),
+            cr = new Cairo.Context(surface),
+            motto = this.getMotto(),
+            source = motto ? Draw.genMotto(cr, x, y, motto, this.orient, this.font, this.scaling) : Draw.genLogo(this.motto.logo, x, y);
         Draw.drawBackground(cr);
-        this._drawSketch(cr, x, y);
-        mt ? Draw.drawMotto(cr, sc) : Draw.drawLogo(cr, sc);
+        this.drawSketch(cr, x, y);
+        motto ? Draw.drawMotto(cr, source) : Draw.drawLogo(cr, source);
         cr.$dispose();
-        sf.finish();
-        sf.flush();
-        this._backup(this.desktop = path).catch(noop);
+        surface.finish();
+        surface.flush();
+        this.setWallpaper(path);
+        this.backupWallpaper(path).catch(noop);
     }
 
-    async _backup(path) {
+    $genSystray() {
+        return new Systray({
+            copy: new MenuItem(_('Copy'), () => this.copyMotto()),
+            refresh: new MenuSection([
+                [_('Motto'),  () => this.loadMotto(false)],
+                [_('Sketch'), () => this.$redraw(true)],
+                [_('Both'),   () => this.loadMotto(true)],
+            ], _('Refresh')),
+            sep1:   new PopupMenu.PopupSeparatorMenuItem(),
+            sketch: new RadioItem(_('Sketch'), this.sketches, this.sketch, x => this.$set.set(this.dark ? 'dsketch' : 'lsketch', x, this)),
+            sep2:   new PopupMenu.PopupSeparatorMenuItem(),
+            prefs:  new MenuItem(_('Settings'), () => myself().openPreferences()),
+        }, 'florette-symbolic');
+    }
+
+    setWallpaper(path) {
+        if(path) {
+            if(this.style === Style.SYSTEM) {
+                if(path.endsWith('d.svg')) !this.dpic.endsWith(path) && this.$set_bg.set('dpic', path, this);
+                else !this.lpic.endsWith(path) && this.$set_bg.set('lpic', path, this);
+            } else {
+                !this.lpic.endsWith(path) && this.$set_bg.set('lpic', path, this);
+                !this.dpic.endsWith(path) && this.$set_bg.set('dpic', path, this);
+            }
+        } else {
+            Object.values(this.$set_bg.prop.get(this)).forEach(([v]) => this.$set_bg.gset.reset(v));
+        }
+    }
+
+    async backupWallpaper(path) {
         if(!this.backups) return;
         let dir = GLib.path_get_dirname(path),
-            head = path.endsWith('d.svg') ? 'shuzhi-d-' : 'shuzhi-l-',
-            baks = await readdir(dir, x => (y => y.startsWith(head) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name())).catch(noop) ?? [];
+            prefix = path.endsWith('d.svg') ? 'shuzhi-d-' : 'shuzhi-l-',
+            baks = await readdir(dir, x => (y => y.startsWith(prefix) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name())).catch(noop) ?? [];
         baks.flat().slice(0, -this.backups).forEach(x => fdelete(`${dir}/${x}`));
         await fcopy(path, path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`));
     }
 
-    _genSketch(x, y) {
+    genSketch(x, y) {
         let type = this.dark
-            ? this.dsketch === DSketch.LUCK ? lot(this._dsketch) : this.dsketch
-            : this.lsketch === LSketch.LUCK ? lot(this._lsketch) : this.lsketch;
+            ? this.dsketch === DSketch.LUCK ? lot(this.$dsketch) : this.dsketch
+            : this.lsketch === LSketch.LUCK ? lot(this.$lsketch) : this.lsketch;
         switch(type) {
         case LSketch.WAVE: return {type, dots: Draw.genWaves(x, y)};
         case LSketch.BLOB: return {type, dots: Draw.genBlobs(x, y)};
@@ -275,16 +248,16 @@ class ShuZhi extends Destroyable {
         }
     }
 
-    _drawSketch(cr, x, y) {
-        this._skt ??= this._genSketch(x, y);
-        switch(this._skt.type) {
-        case LSketch.WAVE: Draw.drawWaves(cr, this._skt.dots, [this.show_color, this.color_font, this.color_style]); break;
-        case LSketch.BLOB: Draw.drawBlobs(cr, this._skt.dots); break;
-        case LSketch.OVAL: Draw.drawOvals(cr, this._skt.dots); break;
+    drawSketch(cr, x, y) {
+        this.$skt ??= this.genSketch(x, y);
+        switch(this.$skt.type) {
+        case LSketch.WAVE: Draw.drawWaves(cr, this.$skt.dots, [this.color_show, this.color_font, this.color_style]); break;
+        case LSketch.BLOB: Draw.drawBlobs(cr, this.$skt.dots); break;
+        case LSketch.OVAL: Draw.drawOvals(cr, this.$skt.dots); break;
         case LSketch.TREE:
-        case DSketch.CLOUD: if(this.dark) Draw.drawClouds(cr, this._skt.dots); else Draw.drawTrees(cr, this._skt.dots); break;
+        case DSketch.CLOUD: if(this.dark) Draw.drawClouds(cr, this.$skt.dots); else Draw.drawTrees(cr, this.$skt.dots); break;
         }
     }
 }
 
-export default class Extension extends ExtensionBase { $klass = ShuZhi; }
+export default class MyExtension extends Extension { $klass = ShuZhi; }

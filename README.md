@@ -22,12 +22,6 @@ meson setup build && meson install -C build
 # meson setup build -Dtarget=system && meson install -C build # system-wide, default --prefix=/usr/local
 ```
 
-For contributing translations:
-
-```bash
-bash ./cli/update-po.sh your_lang_code # default to $LANG
-```
-
 For older versions (< 44), it's recommended to install via:
 
 ### E.G.O
@@ -38,11 +32,34 @@ For older versions (< 44), it's recommended to install via:
 
 ![szpref](https://user-images.githubusercontent.com/17917040/155916819-c07054a9-78a4-4ca1-9f39-31f4c85e4256.png)
 
-
 ## Notes
 
 * Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/cli/_shuzhi.gjs) for reference;
 * If you don't want to bother with scripting, set the text command to `shuzhi.sh` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**.
+
+## Contributions
+
+Any contribution is welcome.
+
+### Ideas
+
+For any question or idea, feel free to open an issue or PR in the repo.
+
+### Translations
+
+To update the po file from sources:
+
+```bash
+bash ./cli/update-po.sh [your_lang_code] # like zh_CN, default to $LANG
+```
+
+### Developments
+
+To install GJS TypeScript type [definitions](https://www.npmjs.com/package/@girs/gnome-shell):
+
+```bash
+npm install @girs/gnome-shell --save-dev
+```
 
 ## Acknowledgements
 

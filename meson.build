@@ -1,6 +1,6 @@
 project(
   'gnome-shell-extension-shuzhi',
-  license: 'gplv3++',
+  license: 'GPL-3.0-or-later',
   version: '46.beta',
 )
 
