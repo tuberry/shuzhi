@@ -8,11 +8,11 @@ import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import * as Draw from './draw.js';
 import {Field} from './const.js';
+import * as Draw from './draw.js';
 import {MenuItem, RadioItem, Systray} from './menu.js';
+import {Setting, Extension, Mortal, Source, myself, _, copy} from './fubar.js';
 import {noop, execute, fdelete, fcopy, readdir, request, capitalize, lot, has} from './util.js';
-import {Setting, Extension, Mortal, Source, Cancel, Light, degrade, myself, _, copy} from './fubar.js';
 
 const Style = {LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3};
 const Desktop = {LIGHT: 'picture-uri', DARK: 'picture-uri-dark'};
@@ -32,7 +32,6 @@ class ShuZhi extends Mortal {
         super();
         this.$buildWidgets();
         this.$bindSettings(gset);
-        this.$src.light.summon();
     }
 
     $bindSettings(gset) {
@@ -45,22 +44,21 @@ class ShuZhi extends Mortal {
         }, 'org.gnome.desktop.interface', this, () => this.$onLightPut()).attach({
             scaling: ['text-scaling-factor', 'double'],
         }, this, () => this.$onFontPut());
-        let redrawSketch = x => { this.$menu?.sketch.setChosen(x); this.$redraw(true); };
-        let redrawOnWave = () => { if(this.$skt?.type === LSketch.WAVE) this.$redraw(); };
         this.$set = new Setting({
             backups:     [Field.BCK,  'uint'],
             interval:    [Field.SPAN, 'uint',    x => this.$src.cycle.reload(x)],
             refresh:     [Field.RFS,  'boolean', x => this.$src.cycle.toggle(x)],
             systray:     [Field.STRY, 'boolean', x => this.$src.systray.toggle(x)],
-            color_show:  [Field.CLR,  'boolean', null, redrawOnWave],
-            color_style: [Field.CLST, 'uint',    null, redrawOnWave],
-            folder:      [Field.PATH, 'string',  null, () => this.$redraw()],
-            orient:      [Field.ORNT, 'uint',    null, () => this.$redraw(true)],
-            dsketch:     [Field.DSKT, 'uint',    null, x => this.dark && redrawSketch(x)],
-            lsketch:     [Field.LSKT, 'uint',    null, x => !this.dark && redrawSketch(x)],
-            color_font:  [Field.CLFT, 'string',  x => Pango.FontDescription.from_string(x), redrawOnWave],
             command:     [Field.CMD,  'string',  x => { this.$builtin = x.trim() === 'shuzhi.sh'; }, () => this.loadMotto(true)],
         }, gset, this).attach({
+            folder:      [Field.PATH, 'string',  null, () => [true]],
+            orient:      [Field.ORNT, 'uint',    null, () => [true, true]],
+            color_show:  [Field.CLR,  'boolean', null, () => [this.waving]],
+            color_style: [Field.CLST, 'uint',    null, () => [this.waving]],
+            color_font:  [Field.CLFT, 'string',  x => Pango.FontDescription.from_string(x), () => [this.waving]],
+            dsketch:     [Field.DSKT, 'uint',    null, x => (this.dark && this.$menu?.sketch.setChosen(x), [this.dark, true])],
+            lsketch:     [Field.LSKT, 'uint',    null, x => (this.dark || this.$menu?.sketch.setChosen(x), [!this.dark, true])],
+        }, this, ([x, y]) => x && this.$redraw(y)).attach({
             style: [Field.STL, 'uint'],
         }, this, () => this.$onLightPut()).attach({
             fontname: [Field.FONT, 'string'],
@@ -68,11 +66,11 @@ class ShuZhi extends Mortal {
     }
 
     $buildWidgets() {
-        this.$src = degrade({
-            cancel: new Cancel(),
+        this.$src = Source.fuse({
+            cancel: Source.newCancel(),
             systray: new Source(() => this.$genSystray()),
-            light: new Light(x => { this.night = x; this.$onLightPut(); }),
-            cycle: new Source((x = this.interval) => setInterval(() => this.loadMotto(true), x * 60000), clearInterval),
+            light: Source.newLight(x => { this.night = x; this.$onLightPut(); }, true),
+            cycle: Source.newTimer((x = this.interval) => [() => this.loadMotto(true), x * 60000]),
         }, this);
         [this.$dsketch, this.$lsketch] = [DSketch, LSketch].map(x => Object.values(x).filter(y => y !== x.LUCK));
         [this.dsketches, this.lsketches] = [DSketch, LSketch].map(x => Object.keys(x).map(y => _(capitalize(y))));
@@ -92,6 +90,10 @@ class ShuZhi extends Mortal {
         Draw.setDarkBg(this.dark = dark);
         this.$menu?.sketch.setOptions(this.sketches, this.sketch);
         this.$redraw(true);
+    }
+
+    get waving() {
+        return this.$skt?.type === LSketch.WAVE;
     }
 
     get $menu() {
@@ -139,12 +141,12 @@ class ShuZhi extends Mortal {
         try {
             this.setMotto(clear, await execute(this.command, null, cancel));
         } catch(e) {
-            if(Cancel.cancelled(e)) return;
+            if(Source.cancelled(e)) return;
             if(this.$builtin) {
                 try {
                     this.setMotto(clear, await this.$fetchMotto(cancel));
                 } catch(e1) {
-                    if(Cancel.cancelled(e1)) return;
+                    if(Source.cancelled(e1)) return;
                     this.setMotto(clear);
                 }
             } else {
@@ -236,26 +238,27 @@ class ShuZhi extends Mortal {
     }
 
     genSketch(x, y) {
-        let type = this.dark
+        let pts, type = this.dark
             ? this.dsketch === DSketch.LUCK ? lot(this.$dsketch) : this.dsketch
             : this.lsketch === LSketch.LUCK ? lot(this.$lsketch) : this.lsketch;
         switch(type) {
-        case LSketch.WAVE: return {type, dots: Draw.genWaves(x, y)};
-        case LSketch.BLOB: return {type, dots: Draw.genBlobs(x, y)};
-        case LSketch.OVAL: return {type, dots: Draw.genOvals(x, y)};
+        case LSketch.WAVE: pts = Draw.genWaves(x, y); break;
+        case LSketch.BLOB: pts = Draw.genBlobs(x, y); break;
+        case LSketch.OVAL: pts = Draw.genOvals(x, y); break;
         case LSketch.TREE:
-        case DSketch.CLOUD: return {type, dots: this.dark ? Draw.genClouds(x, y) : Draw.genTrees(x, y)};
+        case DSketch.CLOUD: pts = this.dark ? Draw.genClouds(x, y) : Draw.genTrees(x, y); break;
         }
+        return {type, pts};
     }
 
     drawSketch(cr, x, y) {
-        this.$skt ??= this.genSketch(x, y);
-        switch(this.$skt.type) {
-        case LSketch.WAVE: Draw.drawWaves(cr, this.$skt.dots, [this.color_show, this.color_font, this.color_style]); break;
-        case LSketch.BLOB: Draw.drawBlobs(cr, this.$skt.dots); break;
-        case LSketch.OVAL: Draw.drawOvals(cr, this.$skt.dots); break;
+        let {type, pts} = this.$skt ??= this.genSketch(x, y);
+        switch(type) {
+        case LSketch.WAVE: Draw.drawWaves(cr, pts, this.color_show, this.color_font, this.color_style); break;
+        case LSketch.BLOB: Draw.drawBlobs(cr, pts); break;
+        case LSketch.OVAL: Draw.drawOvals(cr, pts); break;
         case LSketch.TREE:
-        case DSketch.CLOUD: if(this.dark) Draw.drawClouds(cr, this.$skt.dots); else Draw.drawTrees(cr, this.$skt.dots); break;
+        case DSketch.CLOUD: this.dark ? Draw.drawClouds(cr, pts) : Draw.drawTrees(cr, pts); break;
         }
     }
 }

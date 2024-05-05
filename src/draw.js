@@ -54,10 +54,10 @@ function overlap([x, y, w, h], [m, n, p, q]) {
 
 function normal() { // -> [0, 1]
     // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
-    let spare = [];
+    let cache = [];
     return function () {
-        if(spare.length) {
-            return spare.pop();
+        if(cache.length) {
+            return cache.pop();
         } else {
             let u, v, s;
             do {
@@ -66,7 +66,7 @@ function normal() { // -> [0, 1]
                 s = u * u + v * v;
             } while(s >= 1 || s === 0);
             s = Math.sqrt(-2 * Math.log(s) / s);
-            spare.push(Math.clamp(u * s / 6 + 0.5, 0, 1));
+            cache.push(Math.clamp(u * s / 6 + 0.5, 0, 1));
             return Math.clamp(v * s / 6 + 0.5, 0, 1);
         }
     };
@@ -246,7 +246,7 @@ export function genWaves(x, y) {
     return [x, y, rColor(1 / layers), pts];
 }
 
-export function drawWaves(cr, waves, opts) {
+export function drawWaves(cr, waves, ...args) {
     let [x, y, {color: cl, name}, pts] = waves;
     cr.save();
     cr.setSourceRGBA(...cl);
@@ -256,11 +256,11 @@ export function drawWaves(cr, waves, opts) {
         cr.lineTo(0, y);
         cr.fill();
     });
-    drawColor(cr, x, y, cl, name, opts);
+    drawColor(cr, x, y, cl, name, ...args);
     cr.restore();
 }
 
-function drawColor(cr, x, y, cl, name, [show, font, style]) {
+function drawColor(cr, x, y, cl, name, show, font, style) {
     if(!show) return;
     cr.save();
     if(style) cr.setSourceRGBA(...cl.with(3, 1));
