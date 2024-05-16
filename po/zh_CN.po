@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-12 14:38+0800\n"
+"POT-Creation-Date: 2024-05-13 03:03+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,27 +17,27 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/ui.js:342
+#: src/ui.js:339
 msgid "All"
 msgstr "全部"
 
-#: src/ui.js:342
+#: src/ui.js:339
 msgid "Normal"
 msgstr "常规"
 
-#: src/ui.js:342
+#: src/ui.js:339
 msgid "Symbolic"
 msgstr "符号"
 
-#: src/ui.js:380
+#: src/ui.js:377
 msgid "Clear"
 msgstr "清除"
 
-#: src/ui.js:482
+#: src/ui.js:476
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:625
+#: src/ui.js:619
 msgid "Click or press ENTER to commit changes"
 msgstr "单击或按回车提交更改"
 

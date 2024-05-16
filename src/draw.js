@@ -11,7 +11,7 @@ import PangoCairo from 'gi://PangoCairo';
 
 import * as Color from './color.js';
 import {lookupIcon} from './menu.js';
-import {array, fopen, noop, Y} from './util.js';
+import {seq, array, fopen, noop, Y} from './util.js';
 
 let RATIO = 2 / 3,
     DarkBg = true,
@@ -102,10 +102,8 @@ function rDirichlet(n, a, s = 1) { // n <- N+
     return pie(array(n, () => rGamma(a)), s);
 }
 
-function shuffle(a) {
-    // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    loopr(i => swap(a, rN(i), i), a.length - 1, 1);
-    return a;
+function shuffle(a) { // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+    return seq(x => loopr(i => swap(x, rN(i), i), x.length - 1, 1), a);
 }
 
 function sample(a, n) { // n < a.length
