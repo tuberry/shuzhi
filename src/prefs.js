@@ -22,33 +22,35 @@ class ShuZhiPrefs extends Adw.PreferencesGroup {
 
     $buildWidgets(gset) {
         this.$blk = UI.block({
-            FONT: new UI.Font(),
             CLR:  new UI.Check(),
             RFS:  new UI.Check(),
             STRY: new UI.Check(),
+            ACT:  new UI.Check(),
             SPAN: new UI.Spin(10, 300, 30),
-            PATH: new UI.File({folder: true}),
             BCK:  new UI.Spin(0, 60, 1, _('Max backups')),
-            CLFT: new UI.Font({level: Gtk.FontLevel.FACE, tooltipText: _('Color font')}),
+            SRC:  new UI.Entry('# echo hello, world!', true),
+            FONT: new UI.Font({tooltipText: _('Default font')}),
             CLST: new UI.Drop([_('Watermark'), _('Highlight')], _('Color style')),
-            ORNT: new UI.Drop([_('Horizontal'), _('Vertical')], _('Text orientation')),
+            PATH: new UI.File({folder: true}, {tooltipText: _('Picture location')}),
+            ORNT: new UI.Drop([_('Horizontal'), _('Vertical')], _('Motto orientation')),
+            CLFT: new UI.Font({level: Gtk.FontLevel.FACE, tooltipText: _('Color font')}),
             DSKT: new UI.Drop([_('Luck'), _('Wave'), _('Oval'), _('Blob'), _('Cloud')], _('Dark sketches')),
             LSKT: new UI.Drop([_('Luck'), _('Wave'), _('Oval'), _('Blob'), _('Tree')], _('Light sketches')),
-            CMD:  new UI.LazyEntry(_('# Set to shuzhi.sh to use the jinrishici API'), _('Command to generate the central text')),
+            SRCT: new UI.Drop([_('Command'), _('Text'), _('Image'), _('Online')], _('Source type, “Online” uses the jinrishichi API')),
             STL:  new UI.Drop([_('Light'), _('Dark'), _('Auto'), _('System')], _('Background color, “Auto” means sync with the Night Light')),
         }, gset);
     }
 
     $buildUI() {
         [
-            [this.$blk.STRY,          [_('Enable systray')]],
-            [this.$blk.RFS,           [_('Auto refresh')], this.$blk.SPAN],
-            [this.$blk.CLR,           [_('Color name')], this.$blk.CLST, this.$blk.CLFT],
-            [[_('Picture location')], this.$blk.BCK, this.$blk.PATH],
-            [[_('Default style')],    this.$blk.STL, this.$blk.LSKT, this.$blk.DSKT],
-            [[_('Text orientation')], this.$blk.ORNT],
-            [[_('Text font')],        this.$blk.FONT],
-            [[_('Text command')],     this.$blk.CMD],
+            [this.$blk.STRY,  [_('Enable systray')]],
+            [this.$blk.ACT,   [_('Set accent color')]],
+            [this.$blk.RFS,   [_('Auto refresh')], this.$blk.SPAN],
+            [this.$blk.CLR,   [_('Color name')], this.$blk.CLST, this.$blk.CLFT],
+            [UI.Check.mock(), [_('Gen picture')], this.$blk.PATH, this.$blk.BCK],
+            [UI.Check.mock(), [_('Sketch style')], this.$blk.STL, this.$blk.LSKT, this.$blk.DSKT],
+            [UI.Check.mock(), [_('Motto style')], this.$blk.ORNT, this.$blk.FONT],
+            [UI.Check.mock(), [_('Motto source')], this.$blk.SRC, this.$blk.SRCT],
         ].forEach(xs => this.add(new UI.PrefRow(...xs)));
     }
 }

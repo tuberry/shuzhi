@@ -4,9 +4,8 @@
 
 Wallpaper generation extension for GNOME Shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
->望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*<br>
+>望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*\
 [![license]](/LICENSE.md)
-<br>
 
 ![shuzhi](https://user-images.githubusercontent.com/17917040/108039729-7453cc00-7077-11eb-9d91-4beebcef9e97.png)
 
@@ -22,7 +21,7 @@ meson setup build && meson install -C build
 # meson setup build -Dtarget=system && meson install -C build # system-wide, default --prefix=/usr/local
 ```
 
-For older versions (< 44), it's recommended to install via:
+For older versions, it's recommended to install via:
 
 ### E.G.O
 
@@ -30,7 +29,7 @@ For older versions (< 44), it's recommended to install via:
 
 ## Features
 
-![szpref](https://user-images.githubusercontent.com/17917040/155916819-c07054a9-78a4-4ca1-9f39-31f4c85e4256.png)
+![szpref](https://github.com/user-attachments/assets/135bb1a8-af7c-4dd6-8209-58b0cd49beb0)
 
 ## Notes
 

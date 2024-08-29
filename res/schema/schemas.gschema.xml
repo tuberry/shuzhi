@@ -13,6 +13,10 @@
         <default>false</default>
         <summary>show color name</summary>
     </key>
+    <key type="b" name="set-accent-color">
+        <default>false</default>
+        <summary>sync with accent color</summary>
+    </key>
     <key type="u" name="color-name-style">
         <range min="0" max="1"/>
         <default>0</default>
@@ -36,7 +40,7 @@
     <key type="u" name="dark-sketch-type">
         <range min="0" max="4"/>
         <default>1</default>
-        <summary>light sketch type (0 - luck, 1 - wave, 2 - oval, 3 - blob, 4 - cloud)</summary>
+        <summary>dark sketch type (0 - luck, 1 - wave, 2 - oval, 3 - blob, 4 - cloud)</summary>
     </key>
     <key type="u" name="max-backups">
         <range min="0" max="60"/>
@@ -48,21 +52,26 @@
         <default>60</default>
         <summary>refresh interval (mins)</summary>
     </key>
+    <key type="u" name="motto-source-type">
+        <range min="0" max="3"/>
+        <default>2</default>
+        <summary>motto source type (0 - command, 1 - text, 2 - image, 3 - online)</summary>
+    </key>
+    <key type="s" name="motto-source">
+        <default>""</default>
+        <summary>motto source</summary>
+    </key>
     <key type="s" name="color-font">
         <default>"Serif"</default>
         <summary>font of color names</summary>
     </key>
     <key type="s" name="font-name">
         <default>"Serif 16"</default>
-        <summary>font of text</summary>
+        <summary>font of mottos</summary>
     </key>
     <key type="s" name="picture-location">
         <default>""</default>
-        <summary>temporary picture location</summary>
-    </key>
-    <key type="s" name="text-command">
-        <default>"echo text"</default>
-        <summary>text generation command</summary>
+        <summary>gen picture location</summary>
     </key>
   </schema>
 </schemalist>

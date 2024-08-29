@@ -6,6 +6,8 @@ export const Type = {DARK: 0, LIGHT: 1, MODERATE: 2};
 export const BgColor = {DARK: [0.14, 0.14, 0.14, 1], LIGHT: [0.9, 0.9, 0.9, 1]};
 export const BgHex = vmap(BgColor, v => `#${v.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`); // hex
 
+const normalize = ({rgb, name}) =>  ({rgb: rgb.map(x => x / 255), name});
+
 // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
 // NOTE: https://github.com/tc39/proposal-json-modules
 const Color = [
@@ -535,7 +537,7 @@ const Color = [
     {rgb: [132, 124, 116], name: '夜灰'},
     {rgb: [128, 118, 110], name: '雁灰'},
     {rgb: [129, 119, 110], name: '深灰'},
-].map(({rgb, name}) => ({rgb: rgb.map(x => x / 255), name}));
+].map(normalize);
 
 const Colors = Color.reduce((p, {rgb: [r, g, b]}, i) => {
     let l = Math.sqrt(0.299 * r * r  + 0.587 * g * g + 0.114 * b * b); // Ref: https://stackoverflow.com/a/596243 & https://stackoverflow.com/a/56678483
@@ -544,7 +546,58 @@ const Colors = Color.reduce((p, {rgb: [r, g, b]}, i) => {
     return p;
 }, [[], [], []]);
 
+export class Accent {
+    static #cache;
+    static #color = [ // Ref: https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/src/st/st-theme-context.c
+        {rgb: [53,  132, 228], name: 'blue'},
+        {rgb: [33,  144, 164], name: 'teal'},
+        {rgb: [58,  148, 74],  name: 'green'},
+        {rgb: [200, 136, 0],   name: 'yellow'},
+        {rgb: [237, 91,  0],   name: 'orange'},
+        {rgb: [230, 45,  66],  name: 'red'},
+        {rgb: [213, 97,  153], name: 'pink'},
+        {rgb: [145, 65,  172], name: 'purple'},
+        {rgb: [111, 131, 150], name: 'slate'},
+    ].map(normalize);
+
+    static save(save) {
+        this.#cache = save ? [] : null;
+    }
+
+    static #hue([r, g, b]) {
+        let [mn, , v] = [r, g, b].sort(),
+            d = v - mn,
+            h = 3.55; // color blue
+        if(d !== 0) { // chromatic
+            switch(v) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+            }
+        }
+        return h;
+    }
+
+    static push(rgb) {
+        this.#cache?.push(this.#color.reduce((p, {rgb: clr}, i) => {
+            let dh = Math.abs(this.#hue(rgb) - this.#hue(clr));
+            if(p.min > dh) p.min = dh, p.idx = i;
+            return p;
+        }, {min: Infinity, idx: 0}).idx);
+    }
+
+    static take() {
+        return this.#color[this.#cache?.splice(0).reduce((p, x) => {
+            let {[x]: c, [p.max]: m} = p.tmp;
+            p.tmp[x] = c = c ? c + 1 : 1;
+            if(m < c) p.max = x;
+            return p;
+        }, {tmp: {[-1]: 0}, max: -1}).max]?.name;
+    }
+}
+
 export function random(alpha, type) {
     let {rgb, name} = Color[lot(Colors.at(type))];
+    Accent.push(rgb);
     return {color: rgb.concat(alpha), name};
 }
