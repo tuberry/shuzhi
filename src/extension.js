@@ -119,7 +119,7 @@ class ShuZhi extends Mortal {
             cancel: Source.newCancel(),
             systray: new Source(() => this.$genSystray()),
             light: Source.newLight(x => { this.night = x; this.$onLightPut(); }, true),
-            cycle: Source.newTimer((x = this.interval) => [() => this.setMotto(true), x * 60000]),
+            cycle: Source.newTimer((x = this.interval) => [() => this.setMotto(true), x * 60000], false),
         }, this);
         [this.$darkSketch, this.$lightSketch] = [Dark, Light].map(x => Object.values(x).filter(y => y !== x.LUCK));
         [this.darkSketches, this.lightSketches] = [Dark, Light].map(x => Object.keys(x).map(y => _(capitalize(y))));
