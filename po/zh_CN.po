@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-29 02:27+0800\n"
+"POT-Creation-Date: 2024-08-31 00:29+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -41,9 +41,13 @@ msgstr "文件类型不匹配"
 msgid "Click or press ENTER to apply changes"
 msgstr "单击或按回车应用更改"
 
-#: src/prefs.js:30
+#: src/prefs.js:29
 msgid "Max backups"
 msgstr "备份上限"
+
+#: src/prefs.js:31
+msgid "Unit: minute"
+msgstr "单位: 分钟"
 
 #: src/prefs.js:32
 msgid "Default font"
@@ -154,36 +158,36 @@ msgid "Background color, “Auto” means sync with the Night Light"
 msgstr "背景颜色,“自动”即随夜灯同步切换"
 
 #: src/prefs.js:46
-msgid "Enable systray"
-msgstr "系统托盘"
+msgid "_Enable systray"
+msgstr "系统托盘(_E)"
 
 #: src/prefs.js:47
-msgid "Set accent color"
-msgstr "设强调色"
+msgid "_Set accent color"
+msgstr "设强调色(_S)"
 
 #: src/prefs.js:48
-msgid "Auto refresh"
-msgstr "自动刷新"
+msgid "_Auto refresh"
+msgstr "自动刷新(_A)"
 
 #: src/prefs.js:49
-msgid "Color name"
-msgstr "颜色名称"
+msgid "_Color name"
+msgstr "颜色名称(_C)"
 
 #: src/prefs.js:50
-msgid "Gen picture"
-msgstr "生成图片"
+msgid "_Gen picture"
+msgstr "生成图片(_G)"
 
 #: src/prefs.js:51
-msgid "Sketch style"
-msgstr "纹理样式"
+msgid "S_ketch style"
+msgstr "纹理样式(_K)"
 
 #: src/prefs.js:52
-msgid "Motto style"
-msgstr "字句样式"
+msgid "_Motto style"
+msgstr "字句样式(_M)"
 
 #: src/prefs.js:53
-msgid "Motto source"
-msgstr "字句来源"
+msgid "M_otto source"
+msgstr "字句来源(_O)"
 
 #: src/extension.js:216
 msgid "Copy"

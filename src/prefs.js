@@ -26,9 +26,9 @@ class ShuZhiPrefs extends Adw.PreferencesGroup {
             RFS:  new UI.Check(),
             STRY: new UI.Check(),
             ACT:  new UI.Check(),
-            SPAN: new UI.Spin(10, 300, 30),
             BCK:  new UI.Spin(0, 60, 1, _('Max backups')),
             SRC:  new UI.Entry('# echo hello, world!', true),
+            SPAN: new UI.Spin(10, 300, 30, _('Unit: minute')),
             FONT: new UI.Font({tooltipText: _('Default font')}),
             CLST: new UI.Drop([_('Watermark'), _('Highlight')], _('Color style')),
             PATH: new UI.File({folder: true}, {tooltipText: _('Picture location')}),
@@ -43,14 +43,14 @@ class ShuZhiPrefs extends Adw.PreferencesGroup {
 
     $buildUI() {
         [
-            [this.$blk.STRY,  [_('Enable systray')]],
-            [this.$blk.ACT,   [_('Set accent color')]],
-            [this.$blk.RFS,   [_('Auto refresh')], this.$blk.SPAN],
-            [this.$blk.CLR,   [_('Color name')], this.$blk.CLST, this.$blk.CLFT],
-            [UI.Check.mock(), [_('Gen picture')], this.$blk.PATH, this.$blk.BCK],
-            [UI.Check.mock(), [_('Sketch style')], this.$blk.STL, this.$blk.LSKT, this.$blk.DSKT],
-            [UI.Check.mock(), [_('Motto style')], this.$blk.ORNT, this.$blk.FONT],
-            [UI.Check.mock(), [_('Motto source')], this.$blk.SRC, this.$blk.SRCT],
+            [this.$blk.STRY,  [_('_Enable systray')]],
+            [this.$blk.ACT,   [_('_Set accent color')]],
+            [this.$blk.RFS,   [_('_Auto refresh')], this.$blk.SPAN],
+            [this.$blk.CLR,   [_('_Color name')], this.$blk.CLST, this.$blk.CLFT],
+            [UI.Check.mock(), [_('_Gen picture')], this.$blk.PATH, this.$blk.BCK],
+            [UI.Check.mock(), [_('S_ketch style')], this.$blk.STL, this.$blk.LSKT, this.$blk.DSKT],
+            [UI.Check.mock(), [_('_Motto style')], this.$blk.ORNT, this.$blk.FONT],
+            [UI.Check.mock(), [_('M_otto source')], this.$blk.SRC, this.$blk.SRCT],
         ].forEach(xs => this.add(new UI.PrefRow(...xs)));
     }
 }
