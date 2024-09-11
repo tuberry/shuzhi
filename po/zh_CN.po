@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-31 00:29+0800\n"
+"POT-Creation-Date: 2024-09-06 15:11+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -37,7 +37,7 @@ msgstr "清除"
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:599
+#: src/ui.js:600
 msgid "Click or press ENTER to apply changes"
 msgstr "单击或按回车应用更改"
 
@@ -45,39 +45,39 @@ msgstr "单击或按回车应用更改"
 msgid "Max backups"
 msgstr "备份上限"
 
-#: src/prefs.js:31
+#: src/prefs.js:30
 msgid "Unit: minute"
 msgstr "单位: 分钟"
 
-#: src/prefs.js:32
+#: src/prefs.js:31
 msgid "Default font"
 msgstr "默认字体"
 
-#: src/prefs.js:33
+#: src/prefs.js:32
 msgid "Watermark"
 msgstr "水印"
 
-#: src/prefs.js:33
+#: src/prefs.js:32
 msgid "Highlight"
 msgstr "高亮"
 
-#: src/prefs.js:33
+#: src/prefs.js:32
 msgid "Color style"
 msgstr "颜色样式"
 
-#: src/prefs.js:34
+#: src/prefs.js:33
 msgid "Picture location"
 msgstr "图片位置"
 
-#: src/prefs.js:35
+#: src/prefs.js:34
 msgid "Horizontal"
 msgstr "水平"
 
-#: src/prefs.js:35
+#: src/prefs.js:34
 msgid "Vertical"
 msgstr "竖直"
 
-#: src/prefs.js:35
+#: src/prefs.js:34
 msgid "Motto orientation"
 msgstr "字句方向"
 

@@ -9,17 +9,17 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {Field} from './const.js';
+import {Color} from './color.js';
 import * as Draw from './draw.js';
-import {Accent} from './color.js';
 import {MenuItem, RadioItem, Systray} from './menu.js';
 import {Setting, Extension, Mortal, Source, myself, _, copy} from './fubar.js';
 import {noop, execute, fdelete, fcopy, readdir, request, capitalize, lot, has, seq} from './util.js';
 
 const Style = {LIGHT: 0, DARK: 1, AUTO: 2, SYSTEM: 3};
-const Type = {COMMAND: 0, TEXT: 1, IMAGE: 2, ONLINE: 3};
-const Dark = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, CLOUD: 4};
-const Light = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, TREE: 4};
-const Desktop = {LIGHT: 'picture-uri', DARK: 'picture-uri-dark'};
+const MottoSource = {COMMAND: 0, TEXT: 1, IMAGE: 2, ONLINE: 3};
+const DarkSketch = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, CLOUD: 4};
+const LightSketch = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, TREE: 4};
+const Picture = {LIGHT: 'picture-uri', DARK: 'picture-uri-dark'};
 
 class MenuSection extends PopupMenu.PopupMenuSection {
     constructor(items, name) {
@@ -81,18 +81,18 @@ class ShuZhi extends Mortal {
 
     $bindSettings(gset) {
         this.$setBg = new Setting({
-            darkPic: [Desktop.DARK, 'string'],
-            lightPic: [Desktop.LIGHT, 'string'],
+            darkPic: [Picture.DARK, 'string'],
+            lightPic: [Picture.LIGHT, 'string'],
         }, 'org.gnome.desktop.background', this);
         this.$setIf = new Setting({
-            accent: ['accent-color', 'string'],
+            colour: ['accent-color', 'string'],
             scheme: ['color-scheme', 'string', x => x === 'prefer-dark'],
         }, 'org.gnome.desktop.interface', this, () => this.$onLightPut()).attach({
             scaling: ['text-scaling-factor', 'double'],
         }, this, () => this.$onFontPut());
         this.$set = new Setting({
             backups:  [Field.BCK,  'uint'],
-            stress:   [Field.ACT,  'boolean', x => Accent.save(x)],
+            accent:   [Field.ACT,  'boolean', x => Color.saveAccent(x)],
             interval: [Field.SPAN, 'uint',    x => this.$src.cycle.reload(x)],
             refresh:  [Field.RFS,  'boolean', x => this.$src.cycle.toggle(x)],
             systray:  [Field.STRY, 'boolean', x => this.$src.systray.toggle(x)],
@@ -121,8 +121,8 @@ class ShuZhi extends Mortal {
             light: Source.newLight(x => { this.night = x; this.$onLightPut(); }, true),
             cycle: Source.newTimer((x = this.interval) => [() => this.setMotto(true), x * 60000], false),
         }, this);
-        [this.$darkSketch, this.$lightSketch] = [Dark, Light].map(x => Object.values(x).filter(y => y !== x.LUCK));
-        [this.darkSketches, this.lightSketches] = [Dark, Light].map(x => Object.keys(x).map(y => _(capitalize(y))));
+        [this.$darkSketch, this.$lightSketch] = [DarkSketch, LightSketch].map(x => Object.values(x).filter(y => y !== x.LUCK));
+        [this.darkSketches, this.lightSketches] = [DarkSketch, LightSketch].map(x => Object.keys(x).map(y => _(capitalize(y))));
     }
 
     $onFontPut() {
@@ -142,7 +142,7 @@ class ShuZhi extends Mortal {
     }
 
     get waving() {
-        return this.$skt?.type === Light.WAVE;
+        return this.$skt?.type === LightSketch.WAVE;
     }
 
     get $menu() {
@@ -160,10 +160,10 @@ class ShuZhi extends Mortal {
     async genMotto() {
         try {
             switch(this.sourceType) {
-            case Type.IMAGE:   return {logo: this.source};
-            case Type.TEXT:    return Motto.parse(this.source);
-            case Type.ONLINE:  return await Motto.fetch(this.$src.cancel.reborn());
-            case Type.COMMAND: return await Motto.load(this.source, this.$src.cancel.reborn());
+            case MottoSource.IMAGE:   return {logo: this.source};
+            case MottoSource.TEXT:    return Motto.parse(this.source);
+            case MottoSource.ONLINE:  return await Motto.fetch(this.$src.cancel.reborn());
+            case MottoSource.COMMAND: return await Motto.load(this.source, this.$src.cancel.reborn());
             }
         } catch(e) {
             if(Source.cancelled(e)) throw e;
@@ -236,7 +236,7 @@ class ShuZhi extends Mortal {
                 this.lightPic !== path && this.$setBg.set('lightPic', path, this);
             }
         } else {
-            Object.values(Desktop).forEach(x => this.$setBg.gset.reset(x));
+            Object.values(Picture).forEach(x => this.$setBg.gset.reset(x));
         }
     }
 
@@ -251,27 +251,27 @@ class ShuZhi extends Mortal {
 
     genSketch(x, y) {
         let pts, type = this.dark
-            ? this.darkSketch === Dark.LUCK ? lot(this.$darkSketch) : this.darkSketch
-            : this.lightSketch === Light.LUCK ? lot(this.$lightSketch) : this.lightSketch;
+            ? this.darkSketch === DarkSketch.LUCK ? lot(this.$darkSketch) : this.darkSketch
+            : this.lightSketch === LightSketch.LUCK ? lot(this.$lightSketch) : this.lightSketch;
         switch(type) {
-        case Light.WAVE: pts = Draw.genWaves(x, y); break;
-        case Light.BLOB: pts = Draw.genBlobs(x, y); break;
-        case Light.OVAL: pts = Draw.genOvals(x, y); break;
-        case Light.TREE:
-        case Dark.CLOUD: pts = this.dark ? Draw.genClouds(x, y) : Draw.genTrees(x, y); break;
+        case LightSketch.WAVE: pts = Draw.genWaves(x, y); break;
+        case LightSketch.BLOB: pts = Draw.genBlobs(x, y); break;
+        case LightSketch.OVAL: pts = Draw.genOvals(x, y); break;
+        case LightSketch.TREE:
+        case DarkSketch.CLOUD: pts = this.dark ? Draw.genClouds(x, y) : Draw.genTrees(x, y); break;
         }
-        if(this.stress) seq(a => a && a !== this.accent && this.$setIf.set('accent', a, this), Accent.take());
+        if(this.accent) seq(a => a !== this.colour && this.$setIf.set('colour', a, this), Color.takeAccent());
         return {type, pts};
     }
 
     drawSketch(cr, x, y) {
         let {type, pts} = this.$skt ??= this.genSketch(x, y);
         switch(type) {
-        case Light.WAVE: Draw.drawWaves(cr, pts, this.showColor, this.colorFont, this.colorStyle); break;
-        case Light.BLOB: Draw.drawBlobs(cr, pts); break;
-        case Light.OVAL: Draw.drawOvals(cr, pts); break;
-        case Light.TREE:
-        case Dark.CLOUD: this.dark ? Draw.drawClouds(cr, pts) : Draw.drawTrees(cr, pts); break;
+        case LightSketch.WAVE: Draw.drawWaves(cr, pts, this.showColor, this.colorFont, this.colorStyle); break;
+        case LightSketch.BLOB: Draw.drawBlobs(cr, pts); break;
+        case LightSketch.OVAL: Draw.drawOvals(cr, pts); break;
+        case LightSketch.TREE:
+        case DarkSketch.CLOUD: this.dark ? Draw.drawClouds(cr, pts) : Draw.drawTrees(cr, pts); break;
         }
     }
 }

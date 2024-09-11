@@ -1,16 +1,18 @@
 // SPDX-FileCopyrightText: tuberry
 // SPDX-License-Identifier: GPL-3.0-or-later
-import {lot, vmap} from './util.js';
 
-export const Type = {DARK: 0, LIGHT: 1, MODERATE: 2};
+import {lot, array, vmap} from './util.js';
+
+export const FgType = {DARK: 0, LIGHT: 1, MODERATE: 2};
 export const BgColor = {DARK: [0.14, 0.14, 0.14, 1], LIGHT: [0.9, 0.9, 0.9, 1]};
 export const BgHex = vmap(BgColor, v => `#${v.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`); // hex
 
-const normalize = ({rgb, name}) =>  ({rgb: rgb.map(x => x / 255), name});
+const Accent = {BLUE: 0, TEAL: 1, GREEN: 2, YELLOW: 3, ORANGE: 4, RED: 5, PINK: 6, PURPLE: 7, SLATE: 8};
+const Accents = Object.keys(Accent).map(x => x.toLowerCase()); // from https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/src/st/st-theme-context.c
 
-// from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
 // NOTE: https://github.com/tc39/proposal-json-modules
-const Color = [
+const Data = [
+    // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
     {rgb: [249, 244, 228], name: '乳白'},
     {rgb: [249, 236, 195], name: '杏仁黄'},
     {rgb: [248, 223, 114], name: '茉莉黄'},
@@ -532,72 +534,230 @@ const Color = [
     {rgb: [228, 223, 215], name: '珍珠灰'},
     {rgb: [218, 212, 203], name: '浅灰'},
     {rgb: [187, 181, 172], name: '铅灰'},
-    {rgb: [187, 181, 172], name: '中灰'},
+    {rgb: [187, 181, 172], name: '中灰'}, // duplicate
     {rgb: [134, 126, 118], name: '瓦灰'},
     {rgb: [132, 124, 116], name: '夜灰'},
     {rgb: [128, 118, 110], name: '雁灰'},
     {rgb: [129, 119, 110], name: '深灰'},
-].map(normalize);
+    // from https://github.com/longtian/ancient-chinese-color/blob/master/data.json
+    {rgb: [169, 129, 117], name: '绾'},
+    {rgb: [179, 109, 97],  name: '檀'},
+    {rgb: [96,  40,  30],  name: '栗色'},
+    {rgb: [98,  42,  29],  name: '玄'},
+    {rgb: [157, 41,  51],  name: '胭脂'},
+    {rgb: [190, 0,   47],  name: '殷红'},
+    {rgb: [195, 33,  54],  name: '枣红'},
+    {rgb: [195, 39,  43],  name: '赤'},
+    {rgb: [200, 60,  35],  name: '绯红'},
+    {rgb: [201, 31,  55],  name: '赫赤'},
+    {rgb: [201, 55,  86],  name: '樱桃红'},
+    {rgb: [203, 58,  86],  name: '茜色'},
+    {rgb: [219, 90,  107], name: '海棠红'},
+    {rgb: [220, 48,  35],  name: '酡红'},
+    {rgb: [237, 87,  54],  name: '妃色'},
+    {rgb: [239, 122, 130], name: '嫣红'},
+    {rgb: [240, 0,   86],  name: '品红'},
+    {rgb: [242, 12,  0],   name: '石榴红'},
+    {rgb: [240, 86,  84],  name: '银红'},
+    {rgb: [243, 83,  54],  name: '彤'},
+    {rgb: [244, 121, 131], name: '桃红'},
+    {rgb: [249, 144, 111], name: '酡颜'},
+    {rgb: [255, 0,   151], name: '洋红'},
+    {rgb: [255, 33,  33],  name: '大红'},
+    {rgb: [255, 45,  81],  name: '火红'},
+    {rgb: [255, 51,  0],   name: '炎'},
+    {rgb: [255, 76,  0],   name: '朱红'},
+    {rgb: [255, 78,  32],  name: '丹'},
+    {rgb: [255, 179, 167], name: '粉红'},
+    {rgb: [228, 198, 208], name: '藕荷'},
+    {rgb: [237, 209, 216], name: '藕'},
+    {rgb: [243, 211, 231], name: '水红'},
+    {rgb: [252, 239, 232], name: '鱼肚白'},
+    {rgb: [110, 81,  30],  name: '褐色'},
+    {rgb: [124, 75,  0],   name: '棕黑'},
+    {rgb: [149, 85,  57],  name: '赭色'},
+    {rgb: [155, 68,  0],   name: '棕红'},
+    {rgb: [156, 83,  51],  name: '赭'},
+    {rgb: [168, 132, 98],  name: '驼色'},
+    {rgb: [178, 93,  37],  name: '棕色'},
+    {rgb: [179, 92,  68],  name: '茶色'},
+    {rgb: [202, 105, 36],  name: '琥珀'},
+    {rgb: [226, 156, 69],  name: '黄栌'},
+    {rgb: [250, 140, 53],  name: '橙色'},
+    {rgb: [255, 117, 0],   name: '橘红'},
+    {rgb: [255, 137, 54],  name: '橘黄'},
+    {rgb: [255, 140, 49],  name: '杏红'},
+    {rgb: [255, 164, 0],   name: '橙黄'},
+    {rgb: [255, 166, 49],  name: '杏黄'},
+    {rgb: [255, 199, 115], name: '姜黄'},
+    {rgb: [93,  81,  60],  name: '黧'},
+    {rgb: [117, 102, 77],  name: '黎'},
+    {rgb: [130, 113, 0],   name: '棕绿'},
+    {rgb: [137, 108, 57],  name: '秋色'},
+    {rgb: [162, 155, 124], name: '苍黄'},
+    {rgb: [167, 142, 68],  name: '乌金'},
+    {rgb: [174, 112, 0],   name: '棕黄'},
+    {rgb: [200, 155, 64],  name: '昏黄'},
+    {rgb: [211, 177, 125], name: '枯黄'},
+    {rgb: [217, 182, 17],  name: '秋香色'},
+    {rgb: [234, 205, 118], name: '金'},
+    {rgb: [238, 222, 176], name: '牙'},
+    {rgb: [240, 194, 57],  name: '缃色'},
+    {rgb: [242, 190, 69],  name: '赤金'},
+    {rgb: [250, 255, 114], name: '鸭黄'},
+    {rgb: [255, 241, 67],  name: '鹅黄'},
+    {rgb: [242, 236, 222], name: '缟'},
+    {rgb: [255, 251, 240], name: '象牙白'},
+    {rgb: [120, 146, 98],  name: '竹青'},
+    {rgb: [65,  85,  93],  name: '黯'},
+    {rgb: [66,  102, 102], name: '黛绿'},
+    {rgb: [5,   119, 72],  name: '松花绿'},
+    {rgb: [12,  137, 24],  name: '绿沈'},
+    {rgb: [0,   153, 0],   name: '深绿'},
+    {rgb: [10,  163, 68],  name: '青葱'},
+    {rgb: [84,  150, 136], name: '铜绿'},
+    {rgb: [81,  154, 115], name: '苍翠'},
+    {rgb: [33,  166, 117], name: '松柏绿'},
+    {rgb: [14,  184, 58],  name: '葱青'},
+    {rgb: [0,   188, 18],  name: '油绿'},
+    {rgb: [64,  222, 90],  name: '草绿'},
+    {rgb: [150, 206, 84],  name: '豆青'},
+    {rgb: [158, 208, 72],  name: '豆绿'},
+    {rgb: [158, 217, 0],   name: '葱绿'},
+    {rgb: [163, 217, 0],   name: '葱黄'},
+    {rgb: [175, 221, 34],  name: '柳绿'},
+    {rgb: [189, 221, 34],  name: '嫩绿'},
+    {rgb: [201, 221, 34],  name: '柳黄'},
+    {rgb: [188, 230, 114], name: '松花'},
+    {rgb: [234, 255, 86],  name: '樱草色'},
+    {rgb: [136, 173, 166], name: '水'},
+    {rgb: [72,  192, 163], name: '青碧'},
+    {rgb: [27,  209, 165], name: '碧'},
+    {rgb: [123, 207, 166], name: '石青'},
+    {rgb: [0,   224, 121], name: '青翠'},
+    {rgb: [42,  221, 156], name: '碧绿'},
+    {rgb: [46,  223, 163], name: '玉'},
+    {rgb: [61,  225, 173], name: '翡翠'},
+    {rgb: [127, 236, 173], name: '缥'},
+    {rgb: [62,  237, 231], name: '碧蓝'},
+    {rgb: [37,  248, 205], name: '湖绿'},
+    {rgb: [164, 226, 198], name: '艾绿'},
+    {rgb: [192, 235, 215], name: '青白'},
+    {rgb: [212, 242, 231], name: '水绿'},
+    {rgb: [224, 238, 232], name: '鸭卵青'},
+    {rgb: [224, 240, 233], name: '素'},
+    {rgb: [243, 249, 241], name: '荼白'},
+    {rgb: [59,  46,  126], name: '藏蓝'},
+    {rgb: [75,  92,  196], name: '宝蓝'},
+    {rgb: [0,   51,  113], name: '绀青'},
+    {rgb: [46,  78,  126], name: '藏青'},
+    {rgb: [6,   82,  121], name: '靛蓝'},
+    {rgb: [23,  124, 176], name: '靛青'},
+    {rgb: [76,  141, 174], name: '群青'},
+    {rgb: [48,  223, 243], name: '湖蓝'},
+    {rgb: [112, 243, 255], name: '蔚蓝'},
+    {rgb: [214, 236, 240], name: '月白'},
+    {rgb: [210, 240, 244], name: '水蓝'},
+    {rgb: [227, 249, 253], name: '莹白'},
+    {rgb: [240, 252, 255], name: '雪白'},
+    {rgb: [74,  66,  102], name: '黛'},
+    {rgb: [76,  33,  27],  name: '紫檀'},
+    {rgb: [86,  0,   79],  name: '紫棠'},
+    {rgb: [87,  66,  102], name: '黛紫'},
+    {rgb: [140, 67,  86],  name: '绛紫'},
+    {rgb: [129, 84,  99],  name: '紫酱'},
+    {rgb: [129, 84,  118], name: '酱紫'},
+    {rgb: [107, 104, 130], name: '黝'},
+    {rgb: [128, 29,  174], name: '青莲'},
+    {rgb: [176, 164, 227], name: '雪青'},
+    {rgb: [204, 164, 227], name: '丁香'},
+    {rgb: [22,  24,  35],  name: '漆黑'},
+    {rgb: [49,  37,  32],  name: '象牙黑'},
+    {rgb: [57,  47,  65],  name: '乌黑'},
+    {rgb: [61,  59,  79],  name: '玄青'},
+    {rgb: [73,  49,  49],  name: '缁'},
+    {rgb: [102, 87,  87],  name: '黝黑'},
+    {rgb: [66,  76,  80],  name: '鸦青'},
+    {rgb: [66,  80,  102], name: '黛蓝'},
+    {rgb: [57,  82,  96],  name: '苍黑'},
+    {rgb: [80,  97,  109], name: '墨'},
+    {rgb: [128, 128, 128], name: '灰'},
+    {rgb: [117, 135, 138], name: '苍'},
+    {rgb: [117, 138, 153], name: '墨灰'},
+    {rgb: [115, 151, 171], name: '苍青'},
+    {rgb: [161, 175, 201], name: '蓝灰'},
+    {rgb: [186, 202, 198], name: '老银'},
+    {rgb: [187, 205, 197], name: '蟹壳青'},
+    {rgb: [209, 217, 224], name: '苍白'},
+    {rgb: [211, 224, 243], name: '淡青'},
+    {rgb: [233, 231, 239], name: '银白'},
+    {rgb: [233, 241, 246], name: '霜'},
+    {rgb: [240, 240, 244], name: '铅白'},
+].map(({rgb, name}) => ({rgb: rgb.map(x => x / 255), name}));
 
-const Colors = Color.reduce((p, {rgb: [r, g, b]}, i) => {
-    let l = Math.sqrt(0.299 * r * r  + 0.587 * g * g + 0.114 * b * b); // Ref: https://stackoverflow.com/a/596243 & https://stackoverflow.com/a/56678483
-    p[l > 0.5 ? Type.LIGHT : Type.DARK].push(i);
-    if(l > 0.25 && l < 0.75) p[Type.MODERATE].push(i);
-    return p;
-}, [[], [], []]);
-
-export class Accent {
+export class Color {
     static #cache;
-    static #color = [ // Ref: https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/src/st/st-theme-context.c
-        {rgb: [53,  132, 228], name: 'blue'},
-        {rgb: [33,  144, 164], name: 'teal'},
-        {rgb: [58,  148, 74],  name: 'green'},
-        {rgb: [200, 136, 0],   name: 'yellow'},
-        {rgb: [237, 91,  0],   name: 'orange'},
-        {rgb: [230, 45,  66],  name: 'red'},
-        {rgb: [213, 97,  153], name: 'pink'},
-        {rgb: [145, 65,  172], name: 'purple'},
-        {rgb: [111, 131, 150], name: 'slate'},
-    ].map(normalize);
+    static #color = Data.reduce((p, {rgb}, index) => {
+        let [m,, v] = rgb.toSorted(),
+            [r, g, b] = rgb,
+            d = v - m,
+            s = v === 0 ? 0 : d / v,
+            h = 60;
+        if(d !== 0) { // chromatic
+            switch(v) {
+            case r: h *= (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h *= (b - r) / d + 2; break;
+            case b: h *= (r - g) / d + 4; break;
+            }
+        }
 
-    static save(save) {
+        let a; // Ref: http://www.workwithcolor.com/blue-color-hue-range-01.htm
+        if(Math.hypot(1 - v, 1 - s) > 0.8) a = [Accent.SLATE]; // TODO: simplify
+        else if(h > 10 && h <= 20) a = [Accent.RED, Accent.ORANGE];
+        else if(h > 20 && h <= 40) a = [Accent.ORANGE, Accent.ORANGE];
+        else if(h > 40 && h <= 50) a = [Accent.ORANGE, Accent.YELLOW];
+        else if(h > 50 && h <= 60) a = [Accent.YELLOW, Accent.YELLOW];
+        else if(h > 60 && h <= 80) a = [Accent.YELLOW, Accent.GREEN];
+        else if(h > 80 && h <= 140)  a = [Accent.GREEN, Accent.GREEN];
+        else if(h > 140 && h <= 169) a = [Accent.GREEN, Accent.TEAL];
+        else if(h > 169 && h <= 200) a = [Accent.TEAL, Accent.TEAL];
+        else if(h > 200 && h <= 220) a = [Accent.TEAL, Accent.BLUE];
+        else if(h > 220 && h <= 240) a = [Accent.BLUE, Accent.BLUE];
+        else if(h > 240 && h <= 280) a = [Accent.BLUE, Accent.PURPLE];
+        else if(h > 280 && h <= 320) a = [Accent.PURPLE, Accent.PURPLE];
+        else if(h > 320 && h <= 330) a = [Accent.PURPLE, Accent.PINK];
+        else if(h > 330 && h <= 345) a = [Accent.PINK, Accent.PINK];
+        else if(h > 345 && h <= 355) a = [Accent.PINK, Accent.RED];
+        else a = [Accent.RED, Accent.RED];
+
+        let c = rgb.map(x => x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92),
+            y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], // Ref: https://stackoverflow.com/a/56678483
+            l = y > 216 / 24389 ? Math.pow(y, 1 / 3) * 116 - 16 : y * 24389 / 27,
+            t = l > 50 ? [FgType.LIGHT] : [FgType.DARK];
+        if(l > 25 && l < 75) t.push(FgType.MODERATE);
+        a.forEach(i => t.forEach(j => p[i][j].push(index)));
+
+        return p;
+    }, array(Accents.length, i => ({accent: i, [FgType.DARK]: [], [FgType.LIGHT]: [], [FgType.MODERATE]: []})));
+
+    static random(alpha, type) {
+        let colors = lot(this.#color);
+        if(this.#cache) {
+            let count = this.#cache[colors.accent];
+            this.#cache[colors.accent] = count ? count + 1 : 1;
+        }
+        let {name, rgb} = Data[lot(colors[type]) ?? 0];
+        return {color: rgb.concat(alpha), name};
+    }
+
+    static saveAccent(save) {
         this.#cache = save ? [] : null;
     }
 
-    static #hue([r, g, b]) {
-        let [mn, , v] = [r, g, b].sort(),
-            d = v - mn,
-            h = 3.55; // color blue
-        if(d !== 0) { // chromatic
-            switch(v) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-            }
-        }
-        return h;
-    }
-
-    static push(rgb) {
-        this.#cache?.push(this.#color.reduce((p, {rgb: clr}, i) => {
-            let dh = Math.abs(this.#hue(rgb) - this.#hue(clr));
-            if(p.min > dh) p.min = dh, p.idx = i;
+    static takeAccent() {
+        return Accents[this.#cache?.splice(0).reduce((p, x, i) => {
+            if(p.tmp < x) p.tmp = x, p.max = i;
             return p;
-        }, {min: Infinity, idx: 0}).idx);
+        }, {tmp: -1, max: -1}).max] ?? 'blue';
     }
-
-    static take() {
-        return this.#color[this.#cache?.splice(0).reduce((p, x) => {
-            let {[x]: c, [p.max]: m} = p.tmp;
-            p.tmp[x] = c = c ? c + 1 : 1;
-            if(m < c) p.max = x;
-            return p;
-        }, {tmp: {[-1]: 0}, max: -1}).max]?.name;
-    }
-}
-
-export function random(alpha, type) {
-    let {rgb, name} = Color[lot(Colors.at(type))];
-    Accent.push(rgb);
-    return {color: rgb.concat(alpha), name};
 }

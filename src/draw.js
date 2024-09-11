@@ -9,9 +9,9 @@ import Pango from 'gi://Pango';
 import GdkPixbuf from 'gi://GdkPixbuf';
 import PangoCairo from 'gi://PangoCairo';
 
-import * as Color from './color.js';
 import {lookupIcon} from './menu.js';
 import {seq, array, fopen, noop, Y} from './util.js';
+import {Color, BgHex, BgColor, FgType} from './color.js';
 
 let RATIO = 2 / 3,
     DarkBg = true,
@@ -22,7 +22,7 @@ const sinp = t => Math.sin(t * Math.PI);
 const cosp = t => Math.cos(t * Math.PI);
 const p2ct = (r, t) => [r * cosp(t), r * sinp(t)];
 
-const rColor = (alpha = 1, type = DarkBg ? Color.Type.LIGHT : Color.Type.DARK) => Color.random(alpha, type);
+const rColor = (alpha = 1, type = DarkBg ? FgType.LIGHT : FgType.DARK) => Color.random(alpha, type);
 const rAmp = (u, v) => Math.random() * 2 * v + u - v;
 const rand = (l, u) => Math.random() * (u - l) + l;
 const rInt = (l, u) => Math.floor(rand(l, u + 1)); // -> l .. u
@@ -175,7 +175,7 @@ function genMoon(x, _y) {
         [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI, p > 0.5 ? Math.PI / 4 : -Math.PI / 4],
         q = (1 - Math.abs(2 * p - 1)).toFixed(3);
     if(Math.abs(q - 1) < 0.005) {
-        return [c_x, c_y, r, Color.BgColor.LIGHT];
+        return [c_x, c_y, r, BgColor.LIGHT];
     } else if(Math.abs(q - 0.5) < 0.005) {
         let g = new Cairo.LinearGradient(0, 0, 0, r / 16);
         g.addColorStopRGBA(0, 0, 0, 0, 0);
@@ -277,7 +277,7 @@ function drawColor(cr, x, y, cl, name, show, font, style) {
 
 export function genBlobs(x, y) {
     return sample(genLattices([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16)
-        .map(rect => [rColor(0.5).color, genBezeirCurve(genPolygon(circle(rect)), 1, true)]);
+        .map(rect => [rColor(0.55).color, genBezeirCurve(genPolygon(circle(rect)), 1, true)]);
 }
 
 export function drawBlobs(cr, pts) {
@@ -295,7 +295,7 @@ export function genOvals(x, y) {
     return sample(genLattices([0, 0, x, y]).filter(rect => !overlap(rect, TextRect)), 16).map(rect => {
         let [c_x, c_y, r] = circle(rect);
         let [e_w, e_h] = [r, rGauss(1, 0.2) * r];
-        return [rColor(0.5).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
+        return [rColor(0.55).color, [c_x, c_y, e_w, e_h, 2 * Math.random()]];
     });
 }
 
@@ -374,7 +374,7 @@ export function genMotto(cr, x, y, text, vt, ft) {
     if(vt) pl.get_context().set_base_gravity(Pango.Gravity.EAST);
     else pl.set_alignment(Pango.Alignment.CENTER);
     pl.set_font_description(ft); // HACK: workaround for lack of 'background-clip: text'(css)
-    pl.set_markup(text.replace(/SZ_BGCOLOR/g, DarkBg ? Color.BgHex.DARK : Color.BgHex.LIGHT), -1);
+    pl.set_markup(text.replace(/SZ_BGCOLOR/g, DarkBg ? BgHex.DARK : BgHex.LIGHT), -1);
     let [fw, fh] = pl.get_pixel_size();
     let [a, b, c, d] = [x / 2, RATIO * y / 2, fw / 2, fh / 2];
     TextRect = vt ? [a - d, Math.max(b - c, y / 32), fh, fw] : [a - c, b - d, fw, fh];
@@ -384,7 +384,7 @@ export function genMotto(cr, x, y, text, vt, ft) {
 export function drawMotto(cr, pts) {
     let [x, y, pl, vt, fw, fh] = pts;
     cr.save();
-    cr.setSourceRGBA(...DarkBg ? Color.BgColor.LIGHT : Color.BgColor.DARK);
+    cr.setSourceRGBA(...DarkBg ? BgColor.LIGHT : BgColor.DARK);
     if(vt) {
         let dy = fw < y * (RATIO - 1 / 16) ? 0 : y / 32;
         cr.moveTo((x + fh) / 2, (RATIO * y - fw) / 2 + dy);
@@ -398,14 +398,14 @@ export function drawMotto(cr, pts) {
 
 export function drawBackground(cr) {
     cr.save();
-    cr.setSourceRGBA(...DarkBg ? Color.BgColor.DARK : Color.BgColor.LIGHT);
+    cr.setSourceRGBA(...DarkBg ? BgColor.DARK : BgColor.LIGHT);
     cr.paint();
     cr.restore();
 }
 
 export function genTrees(x, y) {
     let ld = genLand(x, y),
-        cl = rColor(1, Color.Type.MODERATE).color,
+        cl = rColor(1, FgType.MODERATE).color,
         t1 = genTree(8, rand(2, 5) * x / 20, 5 * y / 6, x / 30),
         t2 = genTree(6, rand(14, 18) * x / 20, 5 * y / 6, x / 30);
     return [t1, t2, ld, cl];
@@ -473,7 +473,7 @@ export function drawTree(cr, pts, cl = rColor().color) {
     cr.save();
     cr.setLineCap(Cairo.LineCap.ROUND);
     cr.setLineJoin(Cairo.LineJoin.ROUND);
-    cr.setSourceRGBA(...Color.BgColor.DARK);
+    cr.setSourceRGBA(...BgColor.DARK);
     let lineTo = i => pts[i] && (cr.setLineWidth(pts[i][3]), cr.lineTo(pts[i][0], pts[i][1]), cr.stroke());
     let flower = (i, s) => (pts[i] && pts[i][4]) && (s === pts[i][4].at(-1)) && drawFlower(cr, pts[i][4], cl);
     loopl(i => {
