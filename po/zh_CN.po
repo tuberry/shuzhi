@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gnome-shell-extension-shuzhi 15\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-06 15:11+0800\n"
+"POT-Creation-Date: 2021-08-18 14:25+0800\n"
 "PO-Revision-Date: 2021-08-18 14:25+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,37 +17,33 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/ui.js:329
+#: src/ui.js:343
 msgid "All"
 msgstr "全部"
 
-#: src/ui.js:329
+#: src/ui.js:343
 msgid "Normal"
 msgstr "常规"
 
-#: src/ui.js:329
+#: src/ui.js:343
 msgid "Symbolic"
 msgstr "符号"
 
-#: src/ui.js:368
+#: src/ui.js:382
 msgid "Clear"
 msgstr "清除"
 
-#: src/ui.js:466
+#: src/ui.js:480
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:600
+#: src/ui.js:615
 msgid "Click or press ENTER to apply changes"
 msgstr "单击或按回车应用更改"
 
-#: src/prefs.js:29
+#: src/prefs.js:30
 msgid "Max backups"
 msgstr "备份上限"
-
-#: src/prefs.js:30
-msgid "Unit: minute"
-msgstr "单位: 分钟"
 
 #: src/prefs.js:31
 msgid "Default font"
@@ -81,137 +77,190 @@ msgstr "竖直"
 msgid "Motto orientation"
 msgstr "字句方向"
 
-#: src/prefs.js:36
+#: src/prefs.js:35
 msgid "Color font"
 msgstr "颜色字体"
 
-#: src/prefs.js:37 src/prefs.js:38
-msgid "Luck"
-msgstr "随机"
-
-#: src/prefs.js:37 src/prefs.js:38
-msgid "Wave"
-msgstr "波浪"
-
-#: src/prefs.js:37 src/prefs.js:38
-msgid "Oval"
-msgstr "椭圆"
-
-#: src/prefs.js:37 src/prefs.js:38
-msgid "Blob"
-msgstr "团子"
-
-#: src/prefs.js:37
-msgid "Cloud"
-msgstr "云纹"
-
-#: src/prefs.js:37
-msgid "Dark sketches"
-msgstr "深色纹理"
-
-#: src/prefs.js:38
-msgid "Tree"
-msgstr "虚树"
-
-#: src/prefs.js:38
-msgid "Light sketches"
-msgstr "浅色纹理"
-
-#: src/prefs.js:39
+#: src/prefs.js:37 src/prefs.js:52
 msgid "Command"
 msgstr "命令"
 
-#: src/prefs.js:39
+#: src/prefs.js:37 src/prefs.js:46
 msgid "Text"
 msgstr "文本"
 
-#: src/prefs.js:39
+#: src/prefs.js:37 src/prefs.js:54
 msgid "Image"
 msgstr "图像"
 
-#: src/prefs.js:39
+#: src/prefs.js:37 src/prefs.js:53
 msgid "Online"
 msgstr "在线"
 
+#: src/prefs.js:37
+msgid "Source type"
+msgstr "来源类型"
+
+#: src/prefs.js:38 src/prefs.js:39
+msgid "Luck"
+msgstr "随机"
+
+#: src/prefs.js:38 src/prefs.js:39
+msgid "Wave"
+msgstr "波浪"
+
+#: src/prefs.js:38 src/prefs.js:39
+msgid "Oval"
+msgstr "椭圆"
+
+#: src/prefs.js:38 src/prefs.js:39
+msgid "Blob"
+msgstr "团子"
+
+#: src/prefs.js:38
+msgid "Cloud"
+msgstr "云纹"
+
+#: src/prefs.js:38
+msgid "Dark sketches"
+msgstr "暗色纹理"
+
 #: src/prefs.js:39
-msgid "Source type, “Online” uses the jinrishichi API"
-msgstr "来源类型,“在线”使用今日诗词API"
+msgid "Tree"
+msgstr "虚树"
 
-#: src/prefs.js:40
-msgid "Light"
-msgstr "浅色"
-
-#: src/prefs.js:40
-msgid "Dark"
-msgstr "深色"
-
-#: src/prefs.js:40
-msgid "Auto"
-msgstr "自动"
+#: src/prefs.js:39
+msgid "Light sketches"
+msgstr "亮色纹理"
 
 #: src/prefs.js:40
 msgid "System"
 msgstr "系统"
 
 #: src/prefs.js:40
+msgid "Light"
+msgstr "亮色"
+
+#: src/prefs.js:40
+msgid "Dark"
+msgstr "暗色"
+
+#: src/prefs.js:40
+msgid "Auto"
+msgstr "自动"
+
+#: src/prefs.js:40
 msgid "Background color, “Auto” means sync with the Night Light"
 msgstr "背景颜色,“自动”即随夜灯同步切换"
 
+#: src/prefs.js:45
+msgid "Source type illustration"
+msgstr "来源类型说明"
+
 #: src/prefs.js:46
+msgid ""
+"<a href=\"https://docs.gtk.org/Pango/pango_markup.html\">Pango markup</a> / "
+"plain text or JSON like"
+msgstr ""
+"<a href=\"https://docs.gtk.org/Pango/pango_markup.html\">Pango 标记语言</a>/"
+"纯文本或如下 JSON"
+
+#: src/prefs.js:48
+msgid "(horizontal/vertical and light/dark) markup or text"
+msgstr "(水平/垂直及亮色/暗色)标记语言或文本"
+
+#: src/prefs.js:49
+msgid "intagliated seal style text following the above text"
+msgstr "上述文本后的阴印样式文本"
+
+#: src/prefs.js:50
+msgid "light/dark image obsolute file path"
+msgstr "亮色/暗色图像绝对文件路径"
+
+#: src/prefs.js:52
+msgid "script to generate text like above"
+msgstr "生成如上文本的脚本"
+
+#: src/prefs.js:53
+msgid ""
+"fallback text for the <a href=\"https://github.com/xenv/"
+"gushici\">jinrishichi</a> API"
+msgstr "<a href=\"https://github.com/xenv/gushici\">今日诗词</a>接口的后备文本"
+
+#: src/prefs.js:54
+msgid "obsolute file path, default to the distro logo"
+msgstr "绝对文件路径，默认为发行版标识"
+
+#: src/prefs.js:59
 msgid "_Enable systray"
 msgstr "系统托盘(_E)"
 
-#: src/prefs.js:47
+#: src/prefs.js:60
 msgid "_Set accent color"
 msgstr "设强调色(_S)"
 
-#: src/prefs.js:48
+#: src/prefs.js:61
 msgid "_Auto refresh"
 msgstr "自动刷新(_A)"
 
-#: src/prefs.js:49
+#: src/prefs.js:61
+msgid "Unit: minute"
+msgstr "单位: 分钟"
+
+#: src/prefs.js:62
 msgid "_Color name"
 msgstr "颜色名称(_C)"
 
-#: src/prefs.js:50
+#: src/prefs.js:63
 msgid "_Gen picture"
 msgstr "生成图片(_G)"
 
-#: src/prefs.js:51
+#: src/prefs.js:64
 msgid "S_ketch style"
 msgstr "纹理样式(_K)"
 
-#: src/prefs.js:52
+#: src/prefs.js:65
 msgid "_Motto style"
 msgstr "字句样式(_M)"
 
-#: src/prefs.js:53
+#: src/prefs.js:66
 msgid "M_otto source"
 msgstr "字句来源(_O)"
 
-#: src/extension.js:216
+#: src/extension.js:249
 msgid "Copy"
 msgstr "复制"
 
-#: src/extension.js:218
+#: src/extension.js:251
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:219 src/extension.js:223
+#: src/extension.js:252 src/extension.js:256 src/extension.js:257
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:220
+#: src/extension.js:253
 msgid "Both"
 msgstr "全部"
 
-#: src/extension.js:221
+#: src/extension.js:254
 msgid "Refresh"
 msgstr "刷新"
 
-#: src/extension.js:225
+#: src/extension.js:259
 msgid "Settings"
 msgstr "设置"
+
+#~ msgid ""
+#~ "script to generate text like above, support %SZ_BGCOLOR and "
+#~ "%SZ_ACCENT_COLOR placeholders"
+#~ msgstr "生成如上文本的脚本，支持 %SZ_BGCOLOR 和 %SZ_ACCENT_COLOR 占位符"
+
+#~ msgid "Source"
+#~ msgstr "来源"
+
+#~ msgid "description"
+#~ msgstr "描述"
 
 #~ msgid "Reset"
 #~ msgstr "重置"

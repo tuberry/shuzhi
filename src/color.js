@@ -1,17 +1,21 @@
 // SPDX-FileCopyrightText: tuberry
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import {lot, array, vmap} from './util.js';
+import * as Util from './util.js';
 
-export const FgType = {DARK: 0, LIGHT: 1, MODERATE: 2};
-export const BgColor = {DARK: [0.14, 0.14, 0.14, 1], LIGHT: [0.9, 0.9, 0.9, 1]};
-export const BgHex = vmap(BgColor, v => `#${v.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`); // hex
+export const FgStyle = {DARK: 0, LIGHT: 1, MODERATE: 2};
+export const BgRGBA = {DARK: [0.14, 0.14, 0.14, 1], LIGHT: [0.9, 0.9, 0.9, 1]};
+export const Accent = {
+    blue:   '#3584e4', teal:   '#2190a4', green: '#3a944a',
+    yellow: '#c88800', orange: '#ed5b00', red:   '#e62d42',
+    pink:   '#d56199', purple: '#9141ac', slate: '#6f8396',
+}; // from https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/src/st/st-theme-context.c
 
-const Accent = {BLUE: 0, TEAL: 1, GREEN: 2, YELLOW: 3, ORANGE: 4, RED: 5, PINK: 6, PURPLE: 7, SLATE: 8};
-const Accents = Object.keys(Accent).map(x => x.toLowerCase()); // from https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/src/st/st-theme-context.c
+const BgHex = Util.vmap(BgRGBA, v => `#${v.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`);
+export const genSpecifier = (dark, accent) => ({SZ_BGCOLOR: dark ? BgHex.DARK : BgHex.LIGHT, SZ_ACCENT_COLOR: Accent[accent]});
 
 // NOTE: https://github.com/tc39/proposal-json-modules
-const Data = [
+const Colors = [
     // from https://github.com/unicar9/jizhi/blob/master/src/constants/wavesColors.json
     {rgb: [249, 244, 228], name: '乳白'},
     {rgb: [249, 236, 195], name: '杏仁黄'},
@@ -457,7 +461,7 @@ const Data = [
     {rgb: [196, 215, 214], name: '穹灰'},
     {rgb: [30,  158, 179], name: '翠蓝'},
     {rgb: [15,  149, 176], name: '胆矾蓝'},
-    {rgb: [20,  145, 168], name: '㭴鸟蓝'},
+    {rgb: [20,  145, 168], name: '樫鸟蓝'},
     {rgb: [124, 171, 177], name: '闪蓝'},
     {rgb: [164, 172, 167], name: '冰山蓝'},
     {rgb: [134, 157, 157], name: '虾壳青'},
@@ -695,67 +699,55 @@ const Data = [
     {rgb: [240, 240, 244], name: '铅白'},
 ].map(({rgb, name}) => ({rgb: rgb.map(x => x / 255), name}));
 
-export class Color {
-    static #cache;
-    static #color = Data.reduce((p, {rgb}, index) => {
-        let [m,, v] = rgb.toSorted(),
-            [r, g, b] = rgb,
-            d = v - m,
-            s = v === 0 ? 0 : d / v,
-            h = 60;
-        if(d !== 0) { // chromatic
-            switch(v) {
-            case r: h *= (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h *= (b - r) / d + 2; break;
-            case b: h *= (r - g) / d + 4; break;
-            }
-        }
+export class Palette {
+    static #accent;
+    static Accents = Object.keys(Accent);
+    static Accent = Util.omap(Palette.Accents, ([k, v]) => [[v.toUpperCase(), k]]);
+    static #color = Colors.reduce((p, {rgb}, index) => {
+        let [r, g, b] = rgb.map(x => x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92), // linear srgb
+            l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b),
+            m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b),
+            s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b),
+            L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+            h = 180 * (Math.atan2(B, A) / Math.PI + 2) % 360,
+            c = Math.hypot(A, B);
 
-        let a; // Ref: http://www.workwithcolor.com/blue-color-hue-range-01.htm
-        if(Math.hypot(1 - v, 1 - s) > 0.8) a = [Accent.SLATE]; // TODO: simplify
-        else if(h > 10 && h <= 20) a = [Accent.RED, Accent.ORANGE];
-        else if(h > 20 && h <= 40) a = [Accent.ORANGE, Accent.ORANGE];
-        else if(h > 40 && h <= 50) a = [Accent.ORANGE, Accent.YELLOW];
-        else if(h > 50 && h <= 60) a = [Accent.YELLOW, Accent.YELLOW];
-        else if(h > 60 && h <= 80) a = [Accent.YELLOW, Accent.GREEN];
-        else if(h > 80 && h <= 140)  a = [Accent.GREEN, Accent.GREEN];
-        else if(h > 140 && h <= 169) a = [Accent.GREEN, Accent.TEAL];
-        else if(h > 169 && h <= 200) a = [Accent.TEAL, Accent.TEAL];
-        else if(h > 200 && h <= 220) a = [Accent.TEAL, Accent.BLUE];
-        else if(h > 220 && h <= 240) a = [Accent.BLUE, Accent.BLUE];
-        else if(h > 240 && h <= 280) a = [Accent.BLUE, Accent.PURPLE];
-        else if(h > 280 && h <= 320) a = [Accent.PURPLE, Accent.PURPLE];
-        else if(h > 320 && h <= 330) a = [Accent.PURPLE, Accent.PINK];
-        else if(h > 330 && h <= 345) a = [Accent.PINK, Accent.PINK];
-        else if(h > 345 && h <= 355) a = [Accent.PINK, Accent.RED];
-        else a = [Accent.RED, Accent.RED];
+        let a;
+        if(c < 0.04) a = Palette.Accent.SLATE;
+        else if(h > 345) a = Palette.Accent.PINK;
+        else if(h > 290) a = Palette.Accent.PURPLE;
+        else if(h > 230) a = Palette.Accent.BLUE;
+        else if(h > 175) a = Palette.Accent.TEAL;
+        else if(h > 130) a = Palette.Accent.GREEN;
+        else if(h > 75) a = Palette.Accent.YELLOW;
+        else if(h > 35) a = Palette.Accent.ORANGE;
+        else if(h > 10) a = Palette.Accent.RED;
+        else a = Palette.Accent.PINK;
 
-        let c = rgb.map(x => x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92),
-            y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], // Ref: https://stackoverflow.com/a/56678483
-            l = y > 216 / 24389 ? Math.pow(y, 1 / 3) * 116 - 16 : y * 24389 / 27,
-            t = l > 50 ? [FgType.LIGHT] : [FgType.DARK];
-        if(l > 25 && l < 75) t.push(FgType.MODERATE);
-        a.forEach(i => t.forEach(j => p[i][j].push(index)));
+        p[a][L < 0.5 ? FgStyle.DARK : FgStyle.LIGHT].push(index);
+        if(L > 0.25 && L < 0.75) p[a][FgStyle.MODERATE].push(index);
 
         return p;
-    }, array(Accents.length, i => ({accent: i, [FgType.DARK]: [], [FgType.LIGHT]: [], [FgType.MODERATE]: []})));
+    }, Util.array(Palette.Accents.length, i => ({accent: i, [FgStyle.DARK]: [], [FgStyle.LIGHT]: [], [FgStyle.MODERATE]: []})));
 
-    static random(alpha, type) {
-        let colors = lot(this.#color);
-        if(this.#cache) {
-            let count = this.#cache[colors.accent];
-            this.#cache[colors.accent] = count ? count + 1 : 1;
+    static random(style, alpha = 1) {
+        let colors = Util.lot(this.#color);
+        if(this.#accent) {
+            let count = this.#accent[colors.accent];
+            this.#accent[colors.accent] = count && colors.accent !== Palette.Accent.SLATE ? count + 1 : 1;
         }
-        let {name, rgb} = Data[lot(colors[type]) ?? 0];
+        let {name, rgb} = Colors[Util.lot(colors[style]) ?? 0];
         return {color: rgb.concat(alpha), name};
     }
 
     static saveAccent(save) {
-        this.#cache = save ? [] : null;
+        this.#accent = save ? [] : null;
     }
 
     static takeAccent() {
-        return Accents[this.#cache?.splice(0).reduce((p, x, i) => {
+        return Palette.Accents[this.#accent?.splice(0).reduce((p, x, i) => {
             if(p.tmp < x) p.tmp = x, p.max = i;
             return p;
         }, {tmp: -1, max: -1}).max] ?? 'blue';

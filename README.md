@@ -33,16 +33,12 @@ For older versions, it's recommended to install via:
 
 ## Notes
 
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/cli/_shuzhi.gjs) for reference;
-* If you don't want to bother with scripting, set the text command to `shuzhi.sh` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**.
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see also [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/cli/_shuzhi.gjs) for reference;
+* If you don't want to bother with scripting, set the motto source as `Online` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**;
 
 ## Contributions
 
-Any contribution is welcome.
-
-### Ideas
-
-For any question or idea, feel free to open an issue or PR in the repo.
+Feel free to open an issue or PR in the repo for any question or idea.
 
 ### Translations
 
@@ -62,7 +58,7 @@ npm install @girs/gnome-shell --save-dev
 
 ## Acknowledgements
 
-* [gushichi][jinrishici]: the API
+* [gushichi][jinrishici]: the online API
 
 [jinrishici]:https://github.com/xenv/gushici
 [license]:https://img.shields.io/badge/license-GPLv3+-green.svg
