@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="@gettext@">
+  <schema id="@rdnn@" path="@path@">
+    <key type="b" name="enable-systray">
+      <default>false</default>
+      <summary>enable systray</summary>
+    </key>
+    <key type="b" name="enable-refresh">
+      <default>false</default>
+      <summary>enable auto update</summary>
+    </key>
+    <key type="b" name="show-color-name">
+      <default>false</default>
+      <summary>show color name</summary>
+    </key>
+    <key type="b" name="set-accent-color">
+      <default>false</default>
+      <summary>sync with accent color</summary>
+    </key>
+    <key type="u" name="color-name-style">
+      <range min="0" max="1"/>
+      <default>0</default>
+      <summary>color name style (0 - watermark, 1 - highlight)</summary>
+    </key>
+    <key type="u" name="text-orientation">
+      <range min="0" max="1"/>
+      <default>0</default>
+      <summary>text orientation (0 - horizontal, 1 - vertical)</summary>
+    </key>
+    <key type="u" name="default-style">
+      <range min="0" max="2"/>
+      <default>0</default>
+      <summary>default style (0 - system, 1 - light, 2 - dark)</summary>
+    </key>
+    <key type="u" name="light-sketch-type">
+      <range min="0" max="4"/>
+      <default>1</default>
+      <summary>light sketch type (0 - luck, 1 - wave, 2 - oval, 3 - blob, 4 - tree)</summary>
+    </key>
+    <key type="u" name="dark-sketch-type">
+      <range min="0" max="4"/>
+      <default>1</default>
+      <summary>dark sketch type (0 - luck, 1 - wave, 2 - oval, 3 - blob, 4 - cloud)</summary>
+    </key>
+    <key type="u" name="max-backups">
+      <range min="0" max="60"/>
+      <default>0</default>
+      <summary>max backups (0 - disable backup)</summary>
+    </key>
+    <key type="u" name="refresh-interval">
+      <range min="10" max="300"/>
+      <default>60</default>
+      <summary>refresh interval (mins)</summary>
+    </key>
+    <key type="u" name="motto-source-type">
+      <range min="0" max="3"/>
+      <default>2</default>
+      <summary>motto source type (0 - command, 1 - text, 2 - image, 3 - online)</summary>
+    </key>
+    <key type="s" name="motto-source">
+      <default>""</default>
+      <summary>motto source</summary>
+    </key>
+    <key type="s" name="color-font">
+      <default>"Serif"</default>
+      <summary>font of color names</summary>
+    </key>
+    <key type="s" name="font-name">
+      <default>"Serif 24"</default>
+      <summary>font of mottos</summary>
+    </key>
+    <key type="s" name="picture-location">
+      <default>""</default>
+      <summary>gen picture location</summary>
+    </key>
+  </schema>
+</schemalist>

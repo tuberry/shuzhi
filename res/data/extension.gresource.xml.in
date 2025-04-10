@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="@path@">
+    <file compressed="true">@table@</file>
+  </gresource>
+  <gresource prefix="/org/gnome/shell/icons">
+    <file preprocess="xml-stripblanks" compressed="true">scalable/status/@icon@</file>
+  </gresource>
+</gresources>

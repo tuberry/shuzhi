@@ -1,7 +1,7 @@
 #!/usr/bin/env -S gjs -m
-// SPDX-FileCopyrightText: tuberry & mechtifs
+// SPDX-FileCopyrightText: tuberry
+// SPDX-FileCopyrightText: mechtifs
 // SPDX-License-Identifier: GPL-3.0-or-later
-// vim:ft=javascript
 
 import Soup from 'gi://Soup/?version=3.0';
 
@@ -12,5 +12,5 @@ let http = new Soup.Session({timeout: 30}),
 if(msg.statusCode !== Soup.Status.OK) throw new Error(`Unexpected response: ${msg.get_reason_phrase()}`);
 let {content, origin, author} = JSON.parse(new TextDecoder().decode(ans.get_data())),
     body = content.replaceAll(/[，。：；？、！]/g, '\n').replaceAll(/[《》“”]/g, ''),
-    title = span(`「${origin}」${span(author, {bgcolor: '%SZ_ACCENT_COLOR', fgcolor: '%SZ_BGCOLOR'})}`, {size: '45%'});
+    title = span(`「${origin}」${span(author, {bgcolor: '{SZ_ACCENT_COLOR}', fgcolor: '{SZ_BGCOLOR}'})}`, {size: '45%'});
 print(JSON.stringify({vtext: `${body}${title}`, htext: `${content}${title}`}));

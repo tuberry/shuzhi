@@ -1,6 +1,6 @@
 # 数枝 | Shuzhi
 
-受[几枝](https://github.com/unicar9/jizhi)启发的 gnome shell 壁纸生成扩展。
+受[几枝](https://github.com/unicar9/jizhi)启发的 GNOME Shell 壁纸生成扩展。
 
 Wallpaper generation extension for GNOME Shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
@@ -13,7 +13,7 @@ Wallpaper generation extension for GNOME Shell, inspired by [Jizhi](https://gith
 
 ### Manual
 
-The latest and supported version should only work on the most current stable version of GNOME Shell.
+The latest and supported version should only work on the [current stable version](https://release.gnome.org/calendar/#branches) of GNOME Shell.
 
 ```bash
 git clone https://github.com/tuberry/shuzhi.git && cd shuzhi
@@ -22,6 +22,13 @@ meson setup build && meson install -C build
 ```
 
 For older versions, it's recommended to install via:
+
+```bash
+gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
+          --method org.gnome.Shell.Extensions.InstallRemoteExtension 'shuzhi@tuberry'
+```
+
+It's quite the same as installing from:
 
 ### E.G.O
 
@@ -33,7 +40,7 @@ For older versions, it's recommended to install via:
 
 ## Notes
 
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see also [_shuzhi.fish](/cli/_shuzhi.fish) or [_shuzhi.gjs](/cli/_shuzhi.gjs) for reference;
+* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see also [_shuzhi.sh](/cli/_shuzhi.sh) or [_shuzhi.js](/cli/_shuzhi.js) for reference;
 * If you don't want to bother with scripting, set the motto source as `Online` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**;
 
 ## Contributions
@@ -42,7 +49,7 @@ Feel free to open an issue or PR in the repo for any question or idea.
 
 ### Translations
 
-To update the po file from sources:
+To initialize or update the po file from sources:
 
 ```bash
 bash ./cli/update-po.sh [your_lang_code] # like zh_CN, default to $LANG

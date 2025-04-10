@@ -9,10 +9,8 @@ import Pango from 'gi://Pango';
 import GdkPixbuf from 'gi://GdkPixbuf';
 import PangoCairo from 'gi://PangoCairo';
 
-import * as Menu from './menu.js';
-import * as Util from './util.js';
-import * as Fubar from './fubar.js';
-import {Palette, FgStyle, BgRGBA} from './color.js';
+import * as T from './util.js';
+import {FG, BgRGBA} from './color.js';
 
 const RATIO = 2 / 3;
 const PANEL = 1 / 30;
@@ -38,17 +36,16 @@ const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
 
 export const paint = (m, ...xs) => draw(m.draw, ...xs);
 
-const R = { // PRNG
-    color: ({dark}, alpha) => Palette.random(dark ? FgStyle.LIGHT : FgStyle.DARK, alpha),
-    uniform: (l, u) => Math.random() * (u - l) + l,
-    compass: (u, v) => Math.random() * 2 * v + u - v,
-    integer: (l, u) => Math.floor(R.uniform(l, u + 1)), // -> l .. u
+const RAND = { // PRNG
+    color: ({dark, palette}, alpha) => palette.random(dark ? FG.LIGHT : FG.DARK, alpha),
+    uniform: (l, u) => Math.random() * (u - l) + l, // -> [u, l)
+    compass: (u, v) => Math.random() * 2 * v + u - v, // -> [u - v, u + v)
+    integer: (l, u) => Math.floor(RAND.uniform(l, u + 1)), // -> l .. u
     natural: n => Math.floor(Math.random() * n), // -> 0 .. n - 1
     boolean: () => Math.random() < 0.5,
-    normal: (() => { // -> [0, 1]
-        // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
+    normal: (() => { // -> (0, 1) // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
         let cache = [];
-        return function () {
+        return () => {
             if(cache.length) {
                 return cache.pop();
             } else {
@@ -64,17 +61,16 @@ const R = { // PRNG
             }
         };
     })(),
-    gauss: (m, s, k = 0) => (n => m + s * (6 * (k < 0 ? 1 - n : n) - 3))(Math.pow(R.normal(), 1 - Math.log2(1 + Math.abs(k)))), // k <- (-1, 1)
-    bimodal: (mu, s3, k = 0.5) => R.gauss(mu, s3 / 3, R.boolean() ? k : -k), // k <- (0, 1)
-    gamma: (a, b = 1) => { // a:alpha == k > 0, b:beta == 1 / theta > 0
-        // Ref: https://en.wikipedia.org/wiki/Gamma_distribution#Random_variate_generation
-        if(a < 1) return R.gamma(a + 1, b) * Math.pow(Math.random(), 1 / a);
+    gauss: (m, s, k = 0) => (n => m + s * (6 * (k < 0 ? 1 - n : n) - 3))(Math.pow(RAND.normal(), 1 - Math.log2(1 + Math.abs(k)))), // k <- (-1, 1)
+    bimodal: (mu, s3, k = 0.5) => RAND.gauss(mu, s3 / 3, RAND.boolean() ? k : -k), // k <- (0, 1)
+    gamma: (a, b = 1) => { // a:alpha == k > 0, b:beta == 1 / theta > 0 // Ref: https://en.wikipedia.org/wiki/Gamma_distribution#Random_variate_generation
+        if(a < 1) return RAND.gamma(a + 1, b) * Math.pow(Math.random(), 1 / a);
         let d = a - 1 / 3,
             c = 1 / Math.sqrt(9 * d),
             u, v, s;
         do {
             do {
-                s = R.gauss(0, 1);
+                s = RAND.gauss(0, 1);
                 v = 1 + c * s;
             } while(v <= 0);
             v *= v * v;
@@ -82,59 +78,8 @@ const R = { // PRNG
         } while(u >= 1 - 0.331 * s * s * s * s && Math.log(u) >= s * s / 2 + d * (1 - v  + Math.log(v)));
         return d * v / b;
     },
-    dirichlet: (n, a, s = 1) => pie(Util.array(n, () => R.gamma(a)), s), // n <- N+
+    dirichlet: (n, a, s = 1) => pie(T.array(n, () => RAND.gamma(a)), s), // n <- N+
 };
-
-function shuffle(a) { // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-    return Util.seq(x => loopr(i => swap(x, R.natural(i), i), x.length - 1, 1), a);
-}
-
-function sample(a, n) { // n < a.length
-    let ret = [], idx = {};
-    loopr(i => (j => {
-        ret.push(idx[j] ?? j);
-        idx[j] = idx[i] ?? i;
-    })(R.natural(i)), a.length - 1, a.length - n);
-    return ret.map(x => a[x]);
-}
-
-function wave(a) {
-    R.boolean() ? loopl(i => {
-        if(i !== 0 && a[i] < a[i - 1]) swap(a, i, i - 1);
-        if(i !== a.length - 1 && a[i] < a[i + 1]) swap(a, i, i + 1);
-    }, a.length - 1, 0, 2) : loopl(i => {
-        if(i !== 0 && a[i] > a[i - 1]) swap(a, i, i - 1);
-        if(i !== a.length - 1 && a[i] > a[i + 1]) swap(a, i, i + 1);
-    }, a.length - 1, 0, 2);
-    return a;
-}
-
-function polygon([x, y, r], n = 6, a = 8, dt_r = 0.25) {
-    // Ref: https://stackoverflow.com/a/25276331
-    return scanl(add, R.uniform(0, 2), R.dirichlet(n, a, 2)).map(t => move([x, y], R.gauss(0.95, dt_r) * r, t));
-}
-
-function overlap([x, y, w, h], [m, n, p, q]) {
-    let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
-    let dh = Math.max(0, Math.min(y + h, n + q) - Math.max(y, n));
-    return dw * dh > 0.06 * w * h;
-}
-
-function lattices(rect, sum = 20, factor = 1 / 5) { // reduce collision
-    // Ref: https://stackoverflow.com/a/4382286
-    return Util.Y(f => n => n === 0 ? [rect] : f(n - 1).flatMap(([x, y, w, h]) => {
-        let [a, b] = [w, h].map(i => Math.round(i * R.bimodal(1 / 2, factor)));
-        return Math.abs(a / w - 1 / 2) < Math.abs(b / h - 1 / 2)
-            ? [[x, y, a, b], [x, y + b, a, h - b], [x + a, y, w - a, h - b], [x + a, y + h - b, w - a, b]]
-            : [[x, y, a, b], [x + a, y, w - a, b], [x, y + b, w - a, h - b], [x + w - a, y + b, a, h - b]];
-    }))(Math.ceil(Math.log2(sum) / 2));
-}
-
-function circle([x, y, w, h]) {
-    let r = Math.min(w, h) / 2;
-    let ctr = w > h ? [x + R.uniform(r, w - r), y + h / 2] : [x + w / 2, y + R.uniform(r, h - r)];
-    return ctr.concat(r);
-}
 
 export const BG = {
     gen: ({dark}) => dark ? BgRGBA.DARK : BgRGBA.LIGHT,
@@ -142,8 +87,7 @@ export const BG = {
 };
 
 const Curve = {
-    $gen: ([a, b, c], smooth) => {
-        // Ref: https://zhuanlan.zhihu.com/p/267693043
+    $gen: ([a, b, c], smooth) => { // Ref: https://zhuanlan.zhihu.com/p/267693043
         let ms = [a, c].map(x => lerp(x, b, 1 / 2)),
             d = lerp(...ms, 1 / (1 + distance(c, b) / distance(a, b))),
             [e, f] = ms.map(x => zipWith((u, v, w) => u + (v - w) * smooth, b, x, d));
@@ -151,16 +95,16 @@ const Curve = {
     },
     gen: (pts, smooth = 1, closed = false) => { // -> [start, ...ctrls]
         if(closed) {
-            let ctrls = Util.array(pts.length, i => Curve.$gen(Util.array(3, j => pts[(i + j) % pts.length]), smooth)).flat();
+            let ctrls = T.array(pts.length, i => Curve.$gen(T.array(3, j => pts[(i + j) % pts.length]), smooth)).flat();
             return [pts[0], ctrls.at(-1), ...ctrls.slice(0, -1)];
         } else {
-            let ctrls = Util.array(pts.length - 2, i => Curve.$gen(Util.array(3, j => pts[i + j]), smooth)).flat();
+            let ctrls = T.array(pts.length - 2, i => Curve.$gen(T.array(3, j => pts[i + j]), smooth)).flat();
             return [pts[0], pts[0], ...ctrls, pts.at(-1), pts.at(-1)];
         }
     },
     link: (cr, [start, ...pts]) => {
         cr.moveTo(...start);
-        loopl(i => cr.curveTo(...Util.array(3, j => pts[i + j]).flat()), pts.length - 1, 0, 3);
+        loopl(i => cr.curveTo(...T.array(3, j => pts[i + j]).flat()), pts.length - 1, 0, 3);
     },
 };
 
@@ -228,17 +172,73 @@ const Moon = {
         }
         }
     },
+};
 
+const Tile = {
+    sample: (a, n) => { // n < a.length
+        let ret = [], idx = {};
+        loopr(i => (j => {
+            ret.push(idx[j] ?? j);
+            idx[j] = idx[i] ?? i;
+        })(RAND.natural(i)), a.length - 1, a.length - n);
+        return ret.map(x => a[x]);
+    },
+    lattice: (rect, sum = 20, ratio = 1 / 5) => { // Ref: https://stackoverflow.com/a/4382286
+        return T.Y(f => n => n === 0 ? [rect] : f(n - 1).flatMap(([x, y, w, h]) => {
+            let [a, b] = [w, h].map(i => Math.round(i * RAND.bimodal(1 / 2, ratio)));
+            return Math.abs(a / w - 1 / 2) < Math.abs(b / h - 1 / 2)
+                ? [[x, y, a, b], [x, y + b, a, h - b], [x + a, y, w - a, h - b], [x + a, y + h - b, w - a, b]]
+                : [[x, y, a, b], [x + a, y, w - a, b], [x, y + b, w - a, h - b], [x + w - a, y + b, a, h - b]];
+        }))(Math.ceil(Math.log2(sum) / 2));
+    },
+    circle: ([x, y, w, h]) => {
+        let r = Math.min(w, h) / 2;
+        return w > h ? [x + RAND.uniform(r, w - r), y + h / 2, r] : [x + w / 2, y + RAND.uniform(r, h - r), r];
+    },
+    overlap: ([x, y, w, h], [m, n, p, q]) => {
+        let dw = Math.max(0, Math.min(x + w, m + p) - Math.max(x, m));
+        let dh = Math.max(0, Math.min(y + h, n + q) - Math.max(y, n));
+        return dw * dh > 0.06 * w * h;
+    },
+    N: 16,
+    dye: x => T.array(Tile.N, () => RAND.color(x, x.dark ? 0.5 : 0.6).color),
+    gen: (C, {W, H}) => Tile.sample(Tile.lattice([0, 0, W, H]).filter(x => !Tile.overlap(x, Motto.area)), Tile.N).map(x => Tile.circle(x)),
+};
+
+export const Blob = {
+    polygon: ([x, y, r], n = 6, a = 8, dt_r = 0.25) => scanl(add, RAND.uniform(0, 2), RAND.dirichlet(n, a, 2))
+        .map(t => move([x, y], RAND.gauss(0.95, dt_r) * r, t)), // Ref: https://stackoverflow.com/a/25276331
+    dye: Tile.dye,
+    gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], Curve.gen(Blob.polygon(x), 1, true)]),
+    draw: (cr, pts) => pts.forEach(pt => {
+        let [color, p] = pt;
+        cr.setSourceRGBA(...color);
+        Curve.link(cr, p);
+        cr.fill();
+    }),
+};
+
+export const Oval = {
+    dye: Tile.dye,
+    gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], x.concat(RAND.gauss(1, 0.2) * x[2], 2 * Math.random())]),
+    draw: (cr, pts) => pts.forEach(([color, [c_x, c_y, e_w, e_h, r_t]]) => draw(() => {
+        cr.setSourceRGBA(...color);
+        cr.translate(c_x, c_y);
+        cr.rotate(r_t * Math.PI);
+        cr.scale(e_w, e_h);
+        cr.arc(0, 0, 1, 0, 2 * Math.PI);
+        cr.fill();
+    }, cr)),
 };
 
 export const Wave = {
-    layers: 5,
-    dye: x => R.color(x, 1 / Wave.layers),
-    gen: (C, {X, Y}) => {
-        let [layers, factor, min] = [Wave.layers, 1 - RATIO, R.integer(6, 9)],
-            [dt, st] = [factor * Y / layers, (1 - factor) * Y],
-            pts = Util.array(layers, i => (n => Curve.gen(Util.array(n + 1, j => [X * j / n, st + R.compass(i, RATIO) * dt])))(min + R.natural(6)));
-        return [X, Y, C, pts];
+    N: 5,
+    dye: x => RAND.color(x, 1 / Wave.N),
+    gen: (C, {W, H}) => {
+        let [layers, ratio, min] = [Wave.N, 1 - RATIO, RAND.integer(6, 9)],
+            [dt, st] = [ratio * H / layers, (1 - ratio) * H],
+            pts = T.array(layers, i => (n => Curve.gen(T.array(n + 1, j => [W * j / n, st + RAND.compass(i, RATIO) * dt])))(min + RAND.natural(6)));
+        return [W, H, C, pts];
     },
     draw: (cr, waves, {showColor, colorFont, colorStyle, dark}) => {
         let [x, y, {color, name}, pts] = waves;
@@ -257,53 +257,22 @@ export const Wave = {
     },
 };
 
-export const Blob = {
-    N: 16,
-    dye: x => Util.array(Blob.N, () => R.color(x, x.dark ? 0.5 : 0.6).color),
-    gen: (C, {X, Y}) => sample(lattices([0, 0, X, Y]).filter(rect => !overlap(rect, Motto.area)), Blob.N)
-        .map((r, i) => [C[i], Curve.gen(polygon(circle(r)), 1, true)]),
-    draw: (cr, pts) => pts.forEach(pt => {
-        let [color, p] = pt;
-        cr.setSourceRGBA(...color);
-        Curve.link(cr, p);
-        cr.fill();
-    }),
-};
-
-export const Oval = {
-    N: 16,
-    dye: x => Util.array(Oval.N, () => R.color(x, x.dark ? 0.5 : 0.6).color),
-    gen: (C, {X, Y}) => sample(lattices([0, 0, X, Y]).filter(rc => !overlap(rc, Motto.area)), Oval.N).map((rc, i) => {
-        let [c_x, c_y, r] = circle(rc);
-        let [e_w, e_h] = [r, R.gauss(1, 0.2) * r];
-        return [C[i], [c_x, c_y, e_w, e_h, 2 * Math.random()]];
-    }),
-    draw: (cr, pts) => pts.forEach(pt => {
-        let [color, [c_x, c_y, e_w, e_h, r_t]] = pt;
-        draw(() => {
-            cr.setSourceRGBA(...color);
-            cr.translate(c_x, c_y);
-            cr.rotate(r_t * Math.PI);
-            cr.scale(e_w, e_h);
-            cr.arc(0, 0, 1.0, 0, 2 * Math.PI);
-            cr.fill();
-        }, cr);
-    }),
-};
-
 export const Cloud = {
+    shuffle: a => (loopr(i => swap(a, RAND.natural(i), i), a.length - 1, 1), a), // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+    sway: a => (f => (loopl(i => { f(i, i - 1); f(i, i + 1); }, a.length - 1, 0, 2), a))(
+        RAND.boolean() ? (i, j) => a[i] < a[j] && swap(a, i, j) : (i, j) => a[i] > a[j] && swap(a, i, j)),
+    dye: x => T.array(3, () => RAND.color(x).color),
     $gen: ([x, y, w, h], offset) => {
-        let mend = (a, b) => Math.floor(a > b ? R.gauss(x, w * a / 4) : R.gauss(x + w, w * (1 - a) / 4)),
+        let mend = (a, b) => Math.floor(a > b ? RAND.gauss(x, w * a / 4) : RAND.gauss(x + w, w * (1 - a) / 4)),
             len = Math.floor(h / offset),
-            stp = wave(shuffle(Util.array(len, i => i / len))),
+            stp = Cloud.sway(Cloud.shuffle(T.array(len, i => i / len))),
             fst = [mend(stp[0], stp[1]), y],
-            ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1).at(1), R.boolean()), [fst], Util.array(len));
+            ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1).at(1), RAND.boolean()), [fst], T.array(len));
         return [fst, ...ret, [mend(stp.at(-1), stp.at(-2)), ret.at(-1).at(1)]];
     },
-    dye: x => Util.array(3, () => R.color(x).color),
-    gen: (C, {X, Y}) => {
-        let offset = Y / 27,
-            coords = [[0, 2, 4], [0, 2, 5], [0, 3, 5], [1, 3, 5], [1, 3, 5]][R.natural(5)],
+    gen: (C, {W, H}) => {
+        let offset = H / 27,
+            coords = [[0, 2, 4], [0, 2, 5], [0, 3, 5], [1, 3, 5], [1, 3, 5]][RAND.natural(5)],
             frame = pt => {
                 let [a, b, c, d, e, f] = (() => {
                     switch(pt) {
@@ -315,11 +284,11 @@ export const Cloud = {
                     default: return [1 / 8, 1 / 4, 1 / 8, 1 / 4, 2, [2 / 4, 1 / 4]];
                     }
                 })();
-                let h = R.integer(3 * offset, pt ? 7 * offset : 5 * offset);
-                let w = R.integer(h * 2, e * offset * 7);
-                return [R.integer(a * X, b * X) + f[0] * X, R.integer(c * Y, d * Y) + f[1] * Y, w, h];
+                let h = RAND.integer(3 * offset, pt ? 7 * offset : 5 * offset);
+                let w = RAND.integer(h * 2, e * offset * 7);
+                return [RAND.integer(a * W, b * W) + f[0] * W, RAND.integer(c * H, d * H) + f[1] * H, w, h];
             };
-        return [Moon.gen(X, Y), offset / 20, coords.map((c, i) => [C[i], Cloud.$gen(frame(c), offset)])];
+        return [Moon.gen(W, H), offset / 20, coords.map((c, i) => [C[i], Cloud.$gen(frame(c), offset)])];
     },
     draw: (cr, clouds) => {
         let [moon, lw, pts] = clouds;
@@ -348,33 +317,18 @@ export const Cloud = {
     },
 };
 
-function linkCurveRect(cr, x, y, w, h) { // anti-clockwise
-    let u = x + w,
-        v = y + h,
-        r = Math.min(w, h) / 3;
-    cr.moveTo(x + r, y);
-    cr.curveTo(x, y, x, y, x, y + r);
-    cr.lineTo(x, v - r);
-    cr.curveTo(x, v, x, v, x + r, v);
-    cr.lineTo(u - r, v);
-    cr.curveTo(u, v, u, v, u, v - r);
-    cr.lineTo(u, y + r);
-    cr.curveTo(u, y, u, y, u - r, y);
-    cr.closePath();
-}
-
 const Markup = {
-    gen: (cr, font, text, orient) => {
+    gen: (cr, font, text, level) => {
         let pl = PangoCairo.create_layout(cr);
-        if(orient) pl.get_context().set_base_gravity(Pango.Gravity.EAST);
-        else pl.set_alignment(Pango.Alignment.CENTER);
+        if(level) pl.set_alignment(Pango.Alignment.CENTER);
+        else pl.get_context().set_base_gravity(Pango.Gravity.EAST);
         pl.set_font_description(font);
         pl.set_markup(text, -1);
         return pl;
     },
-    draw: (cr, pl, x, y, whirl, color) => {
+    draw: (cr, pl, x, y, level, color) => {
         cr.moveTo(x, y); // HACK: PangoCairo is buggy with cr.translate sometimes?
-        if(whirl) cr.rotate(Math.PI / 2);
+        if(!level) cr.rotate(Math.PI / 2);
         if(color) {
             cr.setSourceRGBA(...color);
             PangoCairo.show_layout(cr, pl);
@@ -385,74 +339,87 @@ const Markup = {
 };
 
 const Seal = {
-    gen: (cr, pl, X, Y, seal, orient, font, dark) => {
+    link: (cr, x, y, w, h) => { // anti-clockwise curved rect
+        let u = x + w,
+            v = y + h,
+            r = Math.min(w, h) / 3;
+        cr.moveTo(x + r, y);
+        cr.curveTo(x, y, x, y, x, y + r);
+        cr.lineTo(x, v - r);
+        cr.curveTo(x, v, x, v, x + r, v);
+        cr.lineTo(u - r, v);
+        cr.curveTo(u, v, u, v, u, v - r);
+        cr.lineTo(u, y + r);
+        cr.curveTo(u, y, u, y, u - r, y);
+        cr.closePath();
+    },
+    gen: (cr, pl, W, H, seal, level, font, dark) => {
         if(!seal) return;
-        let ed = pl.index_to_pos(Util.encode(pl.get_text()).length),
-            [u, v] = (orient ? [-ed.y, ed.x] : [ed.x, ed.y]).map(x => x / Pango.SCALE),
-            ps = Markup.gen(cr, font, seal, orient),
-            color = Fubar.essay(() => {
+        let ed = pl.index_to_pos(T.encode(pl.get_text()).length),
+            [u, v] = (level ? [ed.x, ed.y] : [-ed.y, ed.x]).map(x => x / Pango.SCALE),
+            ps = Markup.gen(cr, font, seal, level),
+            color = T.essay(() => {
                 let {red, green, blue} = Pango.parse_markup(seal, -1, '')[1].get_attributes().find(x => x.as_color()).as_color().color;
                 return [red / 0xffff, green / 0xffff, blue / 0xffff];
             }, () => dark ? [0.5, 0.16, 0.12] : [0.9, 0.36, 0.3]);
-        return [ps, X + u, Y + v, orient, color];
+        return [ps, W + u, H + v, level, color];
     },
     draw: (cr, pts) => {
         if(!pts) return;
-        let [ps, x, y, t, c] = pts;
-        paint(Markup, cr, ps, x, y, t);
+        let [ps, x, y, level, color] = pts;
+        paint(Markup, cr, ps, x, y, level);
         let [w, h] = ps.get_pixel_size();
-        linkCurveRect(cr, ...t ? [x - h, y, h, w] : [x, y, w, h]);
-        cr.setSourceRGB(...c);
+        Seal.link(cr, ...level ? [x, y, w, h] : [x - h, y, h, w]);
+        cr.setSourceRGB(...color);
         cr.fill(); // FIXME: incorrect filling of stroke overlaps
     },
 };
 
 const Text = {
-    gen: (cr, text, seal, {X, Y, orient, font, dark}) => {
-        let pl = Markup.gen(cr, font, text, orient);
-        if(!orient) pl.set_alignment(Pango.Alignment.CENTER);
+    gen: (cr, text, seal, {W, H, level, font, dark}) => {
+        let pl = Markup.gen(cr, font, text, level);
+        if(level) pl.set_alignment(Pango.Alignment.CENTER);
         let [w, h] = pl.get_pixel_size(),
-            [a, b, c, d] = [X / 2, RATIO * Y / 2, w / 2, h / 2],
+            [a, b, c, d] = [W / 2, RATIO * H / 2, w / 2, h / 2],
             x, y;
-        if(orient) {
-            x = Math.max(a + d, h);
-            y = Math.max(b - c, Y * PANEL);
-            Motto.area = [x - h, y, h, w];
-        } else {
+        if(level) {
             x = Math.max(a - c, 0);
-            y = Math.max(b - d, Y * PANEL);
+            y = Math.max(b - d, H * PANEL);
             Motto.area = [x, y, w, h];
+        } else {
+            x = Math.max(a + d, h);
+            y = Math.max(b - c, H * PANEL);
+            Motto.area = [x - h, y, h, w];
         }
-        return [pl, x, y, orient, Seal.gen(cr, pl, x, y, seal, orient, font, dark)];
+        return [pl, x, y, level, Seal.gen(cr, pl, x, y, seal, level, font, dark)];
     },
     draw: (cr, pts, {dark}) => {
-        let [pl, x, y, t, sl] = pts;
-        paint(Seal, cr, sl);
-        paint(Markup, cr, pl, x, y, t, dark ? BgRGBA.LIGHT : BgRGBA.DARK);
+        let [pl, x, y, level, seal] = pts;
+        paint(Seal, cr, seal);
+        paint(Markup, cr, pl, x, y, level, dark ? BgRGBA.LIGHT : BgRGBA.DARK);
     },
 };
 
 const Image = {
-    gen: (fn, {X, Y, dark}) => {
+    logo: (x, d) => St.IconTheme.new().lookup_icon(`${x}-${d ? 'text-dark' : 'text'}`, -1, St.IconLookupFlags.FORCE_SVG),
+    gen: (fn, {W, H, dark}) => {
         try {
-            let path = fn || Menu.findIcon(`${GLib.get_os_info('LOGO') || 'gnome-logo-text'}${dark ? '-dark' : ''}`)?.get_filename(),
-                svg = path.endsWith('.svg'),
-                img = svg ? Rsvg.Handle.new_from_file(path) : GdkPixbuf.Pixbuf.new_from_file(path) && // HACK: avoid `uncatchable exception` assertion
-            St.TextureCache.get_default().load_file_to_cairo_surface(Util.fopen(path), 1, 1),
-                {width: w, height: h} = svg ? img : {width: img.getWidth(), height: img.getHeight()};
-            Motto.area = [(X - w) / 2, (Y * 0.8 - h) / 2, w, h];
-            return [svg, img];
+            let url = fn ? T.fopen(fn).get_path() : Image.logo(`${GLib.get_os_info('LOGO') || 'gnome-logo'}`, dark).get_filename(),
+                img = url.endsWith('.svg') ? Rsvg.Handle.new_from_file(url) : GdkPixbuf.Pixbuf.new_from_file(url) && // HACK: avoid `uncatchable exception` assertion
+                    St.TextureCache.get_default().load_file_to_cairo_surface(T.fopen(url), 1, 1),
+                {width: w, height: h} = img instanceof Rsvg.Handle ? img : {width: img.getWidth(), height: img.getHeight()};
+            Motto.area = [(W - w) / 2, (H * 0.8 - h) / 2, w, h];
+            return img;
         } catch(e) {
             logError(e);
             Motto.area = [-1, -1, 0, 0];
-            return [];
+            return null;
         }
     },
-    draw: (cr, pts) => {
-        if(!pts.length) return;
-        let [svg, img] = pts;
+    draw: (cr, img) => {
+        if(!img) return;
         let [x, y, width, height] = Motto.area;
-        if(svg) {
+        if(img instanceof Rsvg.Handle) {
             img.render_document(cr, new Rsvg.Rectangle({x, y, width, height}));
         } else {
             cr.setSourceSurface(img, x, y);
@@ -464,31 +431,30 @@ const Image = {
 export const Motto = {
     text: null,
     area: [-1, -1, 0, 0],
-    gen: (cr, [txt, img], that) => ((Motto.text = img === null)) ? Text.gen(cr, ...txt, that) : Image.gen(img, that),
+    gen: (cr, [txt, img], host) => ((Motto.text = img === null)) ? Text.gen(cr, ...txt, host) : Image.gen(img, host),
     draw: (...xs) => Motto.text ? Text.draw(...xs) : Image.draw(...xs),
 };
 
 export const Tree = {
-    dye: () => Palette.random(FgStyle.MODERATE).color,
-    $gen: (n, x, y, l) => {
-        // Ref: http://fhtr.blogspot.com/2008/12/drawing-tree-with-haskell-and-cairo.html
+    dye: ({palette}) => palette.random(FG.MODERATE).color,
+    $gen: (n, w, h, l) => { // Ref: http://fhtr.blogspot.com/2008/12/drawing-tree-with-haskell-and-cairo.html
         let branch = (vec, ang) => {
             if(!vec) return null;
-            let t = vec[2] + ang * R.uniform(0.1, 0.9);
-            let s = R.uniform(0.1, 0.9) * 3 * (1 - Math.abs(t)) ** 2;
+            let t = vec[2] + ang * RAND.uniform(0.1, 0.9);
+            let s = RAND.uniform(0.1, 0.9) * 3 * (1 - Math.abs(t)) ** 2;
             return s < 0.3 ? null : move(vec.slice(0, 2), s * l, t - 1 / 2).concat(t);
         };
-        let root = [[x, y, 0], branch([x, y, 0], R.gauss(0, 1 / 64))],
-            tree = root.concat(scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root[1]], Util.array(n - 1))),
+        let root = [[w, h, 0], branch([w, h, 0], RAND.gauss(0, 1 / 64))],
+            tree = root.concat(scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root[1]], T.array(n - 1))),
             meld = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
-        loopr(i => tree[i] && tree[i].push(meld(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], y / 1024)), tree.length - 1);
-        loopl(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(Flower.gen(tree[i], i, y / 54)), 2 ** n - 1, 1);
+        loopr(i => tree[i] && tree[i].push(meld(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], h / 1024)), tree.length - 1);
+        loopl(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(Flower.gen(tree[i], i, h / 54)), 2 ** n - 1, 1);
         return tree;
     },
-    gen: (C, {X, Y}) => {
-        let ld = Land.gen(X, Y),
-            t1 = Tree.$gen(8, R.uniform(2, 5) * X / 20, 5 * Y / 6, X / 30),
-            t2 = Tree.$gen(6, R.uniform(14, 18) * X / 20, 5 * Y / 6, X / 30);
+    gen: (C, {W, H}) => {
+        let ld = Land.gen(W, H),
+            t1 = Tree.$gen(8, RAND.uniform(2, 5) * W / 20, 5 * H / 6, W / 30),
+            t2 = Tree.$gen(6, RAND.uniform(14, 18) * W / 20, 5 * H / 6, W / 30);
         return [t1, t2, ld, C];
     },
     $draw: (cr, pts, color) => {
@@ -508,23 +474,20 @@ export const Tree = {
     },
     draw: (cr, pts) => {
         let [t1, t2, ld, cl] = pts;
-        paint(Land, cr, ld, cl, () => {
-            draw(Tree.$draw, cr, t1, cl);
-            draw(Tree.$draw, cr, t2, cl);
-        });
+        paint(Land, cr, ld, cl, () => [t1, t2].forEach(tr => draw(Tree.$draw, cr, tr, cl)));
     },
 };
 
 const Flower = {
     gen: ([x, y, v, w], z, l = 20, n = 5) => {
-        if(z < 8) return [w * 0.9, [x, y], move([x, y], R.gauss(5 / 2, 1) * l, v - 1 / 2), false];
+        if(z < 8) return [w * 0.9, [x, y], move([x, y], RAND.gauss(5 / 2, 1) * l, v - 1 / 2), false];
         let dt = 2 / (n + 1),
-            it = rotate(R.uniform(0, 2)),
-            st = R.gauss(1 / 2, 1 / 9),
-            fc = 1 - Math.abs(st * 2 - 1),
-            stp = pie(Util.array(n, () => R.gauss(1, 1 / 2 - fc)), dt),
-            cast = (r, t) => affine(p2ct(r, t), [[1, cosp(st) * fc, 0], [0, sinp(st) * fc, 0]], it, translate([x, y]));
-        return [scanl(add, 0, stp).map((s, i) => [i, i + 1].map(j => [0.05, 0.1, 1].map(r => cast(r * l, s + j * dt)))), sinp(st) * fc > 0.6];
+            it = rotate(RAND.uniform(0, 2)),
+            st = RAND.gauss(1 / 2, 1 / 9),
+            rt = 1 - Math.abs(st * 2 - 1),
+            stop = pie(T.array(n, () => RAND.gauss(1, 1 / 2 - rt)), dt),
+            cast = (r, t) => affine(p2ct(r, t), [[1, cosp(st) * rt, 0], [0, sinp(st) * rt, 0]], it, translate([x, y]));
+        return [scanl(add, 0, stop).map((s, i) => [i, i + 1].map(j => [0.05, 0.1, 1].map(r => cast(r * l, s + j * dt)))), sinp(st) * rt > 0.6];
     },
     draw: (cr, pts, color) => {
         if(pts.length > 2) {
@@ -549,10 +512,10 @@ const Flower = {
 };
 
 const Land = {
-    gen: (X, Y, n = 20, factor = 5 / 6) => {
-        let riverbed = Curve.gen(zipWith((u, v) => [u * X / n, v === 0 ? factor * Y : R.gauss(factor + v / 48, 1 / 96) * Y],
-            Util.array(10, i => i + 5), [0, 0, 2, 4, 5, 6, 6, 3, 0, 0]), 0.3);
-        return [Y / 512, [0, 7 * Y / 8, X, Y / 8], factor * Y, X, riverbed];
+    gen: (W, H, n = 20, ratio = 5 / 6) => {
+        let riverbed = Curve.gen(zipWith((u, v) => [u * W / n, v === 0 ? ratio * H : RAND.gauss(ratio + v / 48, 1 / 96) * H],
+            T.array(10, i => i + 5), [0, 0, 2, 4, 5, 6, 6, 3, 0, 0]), 0.3);
+        return [H / 512, [0, 7 * H / 8, W, H / 8], ratio * H, W, riverbed];
     },
     draw: (cr, pts, color, tree) => {
         let [lw, rs, ld, wd, rb] = pts;
