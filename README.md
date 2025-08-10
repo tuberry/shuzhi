@@ -1,8 +1,8 @@
 # 数枝 | Shuzhi
 
-受[几枝](https://github.com/unicar9/jizhi)启发的 GNOME Shell 壁纸生成扩展。
+受[几枝](https://github.com/unicar9/jizhi)启发的 GNOME Shell 格言壁纸生成扩展。
 
-Wallpaper generation extension for GNOME Shell, inspired by [Jizhi](https://github.com/unicar9/jizhi).
+GNOME Shell extension to generate wallpapers featuring mottos, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
 >望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*\
 [![license]](/LICENSE.md)
@@ -33,10 +33,6 @@ It's quite the same as installing from:
 ### E.G.O
 
 [<img src="https://raw.githubusercontent.com/andyholmes/gnome-shell-extensions-badge/master/get-it-on-ego.svg?sanitize=true" alt="Get it on GNOME Extensions" height="100" align="middle">][EGO]
-
-## Features
-
-![szpref](https://github.com/user-attachments/assets/135bb1a8-af7c-4dd6-8209-58b0cd49beb0)
 
 ## Notes
 

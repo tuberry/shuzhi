@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="@gettext@">
   <schema id="@rdnn@" path="@path@">
-    <key type="b" name="enable-systray">
+    <key type="b" name="enable-bg-menu">
       <default>false</default>
-      <summary>enable systray</summary>
+      <summary>enable background menu</summary>
     </key>
     <key type="b" name="enable-refresh">
       <default>false</default>

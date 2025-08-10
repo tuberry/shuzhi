@@ -8,7 +8,7 @@ export const Key = {
     SRC:  'motto-source',
     STL:  'default-style',
     RFS:  'enable-refresh',
-    STRY: 'enable-systray',
+    MENU: 'enable-bg-menu',
     CLR:  'show-color-name',
     ACT:  'set-accent-color',
     CLST: 'color-name-style',

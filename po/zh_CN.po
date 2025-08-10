@@ -17,13 +17,17 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/ui.js:384
+#: src/ui.js:344
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:516
+#: src/ui.js:462
 msgid "Click or press ENTER to apply changes"
 msgstr "单击或按回车应用更改"
+
+#: src/prefs.js:23
+msgid "min"
+msgstr "分钟"
 
 #: src/prefs.js:24
 msgid "Max backups"
@@ -130,8 +134,8 @@ msgid "Light sketches"
 msgstr "亮色纹理"
 
 #: src/prefs.js:40
-msgid "_Enable systray"
-msgstr "系统托盘(_E)"
+msgid "_Background menu"
+msgstr "背景菜单(_B)"
 
 #: src/prefs.js:41
 msgid "_Set accent color"
@@ -140,10 +144,6 @@ msgstr "设强调色(_S)"
 #: src/prefs.js:42
 msgid "_Auto refresh"
 msgstr "自动刷新(_A)"
-
-#: src/prefs.js:42
-msgid "min"
-msgstr "分钟"
 
 #: src/prefs.js:43
 msgid "_Color name"
@@ -170,16 +170,13 @@ msgid "Source type illustration"
 msgstr "来源类型说明"
 
 #: src/prefs.js:48
-msgid ""
-"<a href=\"https://docs.gtk.org/Pango/pango_markup.html\">Pango markup</a> / "
-"plain text or JSON like:"
-msgstr ""
-"<a href=\"https://docs.gtk.org/Pango/pango_markup.html\">Pango 标记语言</a>/"
-"纯文本或如下 JSON:"
+#, javascript-format
+msgid "<a href=\"%s\">Pango markup</a> / plain text or JSON like:"
+msgstr "<a href=\"%s\">Pango 标记</a>/纯文本或如下 JSON:"
 
 #: src/prefs.js:50
 msgid "(horizontal/vertical and light/dark) markup or text"
-msgstr "(水平/垂直及亮色/暗色)标记语言或文本"
+msgstr "(水平/垂直及亮色/暗色)标记或文本"
 
 #: src/prefs.js:51
 msgid "intagliated seal style text following the above text"
@@ -194,10 +191,9 @@ msgid "script to generate text like above"
 msgstr "生成如上文本的脚本"
 
 #: src/prefs.js:55
-msgid ""
-"fallback text for the <a href=\"https://github.com/xenv/"
-"gushici\">jinrishichi</a> API"
-msgstr "<a href=\"https://github.com/xenv/gushici\">今日诗词</a>接口的备选文本"
+#, javascript-format
+msgid "fallback text for the <a href=\"%s\">jinrishichi</a> API"
+msgstr "<a href=\"%s\">今日诗词</a>接口的备选文本"
 
 #: src/prefs.js:56
 msgid "path of an image, default to the distro logo"
@@ -215,29 +211,30 @@ msgstr "壁纸背景色"
 msgid "system accent color"
 msgstr "系统强调色"
 
-#: src/extension.js:235
-msgid "Copy"
-msgstr "复制"
-
-#: src/extension.js:236
-msgid "Refresh"
-msgstr "刷新"
-
-#: src/extension.js:237
+#: src/extension.js:115
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:238 src/extension.js:242 src/extension.js:243
+#: src/extension.js:116
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:239
+#: src/extension.js:117
 msgid "Both"
 msgstr "全部"
 
-#: src/extension.js:245
-msgid "Settings"
-msgstr "设置"
+#: src/extension.js:118
+msgid "Refresh"
+msgstr "刷新"
+
+#~ msgid "_Enable systray"
+#~ msgstr "系统托盘(_E)"
+
+#~ msgid "Copy"
+#~ msgstr "复制"
+
+#~ msgid "Settings"
+#~ msgstr "设置"
 
 #~ msgid "All"
 #~ msgstr "全部"

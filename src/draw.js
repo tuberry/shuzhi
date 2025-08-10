@@ -10,7 +10,10 @@ import GdkPixbuf from 'gi://GdkPixbuf';
 import PangoCairo from 'gi://PangoCairo';
 
 import * as T from './util.js';
+import {Key as K} from './const.js';
 import {FG, BgRGBA} from './color.js';
+
+const {$} = T;
 
 const RATIO = 2 / 3;
 const PANEL = 1 / 30;
@@ -26,12 +29,12 @@ const distance = (a, b) => Math.hypot(...zipWith((u, v) => u - v, a, b)); // euc
 const move = (a, r, t) => zipWith(add, a, p2ct(r, t));
 const translate = ([x, y]) => [[1, 0, x], [0, 1, y]];
 const rotate = t => [[cosp(t), sinp(t), 0], [-sinp(t), cosp(t), 0]];
-const dot = (xs, ys) => xs.map((x, i) => x * ys[i]).reduce(add);
-const affine = (xs, ...ms) => ms.reduce((p, m) => m.map(v => dot(v, p.concat(1))), xs);
+const dot = (xs, ys) => Math.sumPrecise(xs.map((x, i) => x * ys[i]));
+const affine = (xs, ...ms) => ms.reduce((p, m) => m.map(v => dot(v, p[$].push(1))), xs);
 const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
-const pie = (a, s = 1) => (m => a.map(x => x * s / m))(a.reduce(add));
+const pie = (a, s = 1) => (m => a.map(x => x * s / m))(Math.sumPrecise(a));
 const draw = (f, cr, ...xs) => { cr.save(); f(cr, ...xs); cr.restore(); };
-const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); };
+const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); }; // NOTE: https://tc39.es/proposal-iterator.range/#sec-iteration
 const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
 
 export const paint = (m, ...xs) => draw(m.draw, ...xs);
@@ -220,7 +223,7 @@ export const Blob = {
 
 export const Oval = {
     dye: Tile.dye,
-    gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], x.concat(RAND.gauss(1, 0.2) * x[2], 2 * Math.random())]),
+    gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], x[$].push(RAND.gauss(1, 0.2) * x[2], 2 * Math.random())]),
     draw: (cr, pts) => pts.forEach(([color, [c_x, c_y, e_w, e_h, r_t]]) => draw(() => {
         cr.setSourceRGBA(...color);
         cr.translate(c_x, c_y);
@@ -240,7 +243,7 @@ export const Wave = {
             pts = T.array(layers, i => (n => Curve.gen(T.array(n + 1, j => [W * j / n, st + RAND.compass(i, RATIO) * dt])))(min + RAND.natural(6)));
         return [W, H, C, pts];
     },
-    draw: (cr, waves, {showColor, colorFont, colorStyle, dark}) => {
+    draw: (cr, waves, {[K.CLR]: showColor, [K.CLFT]: colorFont, [K.CLST]: colorStyle, dark}) => {
         let [x, y, {color, name}, pts] = waves;
         cr.setSourceRGBA(...color);
         pts.forEach(p => {
@@ -252,7 +255,7 @@ export const Wave = {
         if(showColor) {
             colorFont.set_size(x * Pango.SCALE / 15);
             let sc = colorStyle ? color.with(3, 1) : dark ? [1, 1, 1, 0.1] : [0, 0, 0, 0.1];
-            paint(Markup, cr, Markup.gen(cr, colorFont, name, true), x, y * PANEL, true, sc);
+            paint(Markup, cr, Markup.gen(cr, colorFont, name), x, y * PANEL, false, sc);
         }
     },
 };
@@ -442,10 +445,10 @@ export const Tree = {
             if(!vec) return null;
             let t = vec[2] + ang * RAND.uniform(0.1, 0.9);
             let s = RAND.uniform(0.1, 0.9) * 3 * (1 - Math.abs(t)) ** 2;
-            return s < 0.3 ? null : move(vec.slice(0, 2), s * l, t - 1 / 2).concat(t);
+            return s < 0.3 ? null : move(vec.slice(0, 2), s * l, t - 1 / 2)[$].push(t);
         };
-        let root = [[w, h, 0], branch([w, h, 0], RAND.gauss(0, 1 / 64))],
-            tree = root.concat(scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root[1]], T.array(n - 1))),
+        let root = branch([w, h, 0], RAND.gauss(0, 1 / 64)),
+            tree = [[w, h, 0], root][$].push(...scanl((_x, t) => t.flatMap(a => [branch(a, -1 / 4), branch(a, 1 / 4)]), [root], T.array(n - 1))),
             meld = (a = 0, b = 0, c) => Math.max(0.7 * (a + b) + 0.5 * (!a * b + !b * a), a * 1.2, b * 1.2) + !a * !b * 1.25 * c;
         loopr(i => tree[i] && tree[i].push(meld(tree[2 * i]?.[3], tree[2 * i + 1]?.[3], h / 1024)), tree.length - 1);
         loopl(i => tree[i] && !tree[2 * i] !== !tree[2 * i + 1] && tree[i].push(Flower.gen(tree[i], i, h / 54)), 2 ** n - 1, 1);
@@ -481,10 +484,10 @@ export const Tree = {
 const Flower = {
     gen: ([x, y, v, w], z, l = 20, n = 5) => {
         if(z < 8) return [w * 0.9, [x, y], move([x, y], RAND.gauss(5 / 2, 1) * l, v - 1 / 2), false];
-        let dt = 2 / (n + 1),
-            it = rotate(RAND.uniform(0, 2)),
-            st = RAND.gauss(1 / 2, 1 / 9),
-            rt = 1 - Math.abs(st * 2 - 1),
+        let dt = 2 / (n + 1), // delta
+            it = rotate(RAND.uniform(0, 2)), // initial theta
+            st = RAND.gauss(1 / 2, 1 / 9), // shear theta
+            rt = 1 - Math.abs(st * 2 - 1), // shear ratio
             stop = pie(T.array(n, () => RAND.gauss(1, 1 / 2 - rt)), dt),
             cast = (r, t) => affine(p2ct(r, t), [[1, cosp(st) * rt, 0], [0, sinp(st) * rt, 0]], it, translate([x, y]));
         return [scanl(add, 0, stop).map((s, i) => [i, i + 1].map(j => [0.05, 0.1, 1].map(r => cast(r * l, s + j * dt)))), sinp(st) * rt > 0.6];
@@ -512,21 +515,18 @@ const Flower = {
 };
 
 const Land = {
-    gen: (W, H, n = 20, ratio = 5 / 6) => {
-        let riverbed = Curve.gen(zipWith((u, v) => [u * W / n, v === 0 ? ratio * H : RAND.gauss(ratio + v / 48, 1 / 96) * H],
-            T.array(10, i => i + 5), [0, 0, 2, 4, 5, 6, 6, 3, 0, 0]), 0.3);
-        return [H / 512, [0, 7 * H / 8, W, H / 8], ratio * H, W, riverbed];
-    },
+    gen: (W, H, n = 20, ratio = 5 / 6) => [H / 512, [0, 7 * H / 8, W, H / 8], ratio * H, W, Curve.gen(zipWith((u, v) =>
+        [u * W / n, v === 0 ? ratio * H : RAND.gauss(ratio + v / 48, 1 / 96) * H], T.array(10, i => i + 5), [0, 0, 2, 4, 5, 6, 6, 3, 0, 0]), 0.3)],
     draw: (cr, pts, color, tree) => {
-        let [lw, rs, ld, wd, rb] = pts;
-        cr.moveTo(0, ld);
+        let [lw, rs, gd, wd, rb] = pts;
+        cr.moveTo(0, gd);
         cr.lineTo(...rb[0]);
         Curve.link(cr, rb);
-        cr.lineTo(wd, ld);
+        cr.lineTo(wd, gd);
         cr.setSourceRGBA(0, 0, 0, 0.4);
         cr.setLineWidth(lw);
         cr.strokePreserve();
-        [[wd, 0], [0, 0], [0, ld]].forEach(p => cr.lineTo(...p));
+        [[wd, 0], [0, 0], [0, gd]].forEach(p => cr.lineTo(...p));
         cr.clip();
         cr.rectangle(...rs);
         cr.setSourceRGBA(...color.with(3, 0.4));

@@ -1,0 +1,16 @@
+// SPDX-FileCopyrightText: tuberry
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+$contrast: 'normal';
+
+$pfx: 'shuzhi';
+
+@function st-tone($color, $percent: 10%, $reverse: true){
+    @return if($variant==if($reverse, 'light', 'dark'), st-darken($color, $percent), st-lighten($color, $percent))
+}
+
+.#{$pfx}-bg-menu-icon {
+    padding: 0 0.15em;
+    &:hover { color: st-tone(-st-accent-color, 8%); }
+    &:focus { outline: 0.15em solid st-tone(-st-accent-color, 4%); }
+}

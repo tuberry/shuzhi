@@ -1,4 +1,4 @@
-import * as Util from '../src/util.js';
+import * as T from '../src/util.js';
 
 // NOTE: https://github.com/tc39/proposal-json-modules
 const Color = [
@@ -685,4 +685,4 @@ const Color = [
     {rgb: [240, 240, 244], name: '铅白'},
 ];
 
-await Util.fwrite(ARGV[0], Color.map(({rgb, name}) => `${rgb.map(x => x.toString(16).padStart(2, '0')).join('')}\t${name}`).join('\n'));
+await T.fwrite(ARGV[0], Color.map(({rgb, name}) => `${rgb.map(x => x.toString(16).padStart(2, '0')).join('')}\t${name}`).join('\n'));

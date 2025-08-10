@@ -18,10 +18,10 @@ class ShuzhiPrefs extends UI.Page {
         return [
             [K.CLR,  new UI.Check()],
             [K.RFS,  new UI.Check()],
-            [K.STRY, new UI.Check()],
+            [K.MENU, new UI.Check()],
             [K.ACT,  new UI.Check()],
-            [K.SPAN, new UI.Spin(10, 300, 30)],
-            [K.BCK,  new UI.Spin(0, 60, 1, _('Max backups'))],
+            [K.SPAN, new UI.Spin(10, 300, 30, _('min'))],
+            [K.BCK,  new UI.Spin(0, 60, 1, '', _('Max backups'))],
             [K.FONT, new UI.Font({tooltipText: _('Default font')})],
             [K.STL,  new UI.Drop([_('System'), _('Light'), _('Dark')])],
             [K.CLST, new UI.Drop([_('Watermark'), _('Highlight')], _('Color style'))],
@@ -37,22 +37,22 @@ class ShuzhiPrefs extends UI.Page {
 
     $buildUI() {
         return [
-            [K.STRY, [_('_Enable systray')]],
+            [K.MENU, [_('_Background menu')]],
             [K.ACT, [_('_Set accent color')]],
-            [K.RFS, [_('_Auto refresh')], K.SPAN, UI.Spin.unit(_('min'))],
+            [K.RFS, [_('_Auto refresh')], K.SPAN],
             [K.CLR, [_('_Color name')], K.CLST, K.CLFT],
             [[_('_Gen picture')], K.PATH, K.BCK],
             [[_('S_ketch style')], K.STL, K.LSKT, K.DSKT],
             [[_('_Motto style')], K.ORNT, K.FONT],
             [[_('M_otto source')], new UI.Help(({d, h}) => [h(_('Source type illustration')), [
-                [_('Text'), _('<a href="https://docs.gtk.org/Pango/pango_markup.html">Pango markup</a> / plain text or JSON like:')],
+                [_('Text'), _('<a href="%s">Pango markup</a> / plain text or JSON like:').format('https://docs.gtk.org/Pango/pango_markup.html')],
                 ['', `<tt>{
   "[hv]?[ld]?text": "${_('(horizontal/vertical and light/dark) markup or text')}",
   "seal": "${_('intagliated seal style text following the above text')}",
   "[ld]?image": "${_('light/dark image file path')}",
 }</tt>`],
                 [_('Command'), _('script to generate text like above')],
-                [_('Online'), _('fallback text for the <a href="https://github.com/xenv/gushici">jinrishichi</a> API')],
+                [_('Online'), _('fallback text for the <a href="%s">jinrishichi</a> API').format('https://github.com/xenv/gushici')],
                 [_('Image'), _('path of an image, default to the distro logo')],
             ], h(_('Text placeholder')), d(['{SZ_BGCOLOR}', _('wallpaper background color'), '{SZ_ACCENT_COLOR}', _('system accent color')])]), K.SRC, K.SRCT],
         ];
