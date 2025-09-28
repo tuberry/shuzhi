@@ -121,7 +121,7 @@ class ShuZhi extends F.Mortal {
                 copy: button(() => MT.copy(this), 'edit-copy-symbolic'),
                 prefs: button(() => F.me().openPreferences(), 'florette-symbolic'),
             }, {activate: true})[$].connect('activate', () => refresh(true, true)), x =>
-                menu.actor.connect('key-press-event', (_a, e) => { M.altNum(e, x); })),
+                menu.actor.connect('key-press-event', (_a, e) => void M.altNum(e, x))),
         ].forEach(x => menu.addMenuItem(x, 0));
     }
 

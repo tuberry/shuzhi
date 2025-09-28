@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: tuberry
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 import * as T from '../src/util.js';
 
 // NOTE: https://github.com/tc39/proposal-json-modules

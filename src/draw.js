@@ -33,6 +33,7 @@ const dot = (xs, ys) => Math.sumPrecise(xs.map((x, i) => x * ys[i]));
 const affine = (xs, ...ms) => ms.reduce((p, m) => m.map(v => dot(v, p[$].push(1))), xs);
 const swap = (a, i, j) => ([a[i], a[j]] = [a[j], a[i]]);
 const pie = (a, s = 1) => (m => a.map(x => x * s / m))(Math.sumPrecise(a));
+const shuffle = a => (loopr(i => swap(a, RAND.natural(i), i), a.length - 1, 1), a); // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
 const draw = (f, cr, ...xs) => { cr.save(); f(cr, ...xs); cr.restore(); };
 const loopl = (f, u, l = 0, s = 1) => { for(let i = l; i <= u; i += s) f(i); }; // NOTE: https://tc39.es/proposal-iterator.range/#sec-iteration
 const loopr = (f, u, l = 0, s = 1) => { for(let i = u; i >= l; i -= s) f(i); };
@@ -186,13 +187,22 @@ const Tile = {
         })(RAND.natural(i)), a.length - 1, a.length - n);
         return ret.map(x => a[x]);
     },
-    lattice: (rect, sum = 20, ratio = 1 / 5) => { // Ref: https://stackoverflow.com/a/4382286
-        return T.Y(f => n => n === 0 ? [rect] : f(n - 1).flatMap(([x, y, w, h]) => {
-            let [a, b] = [w, h].map(i => Math.round(i * RAND.bimodal(1 / 2, ratio)));
-            return Math.abs(a / w - 1 / 2) < Math.abs(b / h - 1 / 2)
-                ? [[x, y, a, b], [x, y + b, a, h - b], [x + a, y, w - a, h - b], [x + a, y + h - b, w - a, b]]
-                : [[x, y, a, b], [x + a, y, w - a, b], [x, y + b, w - a, h - b], [x + w - a, y + b, a, h - b]];
-        }))(Math.ceil(Math.log2(sum) / 2));
+    lattice: (rect, ratio = 1 / 5) => { // Ref: https://stackoverflow.com/a/4382286
+        return T.Y(f => rs => (x => rs.length === x.length ? rs : f(x))(rs.flatMap(rc => {
+            let [x, y, w, h] = rc;
+            if(Math.sqrt(w * h / rect[2] / rect[3]) < ratio) return [rc];
+            if(w / h > ratio && h / w > ratio) {
+                let cw = RAND.boolean() ? 1 : 2;
+                let [[a, m], [b, n], [c, p], [d, q]] = T.array(4, i => (u => [u, 1 - u].map(v => (i % 2 ? h : w) * v))(RAND.bimodal(cw / 3, 1 / 12)));
+                return [[x, y, a, q], [x + a, y, m, b], [x + p, y + b, c, n], [x, y + q, p, d], cw === 1 ? [x + a, y + b, m - c, n - d] : [x + p, y + q, c - m, d - n]];
+            } else {
+                let [m, n, p, q] = w > h ? rc : [y, x, h, w];
+                let [c, a, b, d] = [1, 2, 4, 5].map(u => RAND.bimodal(u / 6, 1 / 12));
+                return zipWith(w > h ? ([v, s], [u, t]) => [u, v, t, s] : ([u, s], [v, t]) => [u, v, s, t],
+                    shuffle([0, 1, 2]).map(u => u ? u === 1 ? [n, d * q] : [n + c * q, (1 - c) * q] : [n, q]),
+                    [0, a, b].map((u, i, v) => [m + u * p, ((v[i + 1] ?? 1) - u) * p]));
+            }
+        })))([rect]);
     },
     circle: ([x, y, w, h]) => {
         let r = Math.min(w, h) / 2;
@@ -203,14 +213,14 @@ const Tile = {
         let dh = Math.max(0, Math.min(y + h, n + q) - Math.max(y, n));
         return dw * dh > 0.06 * w * h;
     },
-    N: 16,
+    N: 19,
     dye: x => T.array(Tile.N, () => RAND.color(x, x.dark ? 0.5 : 0.6).color),
     gen: (C, {W, H}) => Tile.sample(Tile.lattice([0, 0, W, H]).filter(x => !Tile.overlap(x, Motto.area)), Tile.N).map(x => Tile.circle(x)),
 };
 
 export const Blob = {
-    polygon: ([x, y, r], n = 6, a = 8, dt_r = 0.25) => scanl(add, RAND.uniform(0, 2), RAND.dirichlet(n, a, 2))
-        .map(t => move([x, y], RAND.gauss(0.95, dt_r) * r, t)), // Ref: https://stackoverflow.com/a/25276331
+    polygon: ([x, y, r], n = 6, a = 8, d_r = 0.2) => scanl(add, RAND.uniform(0, 2), RAND.dirichlet(n, a, 2))
+        .map(t => move([x, y], RAND.gauss(0.95, d_r) * r, t)), // Ref: https://stackoverflow.com/a/25276331
     dye: Tile.dye,
     gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], Curve.gen(Blob.polygon(x), 1, true)]),
     draw: (cr, pts) => pts.forEach(pt => {
@@ -223,7 +233,7 @@ export const Blob = {
 
 export const Oval = {
     dye: Tile.dye,
-    gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], x[$].push(RAND.gauss(1, 0.2) * x[2], 2 * Math.random())]),
+    gen: (C, {W, H}) => Tile.gen(C, {W, H}).map((x, i) => [C[i], x[$].push(RAND.gauss(1, 0.15) * x[2], RAND.uniform(0, 2))]),
     draw: (cr, pts) => pts.forEach(([color, [c_x, c_y, e_w, e_h, r_t]]) => draw(() => {
         cr.setSourceRGBA(...color);
         cr.translate(c_x, c_y);
@@ -261,14 +271,13 @@ export const Wave = {
 };
 
 export const Cloud = {
-    shuffle: a => (loopr(i => swap(a, RAND.natural(i), i), a.length - 1, 1), a), // Ref: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
     sway: a => (f => (loopl(i => { f(i, i - 1); f(i, i + 1); }, a.length - 1, 0, 2), a))(
         RAND.boolean() ? (i, j) => a[i] < a[j] && swap(a, i, j) : (i, j) => a[i] > a[j] && swap(a, i, j)),
     dye: x => T.array(3, () => RAND.color(x).color),
     $gen: ([x, y, w, h], offset) => {
         let mend = (a, b) => Math.floor(a > b ? RAND.gauss(x, w * a / 4) : RAND.gauss(x + w, w * (1 - a) / 4)),
             len = Math.floor(h / offset),
-            stp = Cloud.sway(Cloud.shuffle(T.array(len, i => i / len))),
+            stp = Cloud.sway(shuffle(T.array(len, i => i / len))),
             fst = [mend(stp[0], stp[1]), y],
             ret = scanl((i, t) => ((a, b, c) => [[a, b, c], [a, b + offset, c]])(x + w * stp[i], t.at(-1).at(1), RAND.boolean()), [fst], T.array(len));
         return [fst, ...ret, [mend(stp.at(-1), stp.at(-2)), ret.at(-1).at(1)]];
