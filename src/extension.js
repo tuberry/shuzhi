@@ -17,12 +17,13 @@ import * as Draw from './draw.js';
 import * as Color from './color.js';
 
 const {_} = F;
-const {$, $$} = T;
+const {$, $$, $s} = T;
 
 const Style = {SYSTEM: 0, LIGHT: 1, DARK: 2};
-const Source = {CMD: 0, TEXT: 1, IMAGE: 2, ONLINE: 3};
 const Dark = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, CLOUD: 4};
 const Light = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, TREE: 4};
+const Src = {CMD: 0, TEXT: 1, IMAGE: 2, ONLINE: 3};
+const Re = {NONE: 0, SKETCH: 1, MOTTO: 2, BOTH: 3};
 const BG = {LIGHT: 'picture-uri', DARK: 'picture-uri-dark'};
 const IF = {ACCENT: 'accent-color', SCALE: 'text-scaling-factor', STYLE: 'color-scheme'};
 const MT = {
@@ -61,104 +62,93 @@ const MT = {
 };
 
 class ShuZhi extends F.Mortal {
-    constructor(gset) {
-        super()[$].$buildWidgets()[$].$bindSettings(gset)[$].$buildSources().$prepareMotto();
-    }
-
-    $buildWidgets() {
-        this.palette = new Color.Palette();
-        [this.darkSketch, this.lightSketch] = [Dark, Light].map(x => Object.values(x).filter(y => y !== x.LUCK));
-        F.connect(this, Main.layoutManager, 'monitors-changed', (() => ({width: this.W, height: this.H} =
-            Main.layoutManager.monitors.reduce((p, x) => p.height * p.width > x.height * x.width ? p : x, {width: 16, height: 9})))[$].call());
-    }
-
     $bindSettings(gset) {
-        this.$setBG = new F.Setting('org.gnome.desktop.background', BG, this);
-        this.$setIF = new F.Setting('org.gnome.desktop.interface', [
-            IF.ACCENT, [IF.SCALE, null, () => this.#onFontSet()],
-            [IF.STYLE, x => x === 'prefer-dark', () => this.#onStyleSet()],
-        ], this);
-        this.$set = new F.Setting(gset, [
-            K.BCK, [K.ACT, x => this.palette.saveAccent(x)],
+        this.$setBG = new F.Setting('org.gnome.desktop.background', this, BG);
+        this.$setIF = new F.Setting('org.gnome.desktop.interface', this, [
+            IF.ACCENT, [IF.SCALE, null, () => this.$onFontSet()],
+            [IF.STYLE, x => x === 'prefer-dark', () => this.$onStyleSet()],
+        ]);
+        this.$set = new F.Setting(gset, this, [
+            K.BCK, [K.ACT, null, x => this.palette.saveAccent(x)],
             [K.MENU, null, x => this.$src.menu.toggle(x)],
             [K.SPAN, null, x => this.$src.cycle.reload(x)],
-            [K.RFS,  null, x => this.$src.cycle.toggle(x)],
-        ], this).tie([K.SRC, K.SRCT], this, null, () => this.#redraw(true, true)).tie([
+            [K.RFS, null, x => this.$src.cycle.toggle(x)],
+        ], [K.SRC, K.SRCT], null, () => this.$redraw(Re.BOTH), [
             [K.PATH, null, () => [true]],
-            [K.CLR,  null, () => [this.waving]],
+            [K.CLR, null, () => [this.waving]],
             [K.CLST, null, () => [this.waving]],
             [K.DSKT, null, () => [this.dark, true]],
             [K.LSKT, null, () => [!this.dark, true]],
-            [K.ORNT, x => { this.level = !x; }, () => [true, true]],
+            [['level', K.ORNT], x => !x, () => [true, true]],
             [K.CLFT, x => Pango.FontDescription.from_string(x), () => [this.waving]],
-        ], this, null, ([x, y]) => x && this.#redraw(y, false))
-            .tie([K.FONT], this, () => this.#onFontSet())
-            .tie([K.STL], this, () => this.#onStyleSet());
+        ], null, ([x, y]) => x && this.$redraw(y ? Re.SKETCH : Re.NONE),
+        [K.FONT], () => this.$onFontSet(),
+        [K.STL], () => this.$onStyleSet());
     }
 
     $buildSources() {
         let cancel = F.Source.newCancel(),
-            cycle = F.Source.newTimer(() => [() => this.#redraw(true, true), this[K.SPAN] * 60000], false, null, this[K.RFS]),
-            menu = F.Source.newInjector([Main.layoutManager, {_addBackgroundMenu: (a, f, xs) => { f.apply(a, xs); this.#amendBgMenu(xs); }}], this[K.MENU],
-                () => { Main.layoutManager.screenTransition.run(); Main.layoutManager._updateBackgrounds(); }); // HACK: workaround for flickering when _updateBackgrounds
-        this.$src = F.Source.tie({cancel, cycle, menu}, this);
+            cycle = F.Source.newTimer(() => [() => this.$redraw(Re.BOTH), this[K.SPAN] * 60000], false, null, this[K.RFS]),
+            menu = F.Source.newInjector([Main.layoutManager, {_addBackgroundMenu: (a, f, xs) => { f.apply(a, xs); this.$amendBgMenu(xs); }}], this[K.MENU],
+                () => { if(global.stage.peek_stage_views().length) Main.layoutManager.screenTransition.run(); Main.layoutManager._updateBackgrounds(); }), // HACK: workaround for flickering when _updateBackgrounds & mutter devkit compatibility
+            dog = F.Source.newHandler(Main.layoutManager, 'monitors-changed', (() => ({width: this.W, height: this.H} = Main.layoutManager
+                .monitors.reduce((p, x) => p.height * p.width > x.height * x.width ? p : x, {width: 16, height: 9})))[$].call());
+        this.$src = F.Source.tie(this, {cancel, cycle, menu}, dog);
+        this.$buildWidgets();
     }
 
-    #amendBgMenu([bgManager]) {
-        let menu = bgManager.backgroundActor._backgroundMenu;
-        if(menu.firstMenuItem instanceof M.ToolItem) return;
-        menu.firstMenuItem.destroy(); // remove 'Change Background...' item
-        let refresh = (...xs) => { this.$src.cycle.reload(); this.#redraw(...xs); };
-        let button = (func, icon) => new M.Button(() => { menu.close(); func(); }, icon)[$].set({styleClass: 'shuzhi-bg-menu-icon', xExpand: true});
-        [
-            new PopupMenu.PopupMenuSection()[$$].addMenuItem([
-                [_('Motto'),  () => refresh(false, true)],
-                [_('Sketch'), () => refresh(true, false)],
-                [_('Both'),   () => refresh(true, true)],
-            ].map(x => new M.Item(...x))[$].unshift(new M.Separator(_('Refresh')))),
-            T.seq(new M.ToolItem({
-                refresh: button(() => refresh(true, true), 'view-refresh-symbolic'),
-                copy: button(() => MT.copy(this), 'edit-copy-symbolic'),
-                prefs: button(() => F.me().openPreferences(), 'florette-symbolic'),
-            }, {activate: true})[$].connect('activate', () => refresh(true, true)), x =>
-                menu.actor.connect('key-press-event', (_a, e) => void M.altNum(e, x))),
-        ].forEach(x => menu.addMenuItem(x, 0));
-    }
-
-    $prepareMotto() {
+    $buildWidgets() {
+        this.palette = new Color.Palette()[$].saveAccent(this[K.ACT]);
+        [this.darkSketch, this.lightSketch] = [Dark, Light].map(x => Object.values(x).filter(y => y !== x.LUCK));
         this.getMotto().then(motto => {
             this.motto = motto;
             if(this[K.PATH] && (this[K.STL] === Style.SYSTEM ? (this.dark ? this[BG.DARK] : this[BG.LIGHT]).endsWith(this.path)
                 : this[BG.LIGHT].endsWith(this.path) && this[BG.DARK].endsWith(this.path))) return;
-            this.#redraw(true);
+            this.$redraw(Re.SKETCH);
         }).catch(T.nop);
+    }
+
+    $amendBgMenu([bgManager]) {
+        let menu = bgManager.backgroundActor._backgroundMenu;
+        F.erase(menu._settingsActions, 'gnome-background-panel.desktop'); // remove 'Change Background...' item
+        let refresh = (x = Re.BOTH) => { this.$src.cycle.reload(); this.$redraw(x); };
+        [
+            new M.ToolItem([{
+                fresh: [() => { menu.close(); refresh(); }, 'view-refresh-symbolic'],
+                copy: [() => { menu.close(); MT.copy(this); }, 'edit-copy-symbolic'],
+                prefs: [() => { menu.close(); F.me().openPreferences(); }, M.Icon.wrap('florette-symbolic')],
+            }, 'shuzhi-bg-menu-icon'], {activate: true})[$].connect('activate', refresh)[$$](it =>
+                menu.actor.connect('key-press-event', (_a, e) => void M.altNum(e, it))),
+            new PopupMenu.PopupMenuSection()[$s].addMenuItem([new M.Separator(_('Refresh')),
+                ...[[_('Motto'), Re.MOTTO], [_('Sketch'), Re.SKETCH], [_('Both')]].map(([x, y]) => new M.Item(x, () => refresh(y)))]),
+        ].reverse().forEach(x => menu.addMenuItem(x, 0));
     }
 
     get waving() {
         return this.$type === Light.WAVE;
     }
 
-    #onFontSet() {
+    $onFontSet() {
         this.font = Pango.FontDescription.from_string(this[K.FONT]);
         this.font.set_size(this.font.get_size() * this[IF.SCALE]);
-        this.#redraw(false, false);
+        this.$redraw(Re.NONE);
     }
 
-    #onStyleSet() {
+    $onStyleSet() {
         let dark = this[K.STL] === Style.SYSTEM ? this[IF.STYLE] : this[K.STL] === Style.DARK;
         if(dark === this.dark) return;
         this.dark = dark;
         this.path = `${this[K.PATH] || GLib.get_tmp_dir()}/shuzhi-${dark ? 'd' : 'l'}.svg`;
-        this.#redraw(true);
+        this.$redraw(Re.SKETCH);
     }
 
     getMotto() {
         return Promise.try(() => {
             switch(this[K.SRCT]) {
-            case Source.CMD:    return MT.load(this[K.SRC], this.$src.cancel.reborn(), this.colour);
-            case Source.TEXT:   return MT.parse(this[K.SRC]);
-            case Source.IMAGE:  return {image: this[K.SRC]};
-            case Source.ONLINE: return MT.fetch(this.$src.cancel.reborn());
+            case Src.CMD: return MT.load(this[K.SRC], this.$src.cancel.reborn(), this.colour);
+            case Src.TEXT: return MT.parse(this[K.SRC]);
+            case Src.IMAGE: return {image: this[K.SRC]};
+            case Src.ONLINE: return MT.fetch(this.$src.cancel.reborn());
             }
         }).catch(e => {
             if(F.Source.cancelled(e)) throw e;
@@ -167,10 +157,10 @@ class ShuZhi extends F.Mortal {
         });
     }
 
-    async #redraw(sketch, motto) {
+    async $redraw(redraw) {
         if(!Object.hasOwn(this, 'motto')) return;
-        if(sketch) this.$skt = null;
-        if(motto) this.motto = await this.getMotto();
+        if(redraw & Re.SKETCH) this.$skt = null;
+        if(redraw & Re.MOTTO) this.motto = await this.getMotto();
         let svg = new Cairo.SVGSurface(this.path, this.W, this.H);
         let cr = new Cairo.Context(svg);
         this.draw(cr);
@@ -191,18 +181,18 @@ class ShuZhi extends F.Mortal {
         }
     }
 
-    #draw(cr, paint, dye) {
-        T.seq([dye?.(), Draw.Motto.gen(cr, MT.get(this), this)], ([x, y]) => { paint(x); Draw.paint(Draw.Motto, cr, y, this); });
+    $draw(cr, paint, dye) {
+        [dye?.(), Draw.Motto.gen(cr, MT.get(this), this)][$$](([x, y]) => { paint(x); Draw.paint(Draw.Motto, cr, y, this); });
     }
 
     draw(cr) {
         Draw.paint(Draw.BG, cr, Draw.BG.gen(this));
         if(this.$skt) {
-            this.#draw(cr, () => this.$skt(cr));
+            this.$draw(cr, () => this.$skt(cr));
         } else {
             let skt = this.getSketch();
-            this.#draw(cr, color => (pts => { this.$skt = (ctx => Draw.paint(skt, ctx, pts, this))[$].call(null, cr); })(skt.gen(color, this)),
-                () => T.seq(skt.dye(this), () => this[K.ACT] && this.$setIF.set(IF.ACCENT, this.palette.takeAccent())));
+            this.$draw(cr, color => (pts => { this.$skt = (ctx => Draw.paint(skt, ctx, pts, this))[$].call(null, cr); })(skt.gen(color, this)),
+                () => skt.dye(this)[$$](() => this[K.ACT] && this.$setIF.set(IF.ACCENT, this.palette.takeAccent())));
         }
     }
 

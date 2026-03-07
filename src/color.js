@@ -20,7 +20,7 @@ export const specify = (dark, accent) => ({SZ_BGCOLOR: dark ? BgHex.DARK : BgHex
 
 export class Palette {
     constructor() {
-        let table = T.decode(T.fopen('resource://org/gnome/shell/extensions/shuzhi/color.tsv').load_contents(null).at(1)),
+        let table = T.decode(T.fopen('resource:///org/gnome/shell/extensions/shuzhi/color.tsv').load_contents(null).at(1)),
             rgb2oklch = rgb => {
                 let [r, g, b] = rgb.map(x => x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92), // linear srgb
                     l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b),
@@ -67,6 +67,6 @@ export class Palette {
     }
 
     takeAccent() {
-        return Accents[this.$accent?.splice(0).reduce((p, x, i) => p[0] < x ? p[T.$][0](x)[T.$][1](i) : p, [-1, -1])[1]] ?? 'blue';
+        return Accents[this.$accent?.splice(0).reduce((p, x, i, a) => a[p] > x ? p : i, 0) ?? 0];
     }
 }

@@ -17,11 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/ui.js:366
+#: src/ui.js:365
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:488
+#: src/ui.js:482
 msgid "Click or press ENTER to apply changes"
 msgstr "单击或按回车应用更改"
 
@@ -211,21 +211,21 @@ msgstr "壁纸背景色"
 msgid "system accent color"
 msgstr "系统强调色"
 
-#: src/extension.js:115
+#: src/extension.js:122
+msgid "Refresh"
+msgstr "刷新"
+
+#: src/extension.js:123
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:116
+#: src/extension.js:123
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:117
+#: src/extension.js:123
 msgid "Both"
 msgstr "全部"
-
-#: src/extension.js:118
-msgid "Refresh"
-msgstr "刷新"
 
 #~ msgid "_Enable systray"
 #~ msgstr "系统托盘(_E)"

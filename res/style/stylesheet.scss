@@ -12,5 +12,5 @@ $pfx: 'shuzhi';
 .#{$pfx}-bg-menu-icon {
     padding: 0 0.15em;
     &:hover { color: st-tone(-st-accent-color, 8%); }
-    &:focus { outline: 0.15em solid st-tone(-st-accent-color, 4%); }
+    &:focus { outline: 0.15em solid st-transparentize(-st-accent-color, 0.25); }
 }

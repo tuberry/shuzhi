@@ -108,7 +108,7 @@ const Curve = {
     },
     link: (cr, [start, ...pts]) => {
         cr.moveTo(...start);
-        loopl(i => cr.curveTo(...T.array(3, j => pts[i + j]).flat()), pts.length - 1, 0, 3);
+        T.chunk(pts, 3).forEach(pt => cr.curveTo(...pt.flat()));
     },
 };
 
@@ -351,7 +351,7 @@ const Markup = {
 };
 
 const Seal = {
-    link: (cr, x, y, w, h) => { // anti-clockwise curved rect
+    link: (cr, x, y, w, h) => { // anti-clockwise curved rect, fake superellipse
         let u = x + w,
             v = y + h,
             r = Math.min(w, h) / 3;
@@ -383,7 +383,7 @@ const Seal = {
         let [w, h] = ps.get_pixel_size();
         Seal.link(cr, ...level ? [x, y, w, h] : [x - h, y, h, w]);
         cr.setSourceRGB(...color);
-        cr.fill(); // FIXME: incorrect filling of stroke overlaps
+        cr.fill(); // NOTE: wrong filling of stroke overlaps in some fonts
     },
 };
 
