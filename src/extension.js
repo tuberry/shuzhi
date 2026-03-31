@@ -118,7 +118,7 @@ class ShuZhi extends F.Mortal {
                 copy: [() => { menu.close(); MT.copy(this); }, 'edit-copy-symbolic'],
                 prefs: [() => { menu.close(); F.me().openPreferences(); }, M.Icon.wrap('florette-symbolic')],
             }, 'shuzhi-bg-menu-icon'], {activate: true})[$].connect('activate', refresh)[$$](it =>
-                menu.actor.connect('key-press-event', (_a, e) => void M.altNum(e, it))),
+                menu.actor.connect('key-press-event', (_a, e) => M.altNum(e, it))),
             new PopupMenu.PopupMenuSection()[$s].addMenuItem([new M.Separator(_('Refresh')),
                 ...[[_('Motto'), Re.MOTTO], [_('Sketch'), Re.SKETCH], [_('Both')]].map(([x, y]) => new M.Item(x, () => refresh(y)))]),
         ].reverse().forEach(x => menu.addMenuItem(x, 0));

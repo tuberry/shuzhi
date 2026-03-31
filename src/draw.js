@@ -47,24 +47,18 @@ const RAND = { // PRNG
     integer: (l, u) => Math.floor(RAND.uniform(l, u + 1)), // -> l .. u
     natural: n => Math.floor(Math.random() * n), // -> 0 .. n - 1
     boolean: () => Math.random() < 0.5,
-    normal: (() => { // -> (0, 1) // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
-        let cache = [];
-        return () => {
-            if(cache.length) {
-                return cache.pop();
-            } else {
-                let u, v, s;
-                do {
-                    u = 2 * Math.random() - 1;
-                    v = 2 * Math.random() - 1;
-                    s = u * u + v * v;
-                } while(s >= 1 || s === 0);
-                s = Math.sqrt(-2 * Math.log(s) / s);
-                cache.push(Math.clamp(u * s / 6 + 0.5, 0, 1));
-                return Math.clamp(v * s / 6 + 0.5, 0, 1);
-            }
-        };
-    })(),
+    normal: (g => () => g.next().value)((function* () { // -> (0, 1) // Ref: https://en.wikipedia.org/wiki/Marsaglia_polar_method
+        for(let u, v, s; ;) {
+            do {
+                u = 2 * Math.random() - 1;
+                v = 2 * Math.random() - 1;
+                s = u * u + v * v;
+            } while(s >= 1 || s === 0);
+            s = Math.sqrt(-2 * Math.log(s) / s);
+            yield Math.clamp(u * s / 6 + 0.5, 0, 1);
+            yield Math.clamp(v * s / 6 + 0.5, 0, 1);
+        }
+    })()),
     gauss: (m, s, k = 0) => (n => m + s * (6 * (k < 0 ? 1 - n : n) - 3))(Math.pow(RAND.normal(), 1 - Math.log2(1 + Math.abs(k)))), // k <- (-1, 1)
     bimodal: (mu, s3, k = 0.5) => RAND.gauss(mu, s3 / 3, RAND.boolean() ? k : -k), // k <- (0, 1)
     gamma: (a, b = 1) => { // a:alpha == k > 0, b:beta == 1 / theta > 0 // Ref: https://en.wikipedia.org/wiki/Gamma_distribution#Random_variate_generation
