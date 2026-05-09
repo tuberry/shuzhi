@@ -6,7 +6,6 @@ import GLib from 'gi://GLib';
 import Rsvg from 'gi://Rsvg';
 import Cairo from 'gi://cairo';
 import Pango from 'gi://Pango';
-import GdkPixbuf from 'gi://GdkPixbuf';
 import PangoCairo from 'gi://PangoCairo';
 
 import * as T from './util.js';
@@ -411,8 +410,7 @@ const Image = {
     gen: (fn, {W, H, dark}) => {
         try {
             let url = fn ? T.fopen(fn).get_path() : Image.logo(`${GLib.get_os_info('LOGO') || 'gnome-logo'}`, dark).get_filename(),
-                img = url.endsWith('.svg') ? Rsvg.Handle.new_from_file(url) : GdkPixbuf.Pixbuf.new_from_file(url) && // HACK: avoid `uncatchable exception` assertion
-                    St.TextureCache.get_default().load_file_to_cairo_surface(T.fopen(url), 1, 1),
+                img = url.endsWith('.svg') ? Rsvg.Handle.new_from_file(url) : St.TextureCache.get_default().load_file_to_cairo_surface(T.fopen(url), 1, 1),
                 {width: w, height: h} = img instanceof Rsvg.Handle ? img : {width: img.getWidth(), height: img.getHeight()};
             Motto.area = [(W - w) / 2, (H * 0.8 - h) / 2, w, h];
             return img;

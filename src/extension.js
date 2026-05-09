@@ -102,8 +102,10 @@ class ShuZhi extends F.Mortal {
         [this.darkSketch, this.lightSketch] = [Dark, Light].map(x => Object.values(x).filter(y => y !== x.LUCK));
         this.getMotto().then(motto => {
             this.motto = motto;
-            if(this[K.PATH] && (this[K.STL] === Style.SYSTEM ? (this.dark ? this[BG.DARK] : this[BG.LIGHT]).endsWith(this.path)
-                : this[BG.LIGHT].endsWith(this.path) && this[BG.DARK].endsWith(this.path))) return;
+            let file = T.fopen(this.path);
+            let same = (...xs) => xs.every(x => file.equal(T.fopen(x)));
+            if(T.exist(file) && (this[K.STL] === Style.SYSTEM ? same(this.dark ? this[BG.DARK] : this[BG.LIGHT])
+                : same(this[BG.LIGHT], this[BG.DARK]))) return;
             this.$redraw(Re.SKETCH);
         }).catch(T.nop);
     }
