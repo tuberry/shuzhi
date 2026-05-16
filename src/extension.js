@@ -102,10 +102,12 @@ class ShuZhi extends F.Mortal {
         [this.darkSketch, this.lightSketch] = [Dark, Light].map(x => Object.values(x).filter(y => y !== x.LUCK));
         this.getMotto().then(motto => {
             this.motto = motto;
-            let file = T.fopen(this.path);
-            let same = (...xs) => xs.every(x => file.equal(T.fopen(x)));
-            if(T.exist(file) && (this[K.STL] === Style.SYSTEM ? same(this.dark ? this[BG.DARK] : this[BG.LIGHT])
-                : same(this[BG.LIGHT], this[BG.DARK]))) return;
+            if(this[K.STL] === Style.SYSTEM
+                ? T.fopen(this.dark ? this[BG.DARK] : this[BG.LIGHT]).equal(T.fopen(this.path))
+                : this[BG.DARK] === this[BG.LIGHT] && T.fopen(this[BG.LIGHT]).equal(T.fopen(this.path))) {
+                if(T.exist(this.path)) return;
+                else [BG.DARK, BG.LIGHT].forEach(x => this.$setBG.set(x, '')); // force update
+            }
             this.$redraw(Re.SKETCH);
         }).catch(T.nop);
     }
@@ -209,7 +211,7 @@ class ShuZhi extends F.Mortal {
     }
 
     async $backup(path) {
-        if(!this[K.BCK]) return;
+        if(!this[K.BCK] || !this[K.PATH]) return;
         let dir = GLib.path_get_dirname(path),
             pfx = path.endsWith('d.svg') ? 'shuzhi-d-' : 'shuzhi-l-',
             bak = await T.readdir(dir, x => (y => y.startsWith(pfx) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name())).catch(T.nop) ?? [];
