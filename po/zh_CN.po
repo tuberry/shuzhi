@@ -211,19 +211,19 @@ msgstr "壁纸背景色"
 msgid "system accent color"
 msgstr "系统强调色"
 
-#: src/extension.js:124
+#: src/extension.js:126
 msgid "Refresh"
 msgstr "刷新"
 
-#: src/extension.js:125
+#: src/extension.js:127
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:125
+#: src/extension.js:127
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:125
+#: src/extension.js:127
 msgid "Both"
 msgstr "全部"
 

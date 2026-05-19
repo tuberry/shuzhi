@@ -4,35 +4,47 @@
 configure_file(
   input: 'metadata.json.in',
   output: 'metadata.json',
-  configuration: metadata,
+  configuration: me,
   install_dir: target_dir,
 )
 
-subdir('scalable/status') # HACK: for https://github.com/mesonbuild/meson/issues/2320
+_table = 'color.tsv'
+_icon = 'florette-symbolic.svg'
+_gres = {'icon': _icon, 'table': _table, 'path': me['path']}
 
-table = 'color.tsv'
-color = custom_target(
-  output: table,
+_deps = [] + custom_target(
+  output: _icon,
+  build_by_default: true,
+  build_always_stale: true,
+  build_subdir: 'scalable/status',
+  command: [
+    find_program('gjs'),
+    '-m',
+    '@SOURCE_ROOT@' / 'cli/gen-icon.js',
+    '@OUTDIR@',
+    _icon,
+  ],
+) + custom_target(
+  output: _table,
   build_by_default: true,
   build_always_stale: true,
   command: [
     find_program('gjs'),
     '-m',
     '@SOURCE_ROOT@'/ 'cli/gen-color.js',
-    '@OUTDIR@' / table,
+    '@OUTDIR@' / _table,
   ],
 )
 
-foreach name: ['extension']
-  gres = configure_file(
-    input: f'@name@.gresource.xml.in',
-    output: f'@name@.gresource.xml',
-    configuration: {'icon': icon, 'table': table, 'path': metadata['path']},
-  )
+foreach x: ['extension']
   gnome.compile_resources(
-    name, gres,
+    x, configure_file(
+      input: f'@x@.gresource.xml.in',
+      output: f'@x@.gresource.xml',
+      configuration: _gres,
+    ),
     source_dir: '@OUTDIR@',
-    dependencies: [tray, color], # NOTE: ? tray dep only not working
+    dependencies: _deps,
     gresource_bundle: true,
     install: true,
     install_dir: target_dir / 'resource',

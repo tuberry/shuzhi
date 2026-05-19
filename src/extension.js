@@ -74,11 +74,11 @@ class ShuZhi extends F.Mortal {
             [K.SPAN, null, x => this.$src.cycle.reload(x)],
             [K.RFS, null, x => this.$src.cycle.toggle(x)],
         ], [K.SRC, K.SRCT], null, () => this.$redraw(Re.BOTH), [
-            [K.PATH, null, () => [true]],
             [K.CLR, null, () => [this.waving]],
             [K.CLST, null, () => [this.waving]],
             [K.DSKT, null, () => [this.dark, true]],
             [K.LSKT, null, () => [!this.dark, true]],
+            [K.PATH, x => this.$onPathSet(x), () => [true]],
             [['level', K.ORNT], x => !x, () => [true, true]],
             [K.CLFT, x => Pango.FontDescription.from_string(x), () => [this.waving]],
         ], null, ([x, y]) => x && this.$redraw(y ? Re.SKETCH : Re.NONE),
@@ -142,8 +142,12 @@ class ShuZhi extends F.Mortal {
         let dark = this[K.STL] === Style.SYSTEM ? this[IF.STYLE] : this[K.STL] === Style.DARK;
         if(dark === this.dark) return;
         this.dark = dark;
-        this.path = `${this[K.PATH] || GLib.get_tmp_dir()}/shuzhi-${dark ? 'd' : 'l'}.svg`;
+        this.$onPathSet();
         this.$redraw(Re.SKETCH);
+    }
+
+    $onPathSet(path = this[K.PATH]) {
+        this.path = `${path || `${GLib.get_user_runtime_dir()}/gnome-shell`}/shuzhi-${this.dark ? 'd' : 'l'}.svg`;
     }
 
     getMotto() {
