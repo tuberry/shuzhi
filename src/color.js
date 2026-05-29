@@ -22,7 +22,7 @@ export class Palette {
     constructor() {
         let table = T.decode(T.fopen('resource:///org/gnome/shell/extensions/shuzhi/color.tsv').load_contents(null).at(1)),
             rgb2oklch = rgb => {
-                let [r, g, b] = rgb.map(x => x > 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92), // linear srgb
+                let [r, g, b] = rgb.map(x => x > 0.04045 ? ((x + 0.055) / 1.055) ** 2.4 : x / 12.92), // linear srgb
                     l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b),
                     m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b),
                     s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b),
@@ -41,7 +41,7 @@ export class Palette {
                 else if(h > 10) return St.SystemAccentColor.RED;
                 else return St.SystemAccentColor.PINK;
             };
-        this.$color = table.split('\n').map(x => (([hex, name]) => [hex.match(/(..)/g).map(y => parseInt(y, 16) / 255), name])(x.split('\t')));
+        this.$color = table.split('\n').map(x => (([hex, name]) => [Array.from(Uint8Array.fromHex(hex), y => y / 255), name])(x.split('\t')));
         this.$index = this.$color.reduce((p, [rgb], i) => {
             let [l, c, h] = rgb2oklch(rgb);
             let accent = c < 0.04 ? St.SystemAccentColor.SLATE : hue2accent(h);

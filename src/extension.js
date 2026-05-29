@@ -17,7 +17,7 @@ import * as Draw from './draw.js';
 import * as Color from './color.js';
 
 const {_} = F;
-const {$, $$, $s} = T;
+const {$, $_, $$} = T;
 
 const Style = {SYSTEM: 0, LIGHT: 1, DARK: 2};
 const Dark = {LUCK: 0, WAVE: 1, OVAL: 2, BLOB: 3, CLOUD: 4};
@@ -121,9 +121,9 @@ class ShuZhi extends F.Mortal {
                 fresh: [() => { menu.close(); refresh(); }, 'view-refresh-symbolic'],
                 copy: [() => { menu.close(); MT.copy(this); }, 'edit-copy-symbolic'],
                 prefs: [() => { menu.close(); F.me().openPreferences(); }, M.Icon.wrap('florette-symbolic')],
-            }, 'shuzhi-bg-menu-icon'], {activate: true})[$].connect('activate', refresh)[$$](it =>
+            }, 'shuzhi-bg-menu-icon'], {activate: true})[$].connect('activate', refresh)[$_](it =>
                 menu.actor.connect('key-press-event', (_a, e) => M.altNum(e, it))),
-            new PopupMenu.PopupMenuSection()[$s].addMenuItem([new M.Separator(_('Refresh')),
+            new PopupMenu.PopupMenuSection()[$$].addMenuItem([new M.Separator(_('Refresh')),
                 ...[[_('Motto'), Re.MOTTO], [_('Sketch'), Re.SKETCH], [_('Both')]].map(([x, y]) => new M.Item(x, () => refresh(y)))]),
         ].reverse().forEach(x => menu.addMenuItem(x, 0));
     }
@@ -190,7 +190,7 @@ class ShuZhi extends F.Mortal {
     }
 
     $draw(cr, paint, dye) {
-        [dye?.(), Draw.Motto.gen(cr, MT.get(this), this)][$$](([x, y]) => { paint(x); Draw.paint(Draw.Motto, cr, y, this); });
+        [dye?.(), Draw.Motto.gen(cr, MT.get(this), this)][$_](([x, y]) => { paint(x); Draw.paint(Draw.Motto, cr, y, this); });
     }
 
     draw(cr) {
@@ -200,7 +200,7 @@ class ShuZhi extends F.Mortal {
         } else {
             let skt = this.getSketch();
             this.$draw(cr, color => (pts => { this.$skt = (ctx => Draw.paint(skt, ctx, pts, this))[$].call(null, cr); })(skt.gen(color, this)),
-                () => skt.dye(this)[$$](() => this[K.ACT] && this.$setIF.set(IF.ACCENT, this.palette.takeAccent())));
+                () => skt.dye(this)[$_](() => this[K.ACT] && this.$setIF.set(IF.ACCENT, this.palette.takeAccent())));
         }
     }
 
@@ -217,10 +217,10 @@ class ShuZhi extends F.Mortal {
     async $backup(path) {
         if(!this[K.BCK] || !this[K.PATH]) return;
         let dir = GLib.path_get_dirname(path),
-            pfx = path.endsWith('d.svg') ? 'shuzhi-d-' : 'shuzhi-l-',
-            bak = await T.readdir(dir, x => (y => y.startsWith(pfx) && Date.parse(y.slice(9, 33)) ? [y] : [])(x.get_name())).catch(T.nop) ?? [];
-        bak.flat().slice(0, -this[K.BCK]).forEach(x => T.fdelete(`${dir}/${x}`));
-        await T.fcopy(path, path.replace(/\.svg$/, `-${new Date().toISOString()}.svg`));
+            pfx = path.endsWith('d.svg') ? 'shuzhi-d_' : 'shuzhi-l_',
+            bak = x => x.startsWith(pfx) && T.essay(() => Temporal.Instant.from(x.slice(9, -4))) ? [x] : [];
+        await T.readdir(dir, x => bak(x.get_name())).then(x => x.flat().slice(0, -this[K.BCK]).forEach(y => T.fdelete(`${dir}/${y}`)));
+        await T.fcopy(path, path.replace(/\.svg$/, `_${Temporal.Now.instant().toString({timeZone: Temporal.Now.timeZoneId()})}.svg`));
     }
 }
 

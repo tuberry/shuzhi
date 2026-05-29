@@ -58,10 +58,10 @@ const RAND = { // PRNG
             yield Math.clamp(v * s / 6 + 0.5, 0, 1);
         }
     })()),
-    gauss: (m, s, k = 0) => (n => m + s * (6 * (k < 0 ? 1 - n : n) - 3))(Math.pow(RAND.normal(), 1 - Math.log2(1 + Math.abs(k)))), // k <- (-1, 1)
+    gauss: (m, s, k = 0) => (n => m + s * (6 * (k < 0 ? 1 - n : n) - 3))(RAND.normal() ** (1 - Math.log2(1 + Math.abs(k)))), // k <- (-1, 1)
     bimodal: (mu, s3, k = 0.5) => RAND.gauss(mu, s3 / 3, RAND.boolean() ? k : -k), // k <- (0, 1)
     gamma: (a, b = 1) => { // a:alpha == k > 0, b:beta == 1 / theta > 0 // Ref: https://en.wikipedia.org/wiki/Gamma_distribution#Random_variate_generation
-        if(a < 1) return RAND.gamma(a + 1, b) * Math.pow(Math.random(), 1 / a);
+        if(a < 1) return RAND.gamma(a + 1, b) * Math.random() ** (1 / a);
         let d = a - 1 / 3,
             c = 1 / Math.sqrt(9 * d),
             u, v, s;
@@ -107,7 +107,7 @@ const Curve = {
 
 const Moon = {
     gen: (x, _y) => {
-        let p = Math.abs((Date.now() / 86400000 - 18256.8) / 29.5305882) % 1, // Ref: https://ecomaan.nl/javascript/moonphase/
+        let p = Math.abs((Temporal.Now.instant().epochMilliseconds / 86400000 - 18256.8) / 29.5305882) % 1, // Ref: https://ecomaan.nl/javascript/moonphase/
             [c_x, c_y, r, s_t, e_t, t] = [x * 8 / 10, x / 10, x / 20, 0, Math.PI, p > 0.5 ? Math.PI / 4 : -Math.PI / 4],
             q = (1 - Math.abs(2 * p - 1)).toFixed(3);
         if(Math.abs(q - 1) < 0.005) {
