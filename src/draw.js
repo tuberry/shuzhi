@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import St from 'gi://St';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Rsvg from 'gi://Rsvg';
 import Cairo from 'gi://cairo';
@@ -406,10 +407,13 @@ const Text = {
 };
 
 const Image = {
-    logo: (x, d) => St.IconTheme.new().lookup_icon(`${x}-${d ? 'text-dark' : 'text'}`, -1, St.IconLookupFlags.FORCE_SVG),
+    logo: (name, dark, size) => { // from https://gitlab.gnome.org/GNOME/gnome-control-center/-/blob/main/panels/system/about/cc-about-page.c
+        let names = dark ? [`${name}-text-dark`, `${name}-text`, `${name}-dark`, name] : [`${name}-text`,  name];
+        return St.IconTheme.new().lookup_by_gicon(Gio.ThemedIcon.new_from_names(names), size * 48, St.IconLookupFlags.FORCE_SVG);
+    },
     gen: (fn, {W, H, dark}) => {
         try {
-            let url = fn ? T.fopen(fn).get_path() : Image.logo(`${GLib.get_os_info('LOGO') || 'gnome-logo'}`, dark).get_filename(),
+            let url = fn ? T.fopen(fn).get_path() : Image.logo(`${GLib.get_os_info('LOGO') || 'gnome-logo'}`, dark, Math.round(W / 1000)).get_filename(),
                 img = url.endsWith('.svg') ? Rsvg.Handle.new_from_file(url) : St.TextureCache.get_default().load_file_to_cairo_surface(T.fopen(url), 1, 1),
                 {width: w, height: h} = img instanceof Rsvg.Handle ? img : {width: img.getWidth(), height: img.getHeight()};
             Motto.area = [(W - w) / 2, (H * 0.8 - h) / 2, w, h];

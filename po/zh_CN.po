@@ -17,11 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/ui.js:379
+#: src/ui.js:375
 msgid "Mismatched filetype"
 msgstr "文件类型不匹配"
 
-#: src/ui.js:559
+#: src/ui.js:564
 msgid "Click or press ENTER to apply changes"
 msgstr "单击或按回车应用更改"
 
@@ -211,19 +211,19 @@ msgstr "壁纸背景色"
 msgid "system accent color"
 msgstr "系统强调色"
 
-#: src/extension.js:126
+#: src/extension.js:133
 msgid "Refresh"
 msgstr "刷新"
 
-#: src/extension.js:127
+#: src/extension.js:134
 msgid "Motto"
 msgstr "字句"
 
-#: src/extension.js:127
+#: src/extension.js:134
 msgid "Sketch"
 msgstr "纹理"
 
-#: src/extension.js:127
+#: src/extension.js:134
 msgid "Both"
 msgstr "全部"
 

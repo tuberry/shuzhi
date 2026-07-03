@@ -4,6 +4,7 @@
 import GLib from 'gi://GLib';
 import Cairo from 'gi://cairo';
 import Pango from 'gi://Pango';
+import Clutter from 'gi://Clutter';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -63,12 +64,12 @@ const MT = {
 
 class ShuZhi extends F.Mortal {
     $bindSettings(gset) {
-        this.$setBG = new F.Setting('org.gnome.desktop.background', this, BG);
-        this.$setIF = new F.Setting('org.gnome.desktop.interface', this, [
+        this.$setBG = new F.Setting('org.gnome.desktop.background').tie(this, BG);
+        this.$setIF = new F.Setting('org.gnome.desktop.interface').tie(this, [
             IF.ACCENT, [IF.SCALE, null, () => this.$onFontSet()],
             [IF.STYLE, x => x === 'prefer-dark', () => this.$onStyleSet()],
         ]);
-        this.$set = new F.Setting(gset, this, [
+        this.$set = new F.Setting(gset).tie(this, [
             K.BCK, [K.ACT, null, x => this.palette.saveAccent(x)],
             [K.MENU, null, x => this.$src.menu.toggle(x)],
             [K.SPAN, null, x => this.$src.cycle.reload(x)],
@@ -87,14 +88,20 @@ class ShuZhi extends F.Mortal {
     }
 
     $buildSources() {
-        let cancel = F.Source.newCancel(),
-            cycle = F.Source.newTimer(() => [() => this.$redraw(Re.BOTH), this[K.SPAN] * 60000], false, null, this[K.RFS]),
-            menu = F.Source.newInjector([Main.layoutManager, {_addBackgroundMenu: (a, f, xs) => { f.apply(a, xs); this.$amendBgMenu(xs); }}], this[K.MENU],
+        let cancel = new F.Source.Cancel(),
+            cycle = new F.Source.Timer(() => [() => this.$redraw(Re.BOTH), this[K.SPAN] * 60000], false, null, this[K.RFS]),
+            menu = new F.Source.Injector([Main.layoutManager, {_addBackgroundMenu: (a, f, xs) => { f.apply(a, xs); this.$amendBgMenu(xs); }}], this[K.MENU],
                 () => { if(global.stage.peek_stage_views().length) Main.layoutManager.screenTransition.run(); Main.layoutManager._updateBackgrounds(); }), // HACK: workaround for flickering when _updateBackgrounds & mutter devkit compatibility
-            dog = F.Source.newHandler(Main.layoutManager, 'monitors-changed', (() => ({width: this.W, height: this.H} = Main.layoutManager
-                .monitors.reduce((p, x) => p.height * p.width > x.height * x.width ? p : x, {width: 16, height: 9})))[$].call());
+            dog = new F.Source.Handler(Main.layoutManager, 'monitors-changed', (() => this.$onMonitorsChange())[$].call());
         this.$src = F.Source.tie(this, {cancel, cycle, menu}, dog);
         this.$buildWidgets();
+    }
+
+    $onMonitorsChange() {
+        [this.W, this.H] = Main.layoutManager.monitors.reduce((p, {height: h, width: w, geometry_scale: s}) => {
+            w *= s, h *= s, s = w * h;
+            return p[2] < s ? [w, h, s] : p;
+        }, [1, 1, 1]);
     }
 
     $buildWidgets() {
@@ -114,7 +121,7 @@ class ShuZhi extends F.Mortal {
 
     $amendBgMenu([bgManager]) {
         let menu = bgManager.backgroundActor._backgroundMenu;
-        F.erase(menu._settingsActions, 'gnome-background-panel.desktop'); // remove 'Change Background...' item
+        F.free(menu._settingsActions, 'gnome-background-panel.desktop'); // remove 'Change Background...' item
         let refresh = (x = Re.BOTH) => { this.$src.cycle.reload(); this.$redraw(x); };
         [
             new M.ToolItem([{
@@ -122,15 +129,13 @@ class ShuZhi extends F.Mortal {
                 copy: [() => { menu.close(); MT.copy(this); }, 'edit-copy-symbolic'],
                 prefs: [() => { menu.close(); F.me().openPreferences(); }, M.Icon.wrap('florette-symbolic')],
             }, 'shuzhi-bg-menu-icon'], {activate: true})[$].connect('activate', refresh)[$_](it =>
-                menu.actor.connect('key-press-event', (_a, e) => M.altNum(e, it))),
+                menu.actor.add_action(new Clutter.KeyController()[$].connect('key-press', x => M.altNum(x, it)))),
             new PopupMenu.PopupMenuSection()[$$].addMenuItem([new M.Separator(_('Refresh')),
                 ...[[_('Motto'), Re.MOTTO], [_('Sketch'), Re.SKETCH], [_('Both')]].map(([x, y]) => new M.Item(x, () => refresh(y)))]),
         ].reverse().forEach(x => menu.addMenuItem(x, 0));
     }
 
-    get waving() {
-        return this.$type === Light.WAVE;
-    }
+    get waving() { return this.$type === Light.WAVE; }
 
     $onFontSet() {
         this.font = Pango.FontDescription.from_string(this[K.FONT]);
@@ -147,7 +152,7 @@ class ShuZhi extends F.Mortal {
     }
 
     $onPathSet(path = this[K.PATH]) {
-        this.path = `${path || `${GLib.get_user_runtime_dir()}/gnome-shell`}/shuzhi-${this.dark ? 'd' : 'l'}.svg`;
+        this.path = `${path || F.temp()}/shuzhi-${this.dark ? 'd' : 'l'}.svg`;
     }
 
     getMotto() {
@@ -159,7 +164,7 @@ class ShuZhi extends F.Mortal {
             case Src.ONLINE: return MT.fetch(this.$src.cancel.reborn());
             }
         }).catch(e => {
-            if(F.Source.cancelled(e)) throw e;
+            if(F.Source.Cancel.expected(e)) throw e;
             logError(e);
             return MT.parse(this[K.SRC]);
         });
@@ -167,8 +172,8 @@ class ShuZhi extends F.Mortal {
 
     async $redraw(redraw) {
         if(!Object.hasOwn(this, 'motto')) return;
+        if(redraw & Re.MOTTO) try { this.motto = await this.getMotto(); } catch { return; }
         if(redraw & Re.SKETCH) this.$skt = null;
-        if(redraw & Re.MOTTO) this.motto = await this.getMotto();
         let svg = new Cairo.SVGSurface(this.path, this.W, this.H);
         let cr = new Cairo.Context(svg);
         this.draw(cr);

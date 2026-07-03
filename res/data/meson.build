@@ -13,25 +13,23 @@ _icon = 'florette-symbolic.svg'
 _gres = {'icon': _icon, 'table': _table, 'path': me['path']}
 
 _deps = [] + custom_target(
+  input: ['../../cli/gen-icon.js'],
   output: _icon,
-  build_by_default: true,
-  build_always_stale: true,
   build_subdir: 'scalable/status',
   command: [
     find_program('gjs'),
     '-m',
-    '@SOURCE_ROOT@' / 'cli/gen-icon.js',
+    '@INPUT@',
     '@OUTDIR@',
     _icon,
   ],
 ) + custom_target(
+  input: ['../../cli/gen-color.js'],
   output: _table,
-  build_by_default: true,
-  build_always_stale: true,
   command: [
     find_program('gjs'),
     '-m',
-    '@SOURCE_ROOT@'/ 'cli/gen-color.js',
+    '@INPUT@',
     '@OUTDIR@' / _table,
   ],
 )
