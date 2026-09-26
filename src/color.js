@@ -8,13 +8,13 @@ import * as T from './util.js';
 export const FG = {DARK: 0, LIGHT: 1, MODERATE: 2};
 export const BgRGBA = {DARK: [0.14, 0.14, 0.14, 1], LIGHT: [0.9, 0.9, 0.9, 1]};
 
+const BgHex = T.vmap(BgRGBA, v => `#${new Uint8Array(v.map(x => Math.round(x * 255))).toHex()}`);
 const Accent = {
     blue:   '#3584e4', teal:   '#2190a4', green: '#3a944a',
     yellow: '#c88800', orange: '#ed5b00', red:   '#e62d42',
     pink:   '#d56199', purple: '#9141ac', slate: '#6f8396',
 }; // from https://gitlab.gnome.org/GNOME/gnome-shell/-/blob/main/src/st/st-theme-context.c
 const Accents = Object.keys(Accent);
-const BgHex = T.vmap(BgRGBA, v => `#${v.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')}`);
 
 export const specify = (dark, accent) => ({SZ_BGCOLOR: dark ? BgHex.DARK : BgHex.LIGHT, SZ_ACCENT_COLOR: Accent[accent]});
 
@@ -29,7 +29,7 @@ export class Palette {
                     A = 1.9779985324311684 * l - 2.4285922420485799 * m + 0.4505937096174110 * s,
                     B = 0.0259040424655478 * l + 0.7827717124575296 * m - 0.8086757549230774 * s;
                 return [0.2104542683093140 * l + 0.7936177747023054 * m - 0.0040720430116193 * s,
-                    Math.hypot(A, B), (Math.atan2(B, A) / Math.PI + 2) % 2 * 180];
+                    Math.hypot(A, B), T.mod(Math.atan2(B, A) / Math.PI, 2) * 180];
             },
             hue2accent = h => {
                 if(h > 345) return St.SystemAccentColor.PINK;
@@ -45,8 +45,7 @@ export class Palette {
         this.$color = table.split('\n').map(x => (([hex, name]) => [Array.from(Uint8Array.fromHex(hex), y => y / 255), name])(x.split('\t')));
         this.$index = this.$color.reduce((p, [rgb], i) => {
             let [l, c, h] = rgb2oklch(rgb);
-            let accent = c < 0.04 ? St.SystemAccentColor.SLATE : hue2accent(h);
-            l *= 0.5 / 0.5693; // middle grey
+            let accent = c < 0.05 ? St.SystemAccentColor.SLATE : hue2accent(h);
             p[accent][l < 0.5 ? FG.DARK : FG.LIGHT].push(i);
             if(l > 0.25 && l < 0.75) p[accent][FG.MODERATE].push(i);
             return p;

@@ -4,8 +4,8 @@
 
 GNOME Shell extension to generate wallpapers featuring mottos, inspired by [Jizhi](https://github.com/unicar9/jizhi).
 
->望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— *张枣 《镜中》*\
-[![license]](/LICENSE.md)
+> 望着窗外，只要想起一生中后悔的事 / 梅花便落满了南山 —— _张枣 《镜中》_\
+> [![license]](/LICENSE.md)
 
 ![shuzhi](https://user-images.githubusercontent.com/17917040/108039729-7453cc00-7077-11eb-9d91-4beebcef9e97.png)
 
@@ -18,7 +18,7 @@ The latest and supported version should only work on the [current stable version
 ```bash
 git clone https://github.com/tuberry/shuzhi.git && cd shuzhi
 just install || (meson setup build && meson compile -C build && meson install -C build)
-# meson setup build -Dtarget=system && meson install -C build # system-wide
+# meson setup build -Dtarget=system && meson compile -C build && meson install -C build # system-wide
 ```
 
 For older versions, it's recommended to install via:
@@ -36,14 +36,14 @@ It's quite the same as installing from:
 
 ## Notes
 
-* Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see also [_shuzhi.sh](/cli/_shuzhi.sh) or [_shuzhi.js](/cli/_shuzhi.js) for reference;
-* If you don't want to bother with scripting, set the motto source as `Online` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**;
+- Support [Pango](https://docs.gtk.org/Pango/pango_markup.html) markups or images, see also [\_shuzhi.sh](/cli/_shuzhi.sh) or [\_shuzhi.js](/cli/_shuzhi.js) for reference;
+- If you don't want to bother with scripting, set the motto source as `Online` to use [jinrishici] as source. **Note that this project is not affiliated with jinrishici in any way**;
 
 ## Contributions
 
-Feel free to open an issue in the repo for any questions or ideas, **particularly before making significant changes or introducing new features**.
+Feel free to open issues/discussions in the repo for any questions or ideas, **particularly before making significant changes or introducing new features**.
 
-Also, *just* so you know:
+Also, _just_ so you know:
 
 ```bash
 just --list
@@ -52,8 +52,8 @@ just --list
 
 ## Acknowledgements
 
-* [gushichi][jinrishici]: the online API
+- [gushichi][jinrishici]: the online API
 
-[jinrishici]:https://github.com/xenv/gushici
-[license]:https://img.shields.io/badge/license-GPLv3+-green.svg
-[EGO]:https://extensions.gnome.org/extension/3985/shu-zhi/
+[jinrishici]: https://github.com/xenv/gushici
+[license]: https://img.shields.io/badge/license-GPLv3+-green.svg
+[EGO]: https://extensions.gnome.org/extension/3985/shu-zhi/

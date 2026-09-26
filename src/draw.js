@@ -91,7 +91,7 @@ const Curve = { //  Ref: https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80
     gen: (pts, closed, tau = R.gauss(1, 1 / 8), alpha = R.normal()) => {
         let n = closed ? pts.length : pts.length - 1;
         return [pts[0], T.array(n, closed
-            ? i => Curve.$gen(T.array(4, j => pts.at((i + j - 1) % n)), tau, alpha)
+            ? i => Curve.$gen(T.array(4, j => pts[T.mod(i + j - 1, n)]), tau, alpha)
             : i => Curve.$gen(T.array(4, j => pts[Math.clamp(i + j - 1, 0, n)]), tau, alpha))];
     },
     link: (cr, [start, pts]) => {

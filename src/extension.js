@@ -35,7 +35,7 @@ const MT = {
     async fetch(cancel) {
         let cent = 45,
             size = {size: `${cent}%`},
-            {content, origin, author} = JSON.parse(await T.request('POST', 'https://v1.jinrishici.com/all.json', null, cancel)),
+            {content, origin, author} = JSON.parse(await T.request('https://v1.jinrishici.com/all.json', cancel)),
             title = this.$span(`「${origin}」`, size),
             gap = this.$span('\n', {line_height: 0.15}),
             body = content.replace(/[，。：；？、！]/g, '\n').replace(/[《》“”]/g, ''),
@@ -51,14 +51,14 @@ const MT = {
     },
     copy(host) {
         let [text, image] = this.get(host);
-        if(text.some(T.id)) F.copy(T.essay(() => Pango.parse_markup(text.join(''), -1, '').at(2), () => text.join('')));
+        if(text.some(T.id)) F.copy(T.essay(() => Pango.parse_markup(text.join(''), -1, '')[2], () => text.join('')));
         else if(image) F.copy(image);
     },
     parse(text = '') {
         return T.essay(() => JSON.parse(text, (k, v) => k ? String(v) : v), () => ({text}));
     },
     async load(command, cancel) {
-        return this.parse(await T.execute(command, null, cancel));
+        return this.parse(await T.execute(command, cancel));
     },
 };
 
